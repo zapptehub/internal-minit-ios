@@ -43,6 +43,52 @@ public final class FirebaseAuthApiImpl: AuthApi {
     public func confirmPasswordReset(email: String, code: String) async throws {
         // Mock: any code is accepted, nothing to validate — see `sendVerificationCode`.
     }
+
+    /// Firebase Auth persists `currentUser` across launches (keychain-backed), independent
+    /// of this package's own in-memory session cache. Restoring from it — rather than only
+    /// trusting the in-memory cache — is what lets a relaunch resume an existing session.
+    ///
+    /// `getIDToken()` returns the cached token when it isn't expired and only talks to the
+    /// network to refresh it when it is, so this is cheap on the common path.
+    public func restoreSession() async throws -> AuthDto? {
+        guard let user = Auth.auth().currentUser else {
+            return nil
+        }
+
+        do {
+            let idToken = try await user.getIDToken()
+            return AuthDto(accessToken: idToken, userId: user.uid)
+        } catch {
+            guard Self.isRevokedSessionError(error) else {
+                // Could not determine validity either way (e.g. offline) — surface it so
+                // the caller can distinguish "definitely signed out" from "try again".
+                throw error
+            }
+            // The persisted identity itself is no longer valid (token revoked, account
+            // disabled/deleted). Sign out locally too so Firebase Auth stops reporting a
+            // `currentUser` that can never successfully refresh.
+            try? Auth.auth().signOut()
+            return nil
+        }
+    }
+
+    public func signOut() async throws {
+        try Auth.auth().signOut()
+    }
+
+    /// Error codes where the persisted Firebase Auth identity is permanently invalid rather
+    /// than just temporarily unreachable — see `AuthErrorCode` in FirebaseAuth.
+    private static func isRevokedSessionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == AuthErrors.domain else { return false }
+        let revokedCodes: Set<Int> = [
+            AuthErrorCode.userTokenExpired.rawValue,
+            AuthErrorCode.userDisabled.rawValue,
+            AuthErrorCode.userNotFound.rawValue,
+            AuthErrorCode.invalidUserToken.rawValue
+        ]
+        return revokedCodes.contains(nsError.code)
+    }
 }
 
 private extension AuthDataResult {

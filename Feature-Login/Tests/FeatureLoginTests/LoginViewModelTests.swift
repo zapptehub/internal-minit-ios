@@ -362,7 +362,7 @@ private final class MockAuthRepository: AuthRepository {
     }
 
     func logout() async { logoutCalled = true }
-    func currentSession() async -> AuthData? { nil }
+    func currentSession() async throws -> AuthData? { nil }
 
     func checkEmailExists(email: String) async throws -> Bool {
         if shouldThrow { throw NSError(domain: "test", code: 0) }

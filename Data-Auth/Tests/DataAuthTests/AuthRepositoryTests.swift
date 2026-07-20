@@ -36,7 +36,7 @@ final class AuthRepositoryTests: XCTestCase {
         let result = try await repository.register(email: "new@minit.com", password: "password", marketingOptIn: true)
 
         XCTAssertEqual(result.token, "test-token")
-        let session = await repository.currentSession()
+        let session = try await repository.currentSession()
         XCTAssertEqual(session, result)
     }
 
@@ -64,6 +64,88 @@ final class AuthRepositoryTests: XCTestCase {
         let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
 
         try await repository.confirmPasswordReset(email: "iveta@minitbakery.com", code: "1234")
+    }
+
+    func testCurrentSession_returnsCachedSessionWithoutRestoring() async throws {
+        let mockApi = MockAuthApi()
+        let dataSource = InMemoryAuthDataSource()
+        await dataSource.save(AuthData(token: "cached-token", userId: "cached-user"))
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        let session = try await repository.currentSession()
+
+        XCTAssertEqual(session, AuthData(token: "cached-token", userId: "cached-user"))
+        XCTAssertFalse(mockApi.restoreSessionCalled)
+    }
+
+    func testCurrentSession_restoresFromBackendWhenCacheIsEmptyAndCachesResult() async throws {
+        let mockApi = MockAuthApi()
+        mockApi.restoreSessionResult = .success(AuthDto(accessToken: "restored-token", userId: "restored-user"))
+        let dataSource = InMemoryAuthDataSource()
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        let session = try await repository.currentSession()
+
+        XCTAssertEqual(session, AuthData(token: "restored-token", userId: "restored-user"))
+        XCTAssertTrue(mockApi.restoreSessionCalled)
+        let cached = await dataSource.load()
+        XCTAssertEqual(cached, session)
+    }
+
+    func testCurrentSession_returnsNilWhenNothingToRestore() async throws {
+        let mockApi = MockAuthApi()
+        mockApi.restoreSessionResult = .success(nil)
+        let dataSource = InMemoryAuthDataSource()
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        let session = try await repository.currentSession()
+
+        XCTAssertNil(session)
+        let cached = await dataSource.load()
+        XCTAssertNil(cached)
+    }
+
+    func testCurrentSession_propagatesRestorationErrorInsteadOfTreatingItAsSignedOut() async {
+        let mockApi = MockAuthApi()
+        mockApi.restoreSessionResult = .failure(NSError(domain: "test", code: 1))
+        let dataSource = InMemoryAuthDataSource()
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        do {
+            _ = try await repository.currentSession()
+            XCTFail("Expected the restoration error to propagate")
+        } catch {
+            // Expected — an indeterminate restoration failure is not the same as being
+            // signed out, so the caller must see it rather than silently getting nil.
+        }
+        let cached = await dataSource.load()
+        XCTAssertNil(cached)
+    }
+
+    func testLogout_clearsLocalCacheAndSignsOutOfBackend() async {
+        let mockApi = MockAuthApi()
+        let dataSource = InMemoryAuthDataSource()
+        await dataSource.save(AuthData(token: "token", userId: "user"))
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        await repository.logout()
+
+        let cached = await dataSource.load()
+        XCTAssertNil(cached)
+        XCTAssertTrue(mockApi.signOutCalled)
+    }
+
+    func testLogout_stillClearsLocalCacheWhenBackendSignOutFails() async {
+        let mockApi = MockAuthApi()
+        mockApi.signOutError = NSError(domain: "test", code: 1)
+        let dataSource = InMemoryAuthDataSource()
+        await dataSource.save(AuthData(token: "token", userId: "user"))
+        let repository = AuthRepositoryImpl(api: mockApi, dataSource: dataSource)
+
+        await repository.logout()
+
+        let cached = await dataSource.load()
+        XCTAssertNil(cached)
     }
 }
 
@@ -95,9 +177,15 @@ private final class NoopNetworkClient: NetworkClient {
 
 // MARK: - Mock
 
-private final class MockAuthApi: AuthApi {
+private final class MockAuthApi: AuthApi, @unchecked Sendable {
     var loginCalled = false
     var shouldThrow = false
+
+    var restoreSessionCalled = false
+    /// `nil` means "not stubbed" — defaults to returning no restorable session.
+    var restoreSessionResult: Result<AuthDto?, Error>?
+    var signOutCalled = false
+    var signOutError: Error?
 
     func login(email: String, password: String) async throws -> AuthDto {
         loginCalled = true
@@ -121,5 +209,22 @@ private final class MockAuthApi: AuthApi {
 
     func confirmPasswordReset(email: String, code: String) async throws {
         if shouldThrow { throw NSError(domain: "test", code: 0) }
+    }
+
+    func restoreSession() async throws -> AuthDto? {
+        restoreSessionCalled = true
+        switch restoreSessionResult {
+        case .success(let dto):
+            return dto
+        case .failure(let error):
+            throw error
+        case nil:
+            return nil
+        }
+    }
+
+    func signOut() async throws {
+        signOutCalled = true
+        if let signOutError { throw signOutError }
     }
 }

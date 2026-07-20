@@ -7,7 +7,7 @@ struct PreviewAuthRepository: AuthRepository {
         AuthData(token: "preview-token", userId: "preview-user")
     }
     func logout() async {}
-    func currentSession() async -> AuthData? { nil }
+    func currentSession() async throws -> AuthData? { nil }
     func checkEmailExists(email: String) async throws -> Bool { true }
     func register(email: String, password: String, marketingOptIn: Bool) async throws -> AuthData {
         AuthData(token: "preview-token", userId: "preview-user")

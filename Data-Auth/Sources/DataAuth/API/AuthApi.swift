@@ -13,6 +13,18 @@ public protocol AuthApi: Sendable {
     /// Confirms a password reset for `email`. `code` is accepted unchecked (mock, no real
     /// OTP validation) — see `plans/ios-auth-flow-multi-step.md`.
     func confirmPasswordReset(email: String, code: String) async throws
+
+    /// Reconstructs a session from the backend's own persisted identity (e.g. Firebase
+    /// Auth's `currentUser`), refreshing the access token if needed. Returns `nil` when
+    /// there is no persisted identity, or when it is no longer valid (revoked, disabled,
+    /// deleted) — implementations should treat that case as "signed out" and clear their
+    /// own persisted identity rather than surfacing it as an error. Any other thrown error
+    /// (e.g. a network failure) means restoration could not be determined either way.
+    func restoreSession() async throws -> AuthDto?
+
+    /// Signs out of the backend's own persisted identity. Called in addition to clearing
+    /// the local session cache so logout is authoritative on both sides.
+    func signOut() async throws
 }
 
 public final class AuthApiImpl: AuthApi {
@@ -49,5 +61,14 @@ public final class AuthApiImpl: AuthApi {
 
     public func confirmPasswordReset(email: String, code: String) async throws {
         // Mock: backend not ready — any code is accepted, nothing to validate.
+    }
+
+    public func restoreSession() async throws -> AuthDto? {
+        // Mock: backend not ready — nothing persisted to restore.
+        return nil
+    }
+
+    public func signOut() async throws {
+        // Mock: backend not ready — nothing to sign out of.
     }
 }
