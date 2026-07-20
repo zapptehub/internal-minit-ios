@@ -1,0 +1,116 @@
+import SwiftUI
+
+/// Single source of truth for every icon used in the app — both bundled
+/// vector assets and SF Symbols. Callers never reach for `Image(systemName:)`
+/// or `Image(_:bundle:)` directly; they add a case here instead.
+public enum DSIcon {
+    case appleLogo
+    case google
+    case storefront
+    case info
+    case externalLink
+    case pencil
+    case next
+    case warningTriangle
+    /// Password field "show" toggle (`DSInputField`'s `.password` variant).
+    case eye
+    /// Password field "hide" toggle (`DSInputField`'s `.password` variant).
+    case eyeSlash
+    /// Trailing accessory for `DSInputField`'s `.date` variant.
+    case calendar
+    /// Checked-state glyph for `DSCheckbox`.
+    case checkmark
+    /// White circle-with-checkmark glyph (`PasswordChangedScreen` success state).
+    case minitCheckbox
+    /// Back-navigation chevron (onboarding's circular back button, the scanner's dark
+    /// back button, and any future back affordance that isn't a `NavigationStack`
+    /// system back button).
+    case chevronLeft
+    /// "Rank Up" badge glyph on the onboarding loyalty-card preview.
+    case minitArmor
+    /// Grid/QR-style glyph for the onboarding loyalty-card preview's "Loyalty Card" chip.
+    case minitQrCode
+    /// Capture-button glyph on the onboarding QR scanner screen. (Asset filename keeps the
+    /// designer's original spelling, "minitCamerIcon" — this case name uses the correct
+    /// spelling.)
+    case minitCamera
+
+    public var image: Image {
+        switch self {
+        case .appleLogo: return Image("Icon/AppleLogo", bundle: .module)
+        case .google: return Image("Icon/Google", bundle: .module)
+        case .storefront: return Image(systemName: "storefront.fill")
+        case .info: return Image(systemName: "info.circle.fill")
+        case .externalLink: return Image(systemName: "arrow.up.forward")
+        case .pencil: return Image(systemName: "pencil")
+        case .next: return Image(systemName: "chevron.right")
+        case .warningTriangle: return Image(systemName: "exclamationmark.triangle.fill")
+        case .eye: return Image(systemName: "eye")
+        case .eyeSlash: return Image(systemName: "eye.slash")
+        case .calendar: return Image(systemName: "calendar")
+        case .checkmark: return Image(systemName: "checkmark")
+        case .minitCheckbox: return Image("Icon/minitCheckbox", bundle: .module)
+        case .chevronLeft: return Image(systemName: "chevron.left")
+        case .minitArmor: return Image("Icon/minitArmorIcon", bundle: .module)
+        case .minitQrCode: return Image("Icon/minitQrCodeIcon", bundle: .module)
+        case .minitCamera: return Image("Icon/minitCamerIcon", bundle: .module)
+        }
+    }
+}
+
+public struct DSIconView: View {
+    let icon: DSIcon
+    public var size: CGFloat
+    public var renderingMode: Image.TemplateRenderingMode?
+    public var color: Color
+
+    public init(
+        icon: DSIcon,
+        size: CGFloat = 16,
+        renderingMode: Image.TemplateRenderingMode? = .template,
+        color: Color = DSColor.Icon.primary
+    ) {
+        self.icon = icon
+        self.size = size
+        self.renderingMode = renderingMode
+        self.color = color
+    }
+
+    public var body: some View {
+        icon.image
+            .renderingMode(renderingMode)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .foregroundColor(color)
+    }
+}
+
+#Preview {
+    VStack(spacing: DSConstant.medium.value) {
+        HStack(spacing: DSConstant.medium.value) {
+            DSIconView(icon: .storefront)
+            DSIconView(icon: .info)
+            DSIconView(icon: .externalLink)
+            DSIconView(icon: .pencil)
+            DSIconView(icon: .next)
+            DSIconView(icon: .warningTriangle)
+            DSIconView(icon: .appleLogo, renderingMode: .original)
+            DSIconView(icon: .google, renderingMode: .original)
+        }
+        HStack(spacing: DSConstant.medium.value) {
+            DSIconView(icon: .eye)
+            DSIconView(icon: .eyeSlash)
+            DSIconView(icon: .calendar)
+            DSIconView(icon: .checkmark)
+            DSIconView(icon: .minitCheckbox, size: 24, renderingMode: .template)
+        }
+        HStack(spacing: DSConstant.medium.value) {
+            DSIconView(icon: .chevronLeft)
+            DSIconView(icon: .minitArmor, renderingMode: .original)
+            DSIconView(icon: .minitQrCode, renderingMode: .original)
+            DSIconView(icon: .minitCamera, renderingMode: .original)
+        }
+    }
+    .padding()
+}

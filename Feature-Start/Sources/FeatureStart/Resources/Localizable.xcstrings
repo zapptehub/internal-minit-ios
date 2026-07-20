@@ -1,0 +1,36 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "start.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make your\nday better"
+          }
+        }
+      }
+    },
+    "start.button.getStarted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get started"
+          }
+        }
+      }
+    },
+    "start.legal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By tapping “Get started” you’re accepting our [terms](https://www.google.com) and [privacy policy](https://www.google.com)."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

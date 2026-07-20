@@ -1,0 +1,416 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "common.alert.ok" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "common.alert.underConstruction.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This feature is under construction."
+          }
+        }
+      }
+    },
+    "common.alert.underConstruction.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "👷"
+          }
+        }
+      }
+    },
+    "createAccount.button.continue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "createAccount.checkbox.marketingOptIn" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We may email you occasionally about updates and services similar to those we offer on our platform. You can opt out at any time by adjusting your preferences regarding commercial communications in the settings."
+          }
+        }
+      }
+    },
+    "createAccount.error.passwordMismatch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwords don't match."
+          }
+        }
+      }
+    },
+    "createAccount.field.confirmPassword" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-Type Password"
+          }
+        }
+      }
+    },
+    "createAccount.field.email" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email Address"
+          }
+        }
+      }
+    },
+    "createAccount.field.placeholder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Value"
+          }
+        }
+      }
+    },
+    "createAccount.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a new account"
+          }
+        }
+      }
+    },
+    "createAccount.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It looks like this is your first time here! Create a new account to continue."
+          }
+        }
+      }
+    },
+    "forgotPassword.button.resetPassword" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Password"
+          }
+        }
+      }
+    },
+    "forgotPassword.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset your password"
+          }
+        }
+      }
+    },
+    "forgotPassword.link.contactSupport" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contact Support if you lost access to 2FA"
+          }
+        }
+      }
+    },
+    "forgotPassword.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll send you a password reset code. Enter this code at the next screen."
+          }
+        }
+      }
+    },
+    "login.button.apple" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        }
+      }
+    },
+    "login.button.google" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        }
+      }
+    },
+    "login.button.login" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "login.error.emptyEmail" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter your email address."
+          }
+        }
+      }
+    },
+    "login.error.invalidEmail" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter a valid email address."
+          }
+        }
+      }
+    },
+    "login.error.emptyFields" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter your email and password."
+          }
+        }
+      }
+    },
+    "login.field.email" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iveta@example.com"
+          }
+        }
+      }
+    },
+    "login.field.password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password"
+          }
+        }
+      }
+    },
+    "login.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your email address"
+          }
+        }
+      }
+    },
+    "login.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll send you a verification code."
+          }
+        }
+      }
+    },
+    "passwordChanged.button.backToLogin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to Login"
+          }
+        }
+      }
+    },
+    "passwordChanged.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password changed"
+          }
+        }
+      }
+    },
+    "passwordChanged.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your new password has been saved successfully. Try logging in with it."
+          }
+        }
+      }
+    },
+    "verification.button.confirmPasswordChange" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Password Change"
+          }
+        }
+      }
+    },
+    "verification.button.confirmSignIn" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm & Sign In"
+          }
+        }
+      }
+    },
+    "verification.error.incompleteCode" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter the 4-digit verification code."
+          }
+        }
+      }
+    },
+    "verification.field.otp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification code digit"
+          }
+        }
+      }
+    },
+    "verification.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter verification code"
+          }
+        }
+      }
+    },
+    "verification.link.sendAgain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send Again"
+          }
+        }
+      }
+    },
+    "verification.link.support.action" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support"
+          }
+        }
+      }
+    },
+    "verification.link.support.prefix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trouble with login? "
+          }
+        }
+      }
+    },
+    "verification.subtitle.prefix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We've sent a verification code to "
+          }
+        }
+      }
+    },
+    "welcomeBack.button.signIn" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        }
+      }
+    },
+    "welcomeBack.error.emptyPassword" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter your password."
+          }
+        }
+      }
+    },
+    "welcomeBack.headline.prefix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome back "
+          }
+        }
+      }
+    },
+    "welcomeBack.link.forgotPassword" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forgot Password?"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

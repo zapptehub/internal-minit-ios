@@ -5,6 +5,12 @@
 ## User settings
 xcuserdata/
 
+## macOS
+.DS_Store
+
+## Local package derived data
+.derivedData/
+
 ## Obj-C/Swift specific
 *.hmap
 
