@@ -1,6 +1,29 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "onboarding.error.corruptedProgress" : {
+      "comment" : "Shown inline when locally saved onboarding progress can't be read back (Task 4.1 bootstrap fallback) — onboarding restarts from the name step.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't restore your progress, so let's start again."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodarilo sa nám obnoviť tvoj postup, začnime znova."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült visszaállítani a folyamatodat, kezdjük újra."
+          }
+        }
+      }
+    },
     "onboarding.placeholder.headline" : {
       "localizations" : {
         "en" : {
