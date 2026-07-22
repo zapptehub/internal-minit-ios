@@ -5,10 +5,11 @@ import SwiftUI
 /// create/claim-loyalty-card processing → success presentation, and any future
 /// "doing something, then confirming it worked" moment.
 ///
-/// The success-icon composition (`Background/Icon/Success` circle + `minitCheckbox`)
-/// mirrors `PasswordChangedScreen`'s hand-rolled version in `Feature-Login` — this is
-/// the shared home for that pattern per the DRY rule (a pattern appearing in 2+
-/// modules gets extracted).
+/// The loading glyph is the branded `DSProgressView` (rotating `miniLoader`), not the
+/// system `ProgressView()`. The success-icon composition (`Background/Icon/Success`
+/// circle + `minitCheckbox`) mirrors `PasswordChangedScreen`'s hand-rolled version in
+/// `Feature-Login` — this is the shared home for that pattern per the DRY rule (a
+/// pattern appearing in 2+ modules gets extracted).
 public struct DSStatusCard: View {
     public enum State {
         case loading(title: String, subtitle: String?)
@@ -52,8 +53,7 @@ public struct DSStatusCard: View {
     private var icon: some View {
         switch state {
         case .loading:
-            ProgressView()
-                .frame(width: Self.iconDiameter, height: Self.iconDiameter)
+            DSProgressView(size: Self.iconDiameter)
         case .success:
             Circle()
                 .fill(DSColor.Background.Icon.success)

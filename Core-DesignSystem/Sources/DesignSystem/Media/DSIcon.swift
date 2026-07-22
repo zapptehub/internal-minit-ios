@@ -37,6 +37,10 @@ public enum DSIcon {
     /// designer's original spelling, "minitCamerIcon" — this case name uses the correct
     /// spelling.)
     case minitCamera
+    /// 8-spoke spinner glyph driving `DSProgressView`'s continuous rotation. Not
+    /// typically used directly via `DSIconView` — go through `DSProgressView` instead
+    /// so the spin animation stays consistent everywhere loading state is shown.
+    case miniLoader
 
     public var image: Image {
         switch self {
@@ -60,6 +64,8 @@ public enum DSIcon {
         case .minitArmor: return Image("Icon/minitArmorIcon", bundle: .module)
         case .minitQrCode: return Image("Icon/minitQrCodeIcon", bundle: .module)
         case .minitCamera: return Image("Icon/minitCamerIcon", bundle: .module)
+        case .miniLoader:
+            return Image("Icon/miniLoader", bundle: .module).renderingMode(.template)
         }
     }
 }
@@ -117,6 +123,7 @@ public struct DSIconView: View {
             DSIconView(icon: .minitArmor, renderingMode: .original)
             DSIconView(icon: .minitQrCode, renderingMode: .original)
             DSIconView(icon: .minitCamera, renderingMode: .original)
+            DSIconView(icon: .miniLoader)
         }
     }
     .padding()
