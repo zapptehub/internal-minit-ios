@@ -70,3 +70,23 @@ struct PreviewOnboardingAnalyticsTracking: OnboardingAnalyticsTracking {
     func trackOnboardingCompleted(file: String = #fileID) {}
     func trackEnterMinitTapped(file: String = #fileID) {}
 }
+
+@MainActor
+enum PreviewOnboarding {
+    static func makeViewModel(
+        preferredLanguages: [String] = ["en-US"],
+        name: String = ""
+    ) -> OnboardingViewModel {
+        let viewModel = OnboardingViewModel(
+            userId: "preview",
+            profileRepository: PreviewProfileRepository(),
+            loyaltyCardRepository: PreviewLoyaltyCardRepository(),
+            progressStore: PreviewOnboardingProgressStore(),
+            analytics: PreviewOnboardingAnalyticsTracking(),
+            preferredLanguages: preferredLanguages,
+            onCompleted: {}
+        )
+        viewModel.name = name
+        return viewModel
+    }
+}

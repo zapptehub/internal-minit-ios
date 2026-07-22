@@ -1,845 +1,868 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "onboarding.error.corruptedProgress" : {
-      "comment" : "Shown inline when locally saved onboarding progress can't be read back (Task 4.1 bootstrap fallback) — onboarding restarts from the name step.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't restore your progress, so let's start again."
+  "sourceLanguage": "en",
+  "strings": {
+    "onboarding.error.corruptedProgress": {
+      "comment": "Shown inline when locally saved onboarding progress can't be read back (Task 4.1 bootstrap fallback) — onboarding restarts from the name step.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't restore your progress, so let's start again."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nepodarilo sa nám obnoviť tvoj postup, začnime znova."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa nám obnoviť tvoj postup, začnime znova."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nem sikerült visszaállítani a folyamatodat, kezdjük újra."
-          }
-        }
-      }
-    },
-    "onboarding.placeholder.headline" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Onboarding"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Onboarding"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Onboarding"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült visszaállítani a folyamatodat, kezdjük újra."
           }
         }
       }
     },
-    "onboarding.placeholder.subtitle" : {
-      "comment" : "Temporary placeholder copy until Task 4.1 replaces this screen with the real flow.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Screens land in Tasks 4.2–4.5. Tap below to exit early during development."
+    "onboarding.placeholder.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onboarding"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obrazovky pribudnú v úlohách 4.2–4.5. Klepnutím nižšie ukončíte počas vývoja."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onboarding"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A képernyők a 4.2–4.5 feladatokban érkeznek. Fejlesztés közben az alábbi gombbal kiléphetsz."
-          }
-        }
-      }
-    },
-    "onboarding.name.eyebrow" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hello! Welcome to Minit"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ahoj! Vitaj v Minit"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Szia! Üdv a Minitben"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onboarding"
           }
         }
       }
     },
-    "onboarding.name.headline" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What should I call you?"
+    "onboarding.placeholder.subtitle": {
+      "comment": "Temporary placeholder copy until Task 4.1 replaces this screen with the real flow.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screens land in Tasks 4.2–4.5. Tap below to exit early during development."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ako ťa mám volať?"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrazovky pribudnú v úlohách 4.2–4.5. Klepnutím nižšie ukončíte počas vývoja."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hogyan szólítsalak?"
-          }
-        }
-      }
-    },
-    "onboarding.name.placeholder" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter your name"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadaj svoje meno"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add meg a neved"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A képernyők a 4.2–4.5 feladatokban érkeznek. Fejlesztés közben az alábbi gombbal kiléphetsz."
           }
         }
       }
     },
-    "onboarding.button.continue" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue"
+    "onboarding.name.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What should I call you?"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pokračovať"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ako ťa mám volať?"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Folytatás"
-          }
-        }
-      }
-    },
-    "onboarding.button.enterMinit" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter Minit"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vstúpiť do Minit"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Belépés a Minitbe"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hogyan szólítsalak?"
           }
         }
       }
     },
-    "onboarding.language.eyebrow" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "So we understand each other better."
+    "onboarding.name.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your name"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aby sme si lepšie rozumeli."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadaj svoje meno"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hogy jobban megértsük egymást."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add meg a neved"
           }
         }
       }
     },
-    "onboarding.language.headline" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose your app language"
+    "onboarding.button.continue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vyber jazyk aplikácie"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovať"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Válaszd ki az alkalmazás nyelvét"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytatás"
           }
         }
       }
     },
-    "onboarding.language.slovak" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slovak"
+    "onboarding.button.enterMinit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter Minit"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slovenčina"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstúpiť do Minit"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Szlovák"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belépés a Minitbe"
           }
         }
       }
     },
-    "onboarding.language.hungarian" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hungarian"
+    "onboarding.language.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose your app language"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Maďarčina"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyber jazyk aplikácie"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Magyar"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Válaszd ki az alkalmazás nyelvét"
           }
         }
       }
     },
-    "onboarding.language.english" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "English"
+    "onboarding.language.slovak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slovak"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Angličtina"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slovenčina"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Angol"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szlovák"
           }
         }
       }
     },
-    "onboarding.loyalty.eyebrow" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every bite is a reward."
+    "onboarding.language.hungarian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hungarian"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Každé sústo je odmena."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maďarčina"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Minden falat jutalom."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magyar"
           }
         }
       }
     },
-    "onboarding.loyalty.headline" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create a new or add an existing minit loyalty card"
+    "onboarding.language.english": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vytvor novú alebo pridaj existujúcu minit vernostnú kartu"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angličtina"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hozz létre újat, vagy add hozzá a meglévő minit hűségkártyádat"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angol"
           }
         }
       }
     },
-    "onboarding.loyalty.option.newCustomer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I'm a new Minit customer"
+    "onboarding.loyalty.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new or add an existing minit loyalty card"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Som nový zákazník Minit"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytvor novú alebo pridaj existujúcu minit vernostnú kartu"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Új Minit-vásárló vagyok"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hozz létre újat, vagy add hozzá a meglévő minit hűségkártyádat"
           }
         }
       }
     },
-    "onboarding.loyalty.option.existingCard" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add my existing loyalty card"
+    "onboarding.loyalty.option.newCustomer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm a new Minit customer"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pridať moju existujúcu vernostnú kartu"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som nový zákazník Minit"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meglévő hűségkártyám hozzáadása"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Új Minit-vásárló vagyok"
           }
         }
       }
     },
-    "onboarding.loyalty.preview.rankUp" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rank Up"
+    "onboarding.loyalty.option.existingCard": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add my existing loyalty card"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rank Up"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridať moju existujúcu vernostnú kartu"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rank Up"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meglévő hűségkártyám hozzáadása"
           }
         }
       }
     },
-    "onboarding.loyalty.preview.benefits" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Earn unique benefits"
+    "onboarding.loyalty.preview.rankUp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rank Up"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Získaj unikátne výhody"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rank Up"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Szerezz egyedi előnyöket"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rank Up"
           }
         }
       }
     },
-    "onboarding.loyalty.preview.chip" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loyalty Card"
+    "onboarding.loyalty.preview.benefits": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Earn unique benefits"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vernostná karta"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Získaj unikátne výhody"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hűségkártya"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szerezz egyedi előnyöket"
           }
         }
       }
     },
-    "onboarding.finish.eyebrow" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every bite is a reward."
+    "onboarding.loyalty.preview.chip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loyalty Card"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Každé sústo je odmena."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vernostná karta"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Minden falat jutalom."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hűségkártya"
           }
         }
       }
     },
-    "onboarding.finish.headline" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Finishing up your experience"
+    "onboarding.finish.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finishing up your experience"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dokončujeme tvoj zážitok"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokončujeme tvoj zážitok"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Befejezzük az élményedet"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Befejezzük az élményedet"
           }
         }
       }
     },
-    "onboarding.finish.creating.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Creating loyalty card..."
+    "onboarding.finish.creating.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating loyalty card..."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vytvára sa vernostná karta..."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytvára sa vernostná karta..."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hűségkártya létrehozása..."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hűségkártya létrehozása..."
           }
         }
       }
     },
-    "onboarding.finish.processing.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Processing loyalty card..."
+    "onboarding.finish.processing.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processing loyalty card..."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spracováva sa vernostná karta..."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spracováva sa vernostná karta..."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hűségkártya feldolgozása..."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hűségkártya feldolgozása..."
           }
         }
       }
     },
-    "onboarding.finish.processing.subtitle" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This may take a second"
+    "onboarding.finish.processing.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This may take a second"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Môže to chvíľu trvať"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Môže to chvíľu trvať"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ez eltarthat egy pillanatig"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ez eltarthat egy pillanatig"
           }
         }
       }
     },
-    "onboarding.finish.success.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loyalty card was added successfully"
+    "onboarding.finish.success.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loyalty card was added successfully"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vernostná karta bola úspešne pridaná"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vernostná karta bola úspešne pridaná"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A hűségkártya sikeresen hozzáadva"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A hűségkártya sikeresen hozzáadva"
           }
         }
       }
     },
-    "onboarding.scanner.caption" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fit the QR code on your loyalty card."
+    "onboarding.scanner.caption": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fit the QR code on your loyalty card."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zarovnaj QR kód na svojej vernostnej karte."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zarovnaj QR kód na svojej vernostnej karte."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Illeszd a QR-kódot a hűségkártyádra."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Illeszd a QR-kódot a hűségkártyádra."
           }
         }
       }
     },
-    "onboarding.manualEntry.headline" : {
-      "comment" : "Provisional copy — no designer reference for the manual card-entry fallback.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter your loyalty card code"
+    "onboarding.manualEntry.headline": {
+      "comment": "Provisional copy — no designer reference for the manual card-entry fallback.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your loyalty card code"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadaj kód svojej vernostnej karty"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadaj kód svojej vernostnej karty"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add meg a hűségkártyád kódját"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add meg a hűségkártyád kódját"
           }
         }
       }
     },
-    "onboarding.manualEntry.placeholder" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card code"
+    "onboarding.manualEntry.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card code"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kód karty"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kód karty"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kártyakód"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kártyakód"
           }
         }
       }
     },
-    "onboarding.alert.createFailed.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Something went wrong"
+    "onboarding.alert.bootstrapFailed.message": {
+      "comment": "Shown when bootstrap cannot determine whether a loyalty card is already linked.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't check your loyalty card. Check your connection and try again."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Niečo sa pokazilo"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa overiť tvoju vernostnú kartu. Skontroluj pripojenie a skús znova."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valami hiba történt"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült ellenőrizni a hűségkártyádat. Ellenőrizd a kapcsolatot, és próbáld újra."
           }
         }
       }
     },
-    "onboarding.alert.alreadyClaimed.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card already linked"
+    "onboarding.alert.createFailed.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karta už je prepojená"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niečo sa pokazilo"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A kártya már kapcsolva van"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valami hiba történt"
           }
         }
       }
     },
-    "onboarding.alert.alreadyClaimed.message" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This card is already linked to another account."
+    "onboarding.alert.alreadyClaimed.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card already linked"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Táto karta je už prepojená s iným účtom."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta už je prepojená"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ez a kártya már egy másik fiókhoz van kapcsolva."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A kártya már kapcsolva van"
           }
         }
       }
     },
-    "onboarding.alert.cameraDenied.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Camera access needed"
+    "onboarding.alert.alreadyClaimed.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This card is already linked to another account."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je potrebný prístup ku kamere"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Táto karta je už prepojená s iným účtom."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kamerahozzáférés szükséges"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ez a kártya már egy másik fiókhoz van kapcsolva."
           }
         }
       }
     },
-    "onboarding.alert.cameraDenied.message" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable the camera in Settings, or enter your loyalty card code manually."
+    "onboarding.alert.cameraDenied.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access needed"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Povoľ kameru v Nastaveniach, alebo zadaj kód vernostnej karty ručne."
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je potrebný prístup ku kamere"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Engedélyezd a kamerát a Beállításokban, vagy add meg manuálisan a hűségkártyád kódját."
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamerahozzáférés szükséges"
           }
         }
       }
     },
-    "onboarding.alert.action.retry" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retry"
+    "onboarding.alert.cameraDenied.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable the camera in Settings, or enter your loyalty card code manually."
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skúsiť znova"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povoľ kameru v Nastaveniach, alebo zadaj kód vernostnej karty ručne."
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Újra"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engedélyezd a kamerát a Beállításokban, vagy add meg manuálisan a hűségkártyád kódját."
           }
         }
       }
     },
-    "onboarding.alert.action.openSettings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Settings"
+    "onboarding.alert.action.retry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otvoriť Nastavenia"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skúsiť znova"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beállítások megnyitása"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Újra"
           }
         }
       }
     },
-    "onboarding.alert.action.enterManually" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter code manually"
+    "onboarding.alert.action.openSettings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadať kód ručne"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otvoriť Nastavenia"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kód megadása manuálisan"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beállítások megnyitása"
           }
         }
       }
     },
-    "onboarding.alert.action.dismiss" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dismiss"
+    "onboarding.alert.action.enterManually": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter code manually"
           }
         },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zavrieť"
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadať kód ručne"
           }
         },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bezárás"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kód megadása manuálisan"
+          }
+        }
+      }
+    },
+    "onboarding.alert.action.dismiss": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrieť"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bezárás"
+          }
+        }
+      }
+    },
+    "onboarding.name.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello! Welcome to Minit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahoj! Vitaj v Minit"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szia! Üdv a Minitben"
+          }
+        }
+      }
+    },
+    "onboarding.language.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So we understand each other better."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aby sme si lepšie rozumeli."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hogy jobban megértsük egymást."
+          }
+        }
+      }
+    },
+    "onboarding.loyalty.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every bite is a reward."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každé sústo je odmena."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minden falat jutalom."
+          }
+        }
+      }
+    },
+    "onboarding.finish.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every bite is a reward."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každé sústo je odmena."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minden falat jutalom."
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

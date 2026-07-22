@@ -39,6 +39,9 @@ public enum DSColor {
             public static let secondary = Color("Background/Button/Secondary", bundle: .module)
             public static let tertiary = Color("Background/Button/Tertiary", bundle: .module)
             public static let disabled = Color("Background/Button/Disabled", bundle: .module)
+            /// Hot-orange accent (`#FF8200`) — distinct from `primary` (`#FF9A31`). Used for
+            /// `DSSelectableRowGroup`'s selected-row fill.
+            public static let accent = Color("Background/Button/Accent", bundle: .module)
         }
         public enum Control {
             /// Checked `DSCheckbox` / selected `DSRadio` fill. Unchecked/unselected controls

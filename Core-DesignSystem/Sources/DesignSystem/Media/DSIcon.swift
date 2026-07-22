@@ -18,14 +18,17 @@ public enum DSIcon {
     case eyeSlash
     /// Trailing accessory for `DSInputField`'s `.date` variant.
     case calendar
-    /// Checked-state glyph for `DSCheckbox`.
+    /// Checked-state glyph for `DSCheckbox`, `DSSelectionControlStyle`, and
+    /// `DSSelectableRowGroup`'s selected row. (Asset filename keeps the designer's
+    /// spelling, "minitCheckmark".)
     case checkmark
     /// White circle-with-checkmark glyph (`PasswordChangedScreen` success state).
     case minitCheckbox
-    /// Back-navigation chevron (onboarding's circular back button, the scanner's dark
-    /// back button, and any future back affordance that isn't a `NavigationStack`
-    /// system back button).
+    /// System chevron — prefer `miniArrowLeft` for branded back affordances.
     case chevronLeft
+    /// Branded left-arrow glyph for circular back buttons (onboarding gradient + scanner).
+    /// Asset name keeps the designer's spelling (`miniArrowLeft`).
+    case miniArrowLeft
     /// "Rank Up" badge glyph on the onboarding loyalty-card preview.
     case minitArmor
     /// Grid/QR-style glyph for the onboarding loyalty-card preview's "Loyalty Card" chip.
@@ -48,9 +51,12 @@ public enum DSIcon {
         case .eye: return Image(systemName: "eye")
         case .eyeSlash: return Image(systemName: "eye.slash")
         case .calendar: return Image(systemName: "calendar")
-        case .checkmark: return Image(systemName: "checkmark")
+        case .checkmark:
+            return Image("Icon/minitCheckmark", bundle: .module).renderingMode(.template)
         case .minitCheckbox: return Image("Icon/minitCheckbox", bundle: .module)
         case .chevronLeft: return Image(systemName: "chevron.left")
+        case .miniArrowLeft:
+            return Image("Icon/miniArrowLeft", bundle: .module).renderingMode(.template)
         case .minitArmor: return Image("Icon/minitArmorIcon", bundle: .module)
         case .minitQrCode: return Image("Icon/minitQrCodeIcon", bundle: .module)
         case .minitCamera: return Image("Icon/minitCamerIcon", bundle: .module)
@@ -107,6 +113,7 @@ public struct DSIconView: View {
         }
         HStack(spacing: DSConstant.medium.value) {
             DSIconView(icon: .chevronLeft)
+            DSIconView(icon: .miniArrowLeft)
             DSIconView(icon: .minitArmor, renderingMode: .original)
             DSIconView(icon: .minitQrCode, renderingMode: .original)
             DSIconView(icon: .minitCamera, renderingMode: .original)
