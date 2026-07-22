@@ -54,6 +54,10 @@ public enum DSColor {
             /// Distinct, hardcoded sage-green — no dedicated Figma token to copy this round,
             /// see `plans/ios-auth-flow-multi-step.md`.
             public static let success = Color("Background/Icon/Success", bundle: .module)
+            /// Filled circle behind `DSProgressView`'s spinner glyph (`#EDEDED`). Distinct,
+            /// hardcoded neutral gray — no dedicated Figma token to copy this round, same
+            /// rationale as `success` above.
+            public static let loading = Color("Background/Icon/Loading", bundle: .module)
         }
     }
 

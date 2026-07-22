@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Branded replacement for the system `ProgressView()` circular spinner — renders the
-/// `miniLoader` glyph (8 tapered spokes) and continuously rotates it 360° while visible,
-/// matching the design's loading-state look everywhere the app shows an indeterminate
-/// spinner (e.g. `DSStatusCard`'s loading state).
+/// Branded replacement for the system `ProgressView()` circular spinner: a filled
+/// neutral-gray circle (`Background/Icon/Loading`, `#EDEDED`) with the `miniLoader`
+/// glyph centered inside it, continuously rotating 360° while visible. Defaults
+/// (48pt circle / 24pt glyph) match the reference screenshot exactly and mirror
+/// `DSStatusCard`'s success composition (filled circle + centered glyph, just gray
+/// instead of green and spinning instead of a static checkmark).
 ///
 /// The appear/disappear-driven state toggle (rather than attaching a `repeatForever`
 /// animation directly at init) is the standard SwiftUI pattern for animations that must
@@ -11,25 +13,40 @@ import SwiftUI
 public struct DSProgressView: View {
     @State private var isRotating = false
 
-    public var size: CGFloat
-    public var color: Color
+    public var diameter: CGFloat
+    public var iconSize: CGFloat
+    public var backgroundColor: Color
+    public var iconColor: Color
 
-    private static let rotationDuration: Double = 0.9
+    /// Full rotation duration — deliberately slow/calm, not a fast "busy" spin.
+    private static let rotationDuration: Double = 1.6
 
-    public init(size: CGFloat = 24, color: Color = DSColor.Icon.primary) {
-        self.size = size
-        self.color = color
+    public init(
+        diameter: CGFloat = 48,
+        iconSize: CGFloat = 24,
+        backgroundColor: Color = DSColor.Background.Icon.loading,
+        iconColor: Color = DSColor.Icon.primary
+    ) {
+        self.diameter = diameter
+        self.iconSize = iconSize
+        self.backgroundColor = backgroundColor
+        self.iconColor = iconColor
     }
 
     public var body: some View {
-        DSIconView(icon: .miniLoader, size: size, color: color)
-            .rotationEffect(.degrees(isRotating ? 360 : 0))
-            .animation(
-                isRotating
-                    ? .linear(duration: Self.rotationDuration).repeatForever(autoreverses: false)
-                    : nil,
-                value: isRotating
-            )
+        Circle()
+            .fill(backgroundColor)
+            .frame(width: diameter, height: diameter)
+            .overlay {
+                DSIconView(icon: .miniLoader, size: iconSize, color: iconColor)
+                    .rotationEffect(.degrees(isRotating ? 360 : 0))
+                    .animation(
+                        isRotating
+                            ? .linear(duration: Self.rotationDuration).repeatForever(autoreverses: false)
+                            : nil,
+                        value: isRotating
+                    )
+            }
             .onAppear { isRotating = true }
             .onDisappear { isRotating = false }
             .accessibilityHidden(true)
@@ -39,12 +56,7 @@ public struct DSProgressView: View {
 #Preview("DSProgressView") {
     VStack(spacing: DSConstant.large.value) {
         DSProgressView()
-        DSProgressView(size: 48)
+        DSProgressView(diameter: 72, iconSize: 36)
     }
     .padding()
-    .background(
-        Circle()
-            .fill(Color(white: 0.93))
-            .frame(width: 160, height: 160)
-    )
 }

@@ -53,7 +53,7 @@ public struct DSStatusCard: View {
     private var icon: some View {
         switch state {
         case .loading:
-            DSProgressView(size: Self.iconDiameter)
+            DSProgressView(diameter: Self.iconDiameter, iconSize: Self.glyphSize)
         case .success:
             Circle()
                 .fill(DSColor.Background.Icon.success)
