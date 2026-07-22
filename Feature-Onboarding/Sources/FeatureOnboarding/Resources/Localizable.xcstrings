@@ -862,6 +862,29 @@
           }
         }
       }
+    },
+    "onboarding.alert.createFailed.message": {
+      "comment": "Shown when createCard() fails on the new-customer branch.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't create your loyalty card. Please try again."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa nám vytvoriť vernostnú kartu. Skús to znova."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült létrehoznunk a hűségkártyádat. Próbáld újra."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

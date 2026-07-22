@@ -6,7 +6,9 @@ import DataLoyaltyCard
 /// Root onboarding content — owns the view model via `@State` (same pattern as
 /// `LoginFlowContainer`), applies the selected locale, runs bootstrap once, and
 /// switches content by `viewModel.step`. Name + language screens are Task 4.2;
-/// later steps render a temporary stub until Tasks 4.3–4.5 land.
+/// loyalty-decision and create-card screens are Task 4.3. The scanner branch
+/// (`scannerPermission`/`scanning`/`scanReview`/`manualCardEntry`) still renders a
+/// temporary stub until Task 4.4 lands.
 struct OnboardingFlowScreen: View {
     @State private var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
@@ -65,6 +67,10 @@ struct OnboardingFlowScreen: View {
             NameEntryScreen(viewModel: viewModel, analytics: analytics)
         case .language:
             LanguageSelectionScreen(viewModel: viewModel, analytics: analytics)
+        case .loyaltyDecision:
+            LoyaltyDecisionScreen(viewModel: viewModel, analytics: analytics)
+        case .creatingCard:
+            CreateCardScreen(viewModel: viewModel, analytics: analytics)
         default:
             OnboardingUpcomingStepStub(viewModel: viewModel)
         }
