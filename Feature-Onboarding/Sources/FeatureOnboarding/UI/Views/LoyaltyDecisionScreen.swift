@@ -11,7 +11,6 @@ struct LoyaltyDecisionScreen: View {
 
     var body: some View {
         OnboardingScaffold(
-            progress: OnboardingStep.loyaltyDecision.progressFraction,
             subtitle: String(localized: "onboarding.loyalty.subtitle", bundle: .module),
             headline: String(localized: "onboarding.loyalty.headline", bundle: .module),
             primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
@@ -25,7 +24,9 @@ struct LoyaltyDecisionScreen: View {
             }
         ) {
             VStack(alignment: .leading, spacing: DSConstant.large.value) {
+                Spacer()
                 LoyaltyCardPreview()
+                Spacer()
 
                 DSSelectableRowGroup(
                     options: [
@@ -40,6 +41,7 @@ struct LoyaltyDecisionScreen: View {
                     ],
                     selection: branchBinding
                 )
+                .padding(.bottom, DSConstant.xLarge.value)
             }
         }
         .onAppear {

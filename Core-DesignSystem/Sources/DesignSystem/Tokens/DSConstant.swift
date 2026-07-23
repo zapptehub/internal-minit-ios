@@ -9,6 +9,8 @@ public enum DSConstant: Int {
     case large = 24
     case xLarge = 32
     case xxLarge = 40
+    /// Corner radius for card-style surfaces (e.g. `DSStatusCard`).
+    case cardCornerRadius = 20
 
     public var value: CGFloat { CGFloat(rawValue) }
 }

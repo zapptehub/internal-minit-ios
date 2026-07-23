@@ -7,6 +7,11 @@ public enum DSButtonType {
     /// Neutral pill for third-party sign-in buttons (e.g. Apple, Google) — background
     /// reuses `DSColor.Background.Button.disabled` (#F2F2F2, matches Figma's `surface/page`).
     case social
+    /// Raised/embossed pill used by the onboarding loyalty card's "Loyalty Card" chip —
+    /// a top-to-bottom `#F2F2F2` → `#FFFFFF` gradient, `#DFDFDF` 1pt border, and a soft
+    /// drop shadow. Currently a one-off special case for that single call site; promote
+    /// to real design tokens if a second call site needs this look.
+    case loyaltyCard
     case textStyle(textColor: Color, typography: FontType)
 }
 
@@ -18,6 +23,9 @@ public enum DSButtonHeightStyle {
     case small
     /// 48pt — matches Figma's spec for the Apple/Google sign-in pills.
     case social
+    /// 48pt — matches Figma's spec for the loyalty card chip. Same numeric value as
+    /// `.social`, named separately so each call site reads clearly on its own.
+    case loyaltyCard
 
     var value: CGFloat {
         switch self {
@@ -25,6 +33,7 @@ public enum DSButtonHeightStyle {
         case .compact: return 36
         case .small: return 32
         case .social: return 48
+        case .loyaltyCard: return 48
         }
     }
 }
@@ -80,8 +89,10 @@ public struct DSButton: View {
                     }
                 }
                 .frame(width: heightStyle.value, height: heightStyle.value)
-                .background(backgroundColor)
+                .background(backgroundView)
+                .overlay(borderOverlay(Circle()))
                 .clipShape(Circle())
+                .shadow(color: shadowColor, radius: Self.shadowRadius, x: 0, y: Self.shadowYOffset)
             } else {
                 HStack(spacing: DSConstant.small.value) {
                     if isLoading {
@@ -97,8 +108,10 @@ public struct DSButton: View {
                 .padding(.horizontal, widthStyle == .compact ? DSConstant.medium.value : DSConstant.large.value)
                 .frame(maxWidth: widthStyle == .expanded ? .infinity : nil)
                 .frame(height: heightStyle.value)
-                .background(backgroundColor)
+                .background(backgroundView)
+                .overlay(borderOverlay(Capsule()))
                 .clipShape(Capsule())
+                .shadow(color: shadowColor, radius: Self.shadowRadius, x: 0, y: Self.shadowYOffset)
             }
         }
         .disabled(!isEnabled)
@@ -114,7 +127,7 @@ public struct DSButton: View {
         switch type {
         case .primary, .secondary, .tertiary:
             return isEnabled ? DSColor.Text.onColorButton : DSColor.Text.disabled
-        case .social:
+        case .social, .loyaltyCard:
             return isEnabled ? DSColor.Text.primary : DSColor.Text.disabled
         case .textStyle(let color, _):
             return color
@@ -131,10 +144,56 @@ public struct DSButton: View {
             return isEnabled ? DSColor.Background.Button.tertiary : DSColor.Background.Button.disabled
         case .social:
             return DSColor.Background.Button.disabled
+        case .loyaltyCard:
+            // Unused — `.loyaltyCard` renders its gradient via `backgroundView` instead.
+            return .clear
         case .textStyle:
             return .clear
         }
     }
+
+    /// `.loyaltyCard` renders a top-to-bottom gradient rather than a flat color;
+    /// every other type falls back to the plain `backgroundColor`.
+    @ViewBuilder
+    private var backgroundView: some View {
+        switch type {
+        case .loyaltyCard:
+            LinearGradient(
+                colors: [Self.loyaltyCardGradientTop, Self.loyaltyCardGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        default:
+            backgroundColor
+        }
+    }
+
+    /// `.loyaltyCard` gets a hairline `#DFDFDF` border matching its clip shape; every
+    /// other type has no border.
+    @ViewBuilder
+    private func borderOverlay<S: Shape>(_ shape: S) -> some View {
+        if isLoyaltyCard {
+            shape.stroke(Self.loyaltyCardBorder, lineWidth: 1)
+        }
+    }
+
+    private var shadowColor: Color {
+        isLoyaltyCard ? Self.loyaltyCardShadow : .clear
+    }
+
+    private var isLoyaltyCard: Bool {
+        if case .loyaltyCard = type { return true }
+        return false
+    }
+
+    // MARK: - `.loyaltyCard` constants
+
+    private static let loyaltyCardGradientTop = Color(red: 0.949, green: 0.949, blue: 0.949) // #F2F2F2
+    private static let loyaltyCardGradientBottom = Color.white // #FFFFFF
+    private static let loyaltyCardBorder = Color(red: 0.875, green: 0.875, blue: 0.875) // #DFDFDF
+    private static let loyaltyCardShadow = Color.black.opacity(0.08)
+    private static let shadowRadius: CGFloat = 2
+    private static let shadowYOffset: CGFloat = 1
 }
 
 #Preview {
@@ -167,6 +226,10 @@ public struct DSButton: View {
             DSButton(title: "Send Again", type: .tertiary, heightStyle: .small, widthStyle: .compact) { }
             DSButton(title: "Send Again", type: .tertiary, isEnabled: false, heightStyle: .small, widthStyle: .compact) { }
         }
+
+        // Loyalty card chip — raised gradient pill, expanded width, .loyaltyCard type/height.
+        DSButton(title: "Loyalty Card", type: .loyaltyCard, icon: .minitQrCode, heightStyle: .loyaltyCard) { }
     }
     .padding(24)
+    .background(Color(white: 0.95))
 }

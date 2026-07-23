@@ -39,6 +39,11 @@ public struct DSImageView: View {
             .resizable()
             .aspectRatio(contentMode: contentMode)
             .frame(width: size.width, height: size.height)
+            // No-op for `.fit` (which never overflows its frame); required for `.fill`
+            // so an asset whose native aspect ratio doesn't match `size` (e.g. a crop
+            // like `minitCashPerson`'s 226x147 display box vs. its 197:169 source) is
+            // trimmed to the requested box instead of bleeding past it.
+            .clipped()
     }
 }
 

@@ -13,7 +13,6 @@ struct NameEntryScreen: View {
 
     var body: some View {
         OnboardingScaffold(
-            progress: OnboardingStep.name.progressFraction,
             subtitle: String(localized: "onboarding.name.subtitle", bundle: .module),
             headline: String(localized: "onboarding.name.headline", bundle: .module),
             primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),

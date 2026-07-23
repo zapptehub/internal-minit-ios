@@ -18,6 +18,13 @@ public enum OnboardingStep: String, Codable, Sendable, CaseIterable {
     case manualCardEntry
 }
 
+/// Which way the flow just moved — drives the slide transition's direction (push vs.
+/// pop, mirroring `NavigationStack`) between `OnboardingFlowScreen`'s step content.
+public enum OnboardingStepDirection: Sendable {
+    case forward
+    case backward
+}
+
 /// Result of reading a locally persisted checkpoint.
 ///
 /// Unknown values stay unsupported so an older app cannot silently restart onboarding and

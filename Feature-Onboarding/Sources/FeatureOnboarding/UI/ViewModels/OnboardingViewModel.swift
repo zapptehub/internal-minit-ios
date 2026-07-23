@@ -24,6 +24,10 @@ public final class OnboardingViewModel {
     public let userId: String
 
     public private(set) var step: OnboardingStep
+    /// Set alongside every `advance(via:)` call — lets `OnboardingFlowScreen` pick a
+    /// push-style (forward) or pop-style (backward) slide direction for the step
+    /// content, matching `NavigationStack`'s own behavior.
+    public private(set) var stepDirection: OnboardingStepDirection = .forward
     /// `true` while `bootstrap()` is resolving the linked-card check and local resume —
     /// screens should show a neutral loading state instead of any step content.
     public private(set) var isBootstrapping = true
@@ -105,6 +109,7 @@ public final class OnboardingViewModel {
     @discardableResult
     func advance(via transition: OnboardingRouter.Transition) -> Bool {
         guard let destination = router.nextStep(from: step, on: transition) else { return false }
+        stepDirection = (transition == .back) ? .backward : .forward
         step = destination
         persistCheckpoint()
         return true

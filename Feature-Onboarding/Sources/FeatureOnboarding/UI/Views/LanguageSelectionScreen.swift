@@ -10,7 +10,6 @@ struct LanguageSelectionScreen: View {
 
     var body: some View {
         OnboardingScaffold(
-            progress: OnboardingStep.language.progressFraction,
             subtitle: String(localized: "onboarding.language.subtitle", bundle: .module),
             headline: String(localized: "onboarding.language.headline", bundle: .module),
             primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),

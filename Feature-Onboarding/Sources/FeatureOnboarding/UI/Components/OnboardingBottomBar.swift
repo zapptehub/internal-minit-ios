@@ -13,7 +13,7 @@ struct OnboardingBottomBar: View {
     var onBack: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: DSConstant.small.value) {
+        HStack(spacing: DSConstant.xLarge.value) {
             if showsBack, let onBack {
                 OnboardingBackButton(action: onBack)
             }

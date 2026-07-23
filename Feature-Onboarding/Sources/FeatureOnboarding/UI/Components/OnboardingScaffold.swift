@@ -2,11 +2,15 @@ import SwiftUI
 import DesignSystem
 
 /// Full-bleed orange→cream gradient shell shared by every non-camera onboarding screen:
-/// top progress bar, subtitle + headline, content slot, and bottom CTA bar.
+/// subtitle + headline, content slot, and bottom CTA bar.
+///
+/// The top progress bar is *not* rendered here — `OnboardingFlowScreen` renders a
+/// single persistent `OnboardingProgressBar` above this scaffold instead, so it can
+/// smoothly animate its fill and stay put while the scaffold itself slides in/out
+/// during step transitions (see that file's doc comment).
 ///
 /// Subtitle is dark and headline is white on every gradient step (matches Figma).
 struct OnboardingScaffold<Content: View>: View {
-    let progress: Double
     let subtitle: String
     let headline: String
     let primaryTitle: String
@@ -19,9 +23,6 @@ struct OnboardingScaffold<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            OnboardingProgressBar(progress: progress)
-                .padding(.top, DSConstant.medium.value)
-
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
                 Text(subtitle)
                     .typography(.paragraphRegular)
@@ -51,10 +52,16 @@ struct OnboardingScaffold<Content: View>: View {
         }
         .padding(.horizontal, DSConstant.large.value)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(gradient.ignoresSafeArea())
+        .background(LinearGradient.onboardingBackground.ignoresSafeArea())
     }
+}
 
-    private var gradient: LinearGradient {
+extension LinearGradient {
+    /// Full-bleed orange→cream onboarding background. Shared with
+    /// `OnboardingFlowScreen`, which paints it behind the persistent progress bar too
+    /// (that bar now lives outside this scaffold — see this file's doc comment) —
+    /// keeping it here as the single definition avoids the two drifting apart.
+    static var onboardingBackground: LinearGradient {
         // Tuned to the onboarding mockups: hot orange held through the header,
         // then a long warm peach fade that reaches solid white by ~75%
         // (so the CTA bar sits on clean white, not cream).
@@ -80,7 +87,6 @@ struct OnboardingScaffold<Content: View>: View {
 
 #Preview("OnboardingScaffold — name step") {
     OnboardingScaffold(
-        progress: 0.16,
         subtitle: "Hello! Welcome to Minit",
         headline: "What should I call you?",
         primaryTitle: "Continue",
@@ -95,7 +101,6 @@ struct OnboardingScaffold<Content: View>: View {
 
 #Preview("OnboardingScaffold — language step + back") {
     OnboardingScaffold(
-        progress: 0.33,
         subtitle: "So we understand each other better.",
         headline: "Choose your app language",
         primaryTitle: "Continue",

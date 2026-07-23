@@ -41,7 +41,22 @@ struct OnboardingFlowScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(DSColor.Background.Layer.level0.ignoresSafeArea())
             } else {
-                stepContent
+                // The progress bar lives here — outside the per-step `stepContent`
+                // switch — as a single persistent view so it can smoothly animate its
+                // fill width in place. `stepContent` itself is the thing that slides
+                // (push/pop, mirroring `NavigationStack`) when `viewModel.step`
+                // changes; `OnboardingScaffold` no longer renders its own copy.
+                VStack(alignment: .leading, spacing: 0) {
+                    OnboardingProgressBar(progress: viewModel.step.progressFraction)
+                        .padding(.top, DSConstant.medium.value)
+                        .padding(.horizontal, DSConstant.large.value)
+
+                    stepContent
+                        .transition(stepTransition)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+                .animation(.easeInOut(duration: 0.32), value: viewModel.step)
             }
         }
         .environment(\.locale, Locale(identifier: viewModel.selectedLanguage.rawValue))
@@ -76,6 +91,18 @@ struct OnboardingFlowScreen: View {
         }
     }
 
+    /// Push (forward) slides the new step in from the trailing edge while the old one
+    /// exits leading, like `NavigationStack.push`; back mirrors it in reverse, like
+    /// `.pop`. Recomputed from `viewModel.stepDirection` on every step change.
+    private var stepTransition: AnyTransition {
+        switch viewModel.stepDirection {
+        case .forward:
+            return .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
+        case .backward:
+            return .asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing))
+        }
+    }
+
     private var bootstrapAlertPresented: Binding<Bool> {
         Binding(
             get: { viewModel.activeAlert == .bootstrapFetchFailed },
@@ -105,7 +132,6 @@ private struct OnboardingUpcomingStepStub: View {
 
     var body: some View {
         OnboardingScaffold(
-            progress: viewModel.step.progressFraction,
             subtitle: String(localized: "onboarding.loyalty.subtitle", bundle: .module),
             headline: String(localized: "onboarding.placeholder.headline", bundle: .module),
             primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),

@@ -26,7 +26,7 @@ public struct DSStatusCard: View {
     }
 
     public var body: some View {
-        VStack(spacing: DSConstant.medium.value) {
+        VStack(spacing: DSConstant.large.value) {
             icon
 
             VStack(spacing: DSConstant.xSmall.value) {
@@ -46,7 +46,7 @@ public struct DSStatusCard: View {
         .frame(maxWidth: .infinity)
         .padding(DSConstant.large.value)
         .background(DSColor.Background.Layer.level0)
-        .cornerRadius(DSConstant.medium.value)
+        .cornerRadius(DSConstant.cardCornerRadius.value)
     }
 
     @ViewBuilder
