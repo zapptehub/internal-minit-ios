@@ -301,7 +301,7 @@ final class OnboardingViewModelTests: XCTestCase {
         vm.didScanCode("MINIT-ABC123")
         await settle()
 
-        XCTAssertEqual(vm.step, .scanReview)
+        XCTAssertEqual(vm.step, .processingScan)
         XCTAssertNotNil(vm.linkedCard)
         XCTAssertEqual(loyaltyRepo.claimedCodes, ["MINIT-ABC123"])
     }
@@ -555,9 +555,9 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(loyaltyRepo.createCardCallCount, 1)
     }
 
-    func testBootstrapResumingAtScanReviewWithNoLinkedCardFallsBackToLoyaltyDecision() async {
+    func testBootstrapResumingAtProcessingScanWithNoLinkedCardFallsBackToLoyaltyDecision() async {
         let store = FakeOnboardingProgressStore()
-        try? store.save(OnboardingProgress(step: .scanReview), userId: "user-1")
+        try? store.save(OnboardingProgress(step: .processingScan), userId: "user-1")
         let vm = makeViewModel(progressStore: store)
 
         await vm.bootstrap()

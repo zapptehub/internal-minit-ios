@@ -8,7 +8,7 @@ public final class MockOnboardingAnalyticsTracking: OnboardingAnalyticsTracking 
     public var trackLoyaltyDecisionScreenViewedCalled = false
     public var trackCreatingCardScreenViewedCalled = false
     public var trackScannerScreenViewedCalled = false
-    public var trackScanReviewScreenViewedCalled = false
+    public var trackProcessingScanScreenViewedCalled = false
     public var trackManualCardEntryScreenViewedCalled = false
     public var trackNameValidationFailedCalled = false
     public var trackLanguageSelectedCalled = false
@@ -61,8 +61,8 @@ public final class MockOnboardingAnalyticsTracking: OnboardingAnalyticsTracking 
         trackScannerScreenViewedCalled = true
     }
 
-    public func trackScanReviewScreenViewed(file: String = #fileID) {
-        trackScanReviewScreenViewedCalled = true
+    public func trackProcessingScanScreenViewed(file: String = #fileID) {
+        trackProcessingScanScreenViewedCalled = true
     }
 
     public func trackManualCardEntryScreenViewed(file: String = #fileID) {

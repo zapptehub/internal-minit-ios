@@ -18,7 +18,7 @@ public protocol OnboardingAnalyticsTracking: Sendable {
     func trackLoyaltyDecisionScreenViewed(file: String)
     func trackCreatingCardScreenViewed(file: String)
     func trackScannerScreenViewed(file: String)
-    func trackScanReviewScreenViewed(file: String)
+    func trackProcessingScanScreenViewed(file: String)
     func trackManualCardEntryScreenViewed(file: String)
 
     // MARK: Validation / selection

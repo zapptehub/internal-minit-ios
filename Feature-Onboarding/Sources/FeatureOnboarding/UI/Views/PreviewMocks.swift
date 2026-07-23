@@ -48,7 +48,7 @@ struct PreviewOnboardingAnalyticsTracking: OnboardingAnalyticsTracking {
     func trackLoyaltyDecisionScreenViewed(file: String = #fileID) {}
     func trackCreatingCardScreenViewed(file: String = #fileID) {}
     func trackScannerScreenViewed(file: String = #fileID) {}
-    func trackScanReviewScreenViewed(file: String = #fileID) {}
+    func trackProcessingScanScreenViewed(file: String = #fileID) {}
     func trackManualCardEntryScreenViewed(file: String = #fileID) {}
     func trackNameValidationFailed(file: String = #fileID) {}
     func trackLanguageSelected(languageCode: String, file: String = #fileID) {}

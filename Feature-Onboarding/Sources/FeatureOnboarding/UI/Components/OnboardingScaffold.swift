@@ -52,7 +52,11 @@ struct OnboardingScaffold<Content: View>: View {
         }
         .padding(.horizontal, DSConstant.large.value)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+        // Do *not* `.ignoresSafeArea()` here — `OnboardingFlowScreen` already paints the
+        // same gradient full-bleed behind the persistent progress bar. Expanding this
+        // background past the scaffold's bounds covers that bar (especially when the
+        // screen wraps the scaffold in a `GeometryReader`, as create/claim finish do).
+        .background(LinearGradient.onboardingBackground)
     }
 }
 
@@ -97,6 +101,7 @@ extension LinearGradient {
             .font(.system(size: 30))
             .foregroundColor(DSColor.Text.heading.opacity(0.4))
     }
+    .background(LinearGradient.onboardingBackground.ignoresSafeArea())
 }
 
 #Preview("OnboardingScaffold — language step + back") {
@@ -112,4 +117,5 @@ extension LinearGradient {
         Text("Language rows go here")
             .foregroundColor(DSColor.Text.heading)
     }
+    .background(LinearGradient.onboardingBackground.ignoresSafeArea())
 }

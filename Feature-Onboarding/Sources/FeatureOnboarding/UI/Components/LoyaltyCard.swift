@@ -39,12 +39,6 @@ struct LoyaltyCard: View {
     /// tucks partially under the loyalty-card button.
     private static let illustrationSize = CGSize(width: 205, height: 130)
 
-    /// Soft, mostly-downward shadow matching Figma's "card floating above the gradient"
-    /// look — kept subtle since it sits directly on the orange onboarding background.
-    private static let shadowColor = Color.black.opacity(0.12)
-    private static let shadowRadius: CGFloat = 16
-    private static let shadowYOffset: CGFloat = 8
-
     var body: some View {
         // `.topTrailing` + matching top padding aligns the illustration's top edge
         // with the header row (instead of centering across the whole card, which sat
@@ -69,7 +63,8 @@ struct LoyaltyCard: View {
         .frame(maxWidth: .infinity, minHeight: Self.minHeight, alignment: .leading)
         .background(DSColor.Background.Layer.level0)
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        .shadow(color: Self.shadowColor, radius: Self.shadowRadius, x: 0, y: Self.shadowYOffset)
+        // Shared with `DSStatusCard` — see `dsCardShadow()`'s doc comment.
+        .dsCardShadow()
     }
 
     private var header: some View {

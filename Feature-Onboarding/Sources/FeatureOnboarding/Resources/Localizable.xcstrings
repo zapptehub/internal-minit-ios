@@ -952,6 +952,52 @@
           }
         }
       }
+    },
+    "onboarding.alert.claimFailed.title": {
+      "comment": "Title for the generic claimCard() failure alert on scanReview.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niečo sa pokazilo"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valami hiba történt"
+          }
+        }
+      }
+    },
+    "onboarding.alert.claimFailed.message": {
+      "comment": "Shown when claimCard() fails for a non-already-claimed reason on scanReview.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't link your loyalty card. Please try again."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa nám prepojiť tvoju vernostnú kartu. Skús to znova."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült összekapcsolnunk a hűségkártyádat. Próbáld újra."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

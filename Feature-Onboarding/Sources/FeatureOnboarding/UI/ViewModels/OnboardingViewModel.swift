@@ -53,6 +53,12 @@ public final class OnboardingViewModel {
     /// "Enter Minit" button should only be enabled while this is non-nil.
     public private(set) var linkedCard: LoyaltyCardData?
 
+    /// Top progress-bar fill. Finish steps (create/claim) stay near-complete while
+    /// the status card is loading, then jump to 100% once `linkedCard` is set.
+    public var progressFraction: Double {
+        step.progressFraction(isFinishComplete: linkedCard != nil)
+    }
+
     let profileRepository: ProfileRepository
     let loyaltyCardRepository: LoyaltyCardRepository
     let progressStore: any OnboardingProgressStoring
@@ -132,7 +138,7 @@ public final class OnboardingViewModel {
     /// Called once from the presenting screen's `.task { }`. Resolves, in order: (1) a
     /// defensive "is a card already linked?" check that short-circuits straight to
     /// completion regardless of the persisted step — this covers both the matrix's
-    /// explicit `creatingCard`/`scanReview` resume rule and any other stale-state edge
+    /// explicit `creatingCard`/`processingScan` resume rule and any other stale-state edge
     /// case, since confirming a linked card is cheap and always safe to check first —
     /// then (2) restoring local progress, then (3) re-driving any step whose entry
     /// action is itself an idempotent backend call.
@@ -170,9 +176,9 @@ public final class OnboardingViewModel {
         case .creatingCard:
             // Matrix: "silently re-invoke createCard() (auto-resumes processing)".
             performCreateCard()
-        case .scanReview:
+        case .processingScan:
             selectedBranch = .existingCard
-            advance(via: .unresumableScanReviewFallback)
+            advance(via: .unresumableProcessingScanFallback)
         default:
             break
         }
@@ -213,12 +219,12 @@ public final class OnboardingViewModel {
         isLoading = false
         activeAlert = nil
         // Lifecycle exception (not an interactive transition): keep `creatingCard` /
-        // `scanReview` so in-flow success chrome stays on the step that produced the
+        // `processingScan` so in-flow success chrome stays on the step that produced the
         // card. Any other step (bootstrap short-circuit while still on `.name`) lands
         // on `creatingCard` — the shared "card added successfully" presentation
         // screens bind to in Task 4.5. See `OnboardingRouter` doc for other
         // intentional direct `step` assignments.
-        if step != .creatingCard && step != .scanReview {
+        if step != .creatingCard && step != .processingScan {
             step = .creatingCard
         }
         progressStore.clear(userId: userId)

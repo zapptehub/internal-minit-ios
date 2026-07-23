@@ -11,7 +11,9 @@ public enum OnboardingStep: String, Codable, Sendable, CaseIterable {
     case creatingCard
     case scannerPermission
     case scanning
-    case scanReview
+    /// Claim processing → success chrome after a scan or manual code submit.
+    /// Raw value kept as `"scanReview"` so existing local checkpoints still resume.
+    case processingScan = "scanReview"
     /// Fallback text-entry screen offered from the camera-permission-denied alert.
     /// Added in Task 4.1 alongside the view model — `OnboardingAnalyticsTracking`
     /// already anticipated it (`trackManualCardEntryScreenViewed`).

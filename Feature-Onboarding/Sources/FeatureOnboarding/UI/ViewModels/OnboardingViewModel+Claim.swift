@@ -1,4 +1,4 @@
-/// `scanning` → `scanReview` (existing-card branch) — claiming a code, whether from a
+/// `scanning` → `processingScan` (existing-card branch) — claiming a code, whether from a
 /// recognized scan or the manual-entry fallback, plus retry and the claim-failure
 /// alert's two different dismiss targets.
 extension OnboardingViewModel {
@@ -13,7 +13,7 @@ extension OnboardingViewModel {
 
     public func submitManualCardCode(_ code: String) {
         // Mirror `didScanCode`'s step guard so a stale call site cannot jump into
-        // `scanReview` + claim from an unrelated screen.
+        // `processingScan` + claim from an unrelated screen.
         guard step == .manualCardEntry, !isLoading else { return }
         let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -50,7 +50,7 @@ extension OnboardingViewModel {
     public func retryClaimCard() {
         guard !isLoading, let code = lastAttemptedCardCode, let source = lastClaimSource else { return }
         activeAlert = nil
-        analytics.trackRetryTapped(step: OnboardingStep.scanReview.rawValue, file: #fileID)
+        analytics.trackRetryTapped(step: OnboardingStep.processingScan.rawValue, file: #fileID)
         performClaim(code: code, source: source)
     }
 

@@ -19,9 +19,9 @@ final class OnboardingRouterTests: XCTestCase {
         XCTAssertNil(router.nextStep(from: .creatingCard, on: .back))
     }
 
-    func testScanReviewHasNoBackAffordance() {
-        XCTAssertFalse(router.canGoBack(from: .scanReview))
-        XCTAssertNil(router.nextStep(from: .scanReview, on: .back))
+    func testProcessingScanHasNoBackAffordance() {
+        XCTAssertFalse(router.canGoBack(from: .processingScan))
+        XCTAssertNil(router.nextStep(from: .processingScan, on: .back))
     }
 
     func testLanguageBacksToName() {
@@ -72,9 +72,9 @@ final class OnboardingRouterTests: XCTestCase {
         XCTAssertEqual(router.nextStep(from: .scanning, on: .manualCardEntryChosen), .manualCardEntry)
     }
 
-    func testCodeSubmittedForClaimGoesToScanReviewFromScanningOrManualEntry() {
-        XCTAssertEqual(router.nextStep(from: .scanning, on: .codeSubmittedForClaim), .scanReview)
-        XCTAssertEqual(router.nextStep(from: .manualCardEntry, on: .codeSubmittedForClaim), .scanReview)
+    func testCodeSubmittedForClaimGoesToProcessingScanFromScanningOrManualEntry() {
+        XCTAssertEqual(router.nextStep(from: .scanning, on: .codeSubmittedForClaim), .processingScan)
+        XCTAssertEqual(router.nextStep(from: .manualCardEntry, on: .codeSubmittedForClaim), .processingScan)
     }
 
     // MARK: Failure dismiss targets
@@ -86,7 +86,7 @@ final class OnboardingRouterTests: XCTestCase {
     func testAlreadyClaimedDismissedFromScanGoesToScanning() {
         XCTAssertEqual(
             router.nextStep(
-                from: .scanReview,
+                from: .processingScan,
                 on: .claimCardFailureDismissed(.alreadyClaimedByOtherUser, source: .scanner)
             ),
             .scanning
@@ -96,7 +96,7 @@ final class OnboardingRouterTests: XCTestCase {
     func testAlreadyClaimedDismissedFromManualEntryGoesToManualCardEntry() {
         XCTAssertEqual(
             router.nextStep(
-                from: .scanReview,
+                from: .processingScan,
                 on: .claimCardFailureDismissed(.alreadyClaimedByOtherUser, source: .manualEntry)
             ),
             .manualCardEntry
@@ -105,26 +105,26 @@ final class OnboardingRouterTests: XCTestCase {
 
     func testGenericClaimFailureDismissedGoesToLoyaltyDecisionRegardlessOfSource() {
         XCTAssertEqual(
-            router.nextStep(from: .scanReview, on: .claimCardFailureDismissed(.generic, source: .scanner)),
+            router.nextStep(from: .processingScan, on: .claimCardFailureDismissed(.generic, source: .scanner)),
             .loyaltyDecision
         )
         XCTAssertEqual(
-            router.nextStep(from: .scanReview, on: .claimCardFailureDismissed(.generic, source: .manualEntry)),
+            router.nextStep(from: .processingScan, on: .claimCardFailureDismissed(.generic, source: .manualEntry)),
             .loyaltyDecision
         )
     }
 
     // MARK: Resume fallback
 
-    func testUnresumableScanReviewFallsBackToLoyaltyDecision() {
-        XCTAssertEqual(router.nextStep(from: .scanReview, on: .unresumableScanReviewFallback), .loyaltyDecision)
+    func testUnresumableProcessingScanFallsBackToLoyaltyDecision() {
+        XCTAssertEqual(router.nextStep(from: .processingScan, on: .unresumableProcessingScanFallback), .loyaltyDecision)
     }
 
     // MARK: Illegal source steps rejected
 
     func testNameConfirmedRejectedFromOtherSteps() {
         XCTAssertNil(router.nextStep(from: .language, on: .nameConfirmed))
-        XCTAssertNil(router.nextStep(from: .scanReview, on: .nameConfirmed))
+        XCTAssertNil(router.nextStep(from: .processingScan, on: .nameConfirmed))
     }
 
     func testLanguageConfirmedRejectedFromOtherSteps() {
@@ -156,7 +156,7 @@ final class OnboardingRouterTests: XCTestCase {
         XCTAssertNil(router.nextStep(from: .loyaltyDecision, on: .createCardFailureDismissed))
     }
 
-    func testClaimCardFailureDismissedRejectedOutsideScanReview() {
+    func testClaimCardFailureDismissedRejectedOutsideProcessingScan() {
         XCTAssertNil(
             router.nextStep(
                 from: .scanning,
@@ -165,8 +165,8 @@ final class OnboardingRouterTests: XCTestCase {
         )
     }
 
-    func testUnresumableScanReviewFallbackRejectedOutsideScanReview() {
-        XCTAssertNil(router.nextStep(from: .creatingCard, on: .unresumableScanReviewFallback))
+    func testUnresumableProcessingScanFallbackRejectedOutsideProcessingScan() {
+        XCTAssertNil(router.nextStep(from: .creatingCard, on: .unresumableProcessingScanFallback))
     }
 
     // MARK: Exhaustiveness

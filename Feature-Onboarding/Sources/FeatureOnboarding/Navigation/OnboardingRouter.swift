@@ -25,7 +25,7 @@ struct OnboardingRouter {
         case codeSubmittedForClaim
         case createCardFailureDismissed
         case claimCardFailureDismissed(OnboardingClaimFailureKind, source: OnboardingClaimSource?)
-        case unresumableScanReviewFallback
+        case unresumableProcessingScanFallback
     }
 
     /// Returns the destination for `transition` fired while on `step`, or `nil` if
@@ -63,14 +63,14 @@ struct OnboardingRouter {
 
         case .codeSubmittedForClaim:
             guard step == .scanning || step == .manualCardEntry else { return nil }
-            return .scanReview
+            return .processingScan
 
         case .createCardFailureDismissed:
             guard step == .creatingCard else { return nil }
             return .loyaltyDecision
 
         case .claimCardFailureDismissed(let kind, let source):
-            guard step == .scanReview else { return nil }
+            guard step == .processingScan else { return nil }
             switch kind {
             case .alreadyClaimedByOtherUser:
                 // Matrix text says "back to scanning", written before `manualCardEntry`
@@ -81,8 +81,8 @@ struct OnboardingRouter {
                 return .loyaltyDecision
             }
 
-        case .unresumableScanReviewFallback:
-            guard step == .scanReview else { return nil }
+        case .unresumableProcessingScanFallback:
+            guard step == .processingScan else { return nil }
             return .loyaltyDecision
         }
     }
@@ -96,7 +96,7 @@ struct OnboardingRouter {
     /// swipe-back gesture is disabled for these too, at the screen level).
     private func backDestination(from step: OnboardingStep) -> OnboardingStep? {
         switch step {
-        case .name, .creatingCard, .scanReview:
+        case .name, .creatingCard, .processingScan:
             return nil
         case .language:
             return .name

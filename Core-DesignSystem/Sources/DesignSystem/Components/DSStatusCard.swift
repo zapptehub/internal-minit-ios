@@ -47,6 +47,7 @@ public struct DSStatusCard: View {
         .padding(DSConstant.large.value)
         .background(DSColor.Background.Layer.level0)
         .cornerRadius(DSConstant.cardCornerRadius.value)
+        .dsCardShadow()
     }
 
     @ViewBuilder
