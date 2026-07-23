@@ -137,7 +137,7 @@ struct LoyaltyCard: View {
             title: chipLabel,
             type: .loyaltyCard,
             icon: .minitQrCode,
-            heightStyle: .loyaltyCard
+            heightStyle: .large
         ) { }
     }
 }

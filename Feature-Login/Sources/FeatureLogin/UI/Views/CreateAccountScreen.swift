@@ -81,7 +81,7 @@ struct CreateAccountScreen: View {
                         title: String(localized: "login.button.apple", bundle: .module),
                         type: .social,
                         icon: .appleLogo,
-                        heightStyle: .social
+                        heightStyle: .large
                     ) {
                         analytics.trackAppleSignInTapped(file: #fileID)
                         viewModel.signInWithApple()
@@ -90,7 +90,7 @@ struct CreateAccountScreen: View {
                         title: String(localized: "login.button.google", bundle: .module),
                         type: .social,
                         icon: .google,
-                        heightStyle: .social
+                        heightStyle: .large
                     ) {
                         analytics.trackGoogleSignInTapped(file: #fileID)
                         viewModel.signInWithGoogle()

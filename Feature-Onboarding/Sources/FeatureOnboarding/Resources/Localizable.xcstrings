@@ -885,6 +885,73 @@
           }
         }
       }
+    },
+    "onboarding.alert.action.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zrušiť"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mégse"
+          }
+        }
+      }
+    },
+    "onboarding.manualEntry.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every bite is a reward."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každé sústo je odmena."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minden falat jutalom."
+          }
+        }
+      }
+    },
+    "onboarding.scanner.unsupported": {
+      "comment": "Fallback copy when VisionKit scanning is unsupported (e.g. Simulator, unsupported hardware) — offers manual entry instead.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanning isn't available on this device. Enter your loyalty card code instead."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenovanie na tomto zariadení nie je k dispozícii. Zadaj kód svojej vernostnej karty."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A szkennelés ezen az eszközön nem elérhető. Add meg helyette a hűségkártyád kódját."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -6,9 +6,9 @@ import DataLoyaltyCard
 /// Root onboarding content — owns the view model via `@State` (same pattern as
 /// `LoginFlowContainer`), applies the selected locale, runs bootstrap once, and
 /// switches content by `viewModel.step`. Name + language screens are Task 4.2;
-/// loyalty-decision and create-card screens are Task 4.3. The scanner branch
-/// (`scannerPermission`/`scanning`/`scanReview`/`manualCardEntry`) still renders a
-/// temporary stub until Task 4.4 lands.
+/// loyalty-decision and create-card screens are Task 4.3; the scanner branch
+/// (`scannerPermission`/`scanning`/`manualCardEntry`) is Task 4.4. `scanReview` still
+/// renders a temporary stub until Task 4.5 lands.
 struct OnboardingFlowScreen: View {
     @State private var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
@@ -47,9 +47,14 @@ struct OnboardingFlowScreen: View {
                 // (push/pop, mirroring `NavigationStack`) when `viewModel.step`
                 // changes; `OnboardingScaffold` no longer renders its own copy.
                 VStack(alignment: .leading, spacing: 0) {
-                    OnboardingProgressBar(progress: viewModel.step.progressFraction)
-                        .padding(.top, DSConstant.medium.value)
-                        .padding(.horizontal, DSConstant.large.value)
+                    // Hidden specifically for the full-screen camera step (Task 1.1:
+                    // "No progress bar visible on the camera screen") — every other
+                    // step keeps it, including the brief `scannerPermission` check.
+                    if viewModel.step != .scanning {
+                        OnboardingProgressBar(progress: viewModel.step.progressFraction)
+                            .padding(.top, DSConstant.medium.value)
+                            .padding(.horizontal, DSConstant.large.value)
+                    }
 
                     stepContent
                         .transition(stepTransition)
@@ -86,7 +91,13 @@ struct OnboardingFlowScreen: View {
             LoyaltyDecisionScreen(viewModel: viewModel, analytics: analytics)
         case .creatingCard:
             CreateCardScreen(viewModel: viewModel, analytics: analytics)
-        default:
+        case .scannerPermission:
+            ScannerPermissionScreen(viewModel: viewModel, analytics: analytics)
+        case .scanning:
+            ScanningScreen(viewModel: viewModel, analytics: analytics)
+        case .manualCardEntry:
+            ManualCardEntryScreen(viewModel: viewModel, analytics: analytics)
+        case .scanReview:
             OnboardingUpcomingStepStub(viewModel: viewModel)
         }
     }
@@ -125,8 +136,8 @@ struct OnboardingFlowScreen: View {
     )
 }
 
-/// Temporary stand-in for steps that land in Tasks 4.3–4.5 so Continue from language
-/// doesn't dead-end during development.
+/// Temporary stand-in for `scanReview`, which lands in Task 4.5, so a recognized/
+/// manually-submitted code doesn't dead-end during development.
 private struct OnboardingUpcomingStepStub: View {
     @Bindable var viewModel: OnboardingViewModel
 
