@@ -19,6 +19,7 @@ struct ScannerBackButton: View {
             iconSize: 20,
             heightStyle: .large,
             widthStyle: .icon,
+            accessibilityLabel: String(localized: "onboarding.a11y.back", bundle: .module),
             action: action
         )
     }

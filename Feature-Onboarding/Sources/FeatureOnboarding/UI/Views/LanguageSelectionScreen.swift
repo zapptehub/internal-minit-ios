@@ -76,3 +76,19 @@ struct LanguageSelectionScreen: View {
         analytics: PreviewOnboardingAnalyticsTracking()
     )
 }
+
+#Preview("LanguageSelectionScreen — Hungarian locale") {
+    LanguageSelectionScreen(
+        viewModel: PreviewOnboarding.makeViewModel(preferredLanguages: ["hu-HU"]),
+        analytics: PreviewOnboardingAnalyticsTracking()
+    )
+    .environment(\.locale, Locale(identifier: "hu"))
+}
+
+#Preview("LanguageSelectionScreen — Dynamic Type accessibility3") {
+    LanguageSelectionScreen(
+        viewModel: PreviewOnboarding.makeViewModel(preferredLanguages: ["en-US"]),
+        analytics: PreviewOnboardingAnalyticsTracking()
+    )
+    .dynamicTypeSize(.accessibility3)
+}

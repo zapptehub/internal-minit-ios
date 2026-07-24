@@ -13,6 +13,7 @@ struct OnboardingBackButton: View {
             type: .social,
             icon: .miniArrowLeft,
             widthStyle: .icon,
+            accessibilityLabel: String(localized: "onboarding.a11y.back", bundle: .module),
             action: action
         )
     }

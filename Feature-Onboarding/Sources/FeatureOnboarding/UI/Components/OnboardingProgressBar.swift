@@ -21,6 +21,9 @@ struct OnboardingProgressBar: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: Self.height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "onboarding.a11y.progress", bundle: .module))
+        .accessibilityValue("\(Int((min(max(progress, 0), 1) * 100).rounded()))%")
     }
 }
 

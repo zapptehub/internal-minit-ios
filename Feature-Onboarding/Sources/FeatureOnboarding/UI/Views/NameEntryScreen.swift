@@ -7,7 +7,9 @@ struct NameEntryScreen: View {
     let analytics: OnboardingAnalyticsTracking
     @FocusState private var isNameFieldFocused: Bool
 
-    private let nameFieldFontSize: CGFloat = 30
+    /// Figma default size (30pt); `@ScaledMetric` keeps oversized-field look while
+    /// respecting Dynamic Type (Task 6.2).
+    @ScaledMetric(relativeTo: .title) private var nameFieldFontSize: CGFloat = 30
     /// Extra space below the headline so the field sits mid-screen (Figma).
     private let nameFieldTopPadding: CGFloat = 88
 
@@ -67,4 +69,28 @@ struct NameEntryScreen: View {
         viewModel: PreviewOnboarding.makeViewModel(name: "Iveta"),
         analytics: PreviewOnboardingAnalyticsTracking()
     )
+}
+
+#Preview("NameEntryScreen — Dynamic Type xxxLarge", traits: .sizeThatFitsLayout) {
+    NameEntryScreen(
+        viewModel: PreviewOnboarding.makeViewModel(name: "Iveta"),
+        analytics: PreviewOnboardingAnalyticsTracking()
+    )
+    .dynamicTypeSize(.xxxLarge)
+}
+
+#Preview("NameEntryScreen — locale sk") {
+    NameEntryScreen(
+        viewModel: PreviewOnboarding.makeViewModel(preferredLanguages: ["sk-SK"]),
+        analytics: PreviewOnboardingAnalyticsTracking()
+    )
+    .environment(\.locale, Locale(identifier: "sk"))
+}
+
+#Preview("NameEntryScreen — compact width") {
+    NameEntryScreen(
+        viewModel: PreviewOnboarding.makeViewModel(),
+        analytics: PreviewOnboardingAnalyticsTracking()
+    )
+    .frame(width: 320)
 }

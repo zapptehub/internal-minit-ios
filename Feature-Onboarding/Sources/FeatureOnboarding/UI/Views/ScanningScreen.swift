@@ -37,6 +37,7 @@ struct ScanningScreen: View {
                     viewModel.didScanCode(code)
                 })
                 .ignoresSafeArea()
+                .accessibilityLabel(String(localized: "onboarding.a11y.scannerCamera", bundle: .module))
 
                 overlay(simulatedScanAction: nil)
             } else if QRScannerView.isRunningInSimulator {
@@ -115,6 +116,9 @@ struct ScanningScreen: View {
             iconSize: 24,
             heightStyle: .xLarge,
             widthStyle: .icon,
+            accessibilityLabel: action == nil
+                ? nil
+                : String(localized: "onboarding.a11y.simulateScan", bundle: .module),
             action: action ?? {}
         )
         .allowsHitTesting(action != nil)

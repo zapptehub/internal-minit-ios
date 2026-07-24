@@ -19,6 +19,9 @@ struct LoyaltyCard: View {
     /// is no real "rank progress" backend concept yet (see the Task 1.1 checklist).
     var rankProgress: Double = 0.75
 
+    /// Figma default display size for the hero points number; scales with Dynamic Type.
+    @ScaledMetric(relativeTo: .largeTitle) private var pointsFontSize: CGFloat = 40
+
     private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
     /// Figma spec — the card's content (header + points + chip + padding) already
     /// lands close to this at default Dynamic Type sizes; this just guarantees it
@@ -65,6 +68,15 @@ struct LoyaltyCard: View {
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         // Shared with `DSStatusCard` — see `dsCardShadow()`'s doc comment.
         .dsCardShadow()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            String(
+                format: String(localized: "onboarding.a11y.loyaltyCardSummary", bundle: .module),
+                rankTitle,
+                rankSubtitle,
+                Self.pointsString(points)
+            )
+        )
     }
 
     private var header: some View {
@@ -103,13 +115,14 @@ struct LoyaltyCard: View {
     }
 
     /// Large "display number" size, not a standard `FontType` token — a one-off hero
-    /// number specific to this card, matching `NameEntryScreen`'s precedent of raw
-    /// system font sizes for bespoke feature-local elements. Thousands are separated
-    /// with a literal comma (e.g. `1,410`) to match Figma — not locale-dependent.
+    /// number specific to this card. `@ScaledMetric` keeps the Figma 40pt look at the
+    /// default size while respecting Dynamic Type. Thousands are separated with a
+    /// literal comma (e.g. `1,410`) to match Figma — not locale-dependent.
     private var pointsText: some View {
         Text(Self.pointsString(points))
-            .font(.system(size: 40, weight: .black))
+            .font(.system(size: pointsFontSize, weight: .black))
             .foregroundColor(DSColor.Text.heading)
+            .accessibilityHidden(true)
     }
 
     /// Inserts a comma every three digits from the right (`1410` → `"1,410"`).

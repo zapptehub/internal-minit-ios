@@ -62,6 +62,8 @@ public struct DSButton: View {
     let iconSize: CGFloat?
     let heightStyle: DSButtonHeightStyle
     let widthStyle: DSButtonWidthStyle
+    /// VoiceOver label override — required for icon-only buttons where `title` is empty.
+    let accessibilityLabelText: String?
     let action: () -> Void
 
     public init(
@@ -73,6 +75,7 @@ public struct DSButton: View {
         iconSize: CGFloat? = nil,
         heightStyle: DSButtonHeightStyle = .regular,
         widthStyle: DSButtonWidthStyle = .expanded,
+        accessibilityLabel: String? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -83,6 +86,7 @@ public struct DSButton: View {
         self.iconSize = iconSize
         self.heightStyle = heightStyle
         self.widthStyle = widthStyle
+        self.accessibilityLabelText = accessibilityLabel
         self.action = action
     }
 
@@ -141,6 +145,14 @@ public struct DSButton: View {
         }
         .disabled(!isEnabled)
         .allowsHitTesting(isEnabled && !isLoading)
+        .accessibilityLabel(resolvedAccessibilityLabel)
+    }
+
+    private var resolvedAccessibilityLabel: Text {
+        if let accessibilityLabelText, !accessibilityLabelText.isEmpty {
+            return Text(accessibilityLabelText)
+        }
+        return Text(title)
     }
 
     private var labelFont: FontType {
