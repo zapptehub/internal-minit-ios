@@ -565,6 +565,73 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(vm.step, .loyaltyDecision)
         XCTAssertEqual(vm.selectedBranch, .existingCard)
     }
+
+    /// Passive steps (no auto side-effect on resume) must restore exactly as persisted —
+    /// covers the matrix's "resume from every persisted step" requirement for everything
+    /// that isn't the create/claim special cases above.
+    func testBootstrapResumesEveryPassivePersistedStep() async {
+        let passiveSteps: [OnboardingStep] = [
+            .name,
+            .language,
+            .loyaltyDecision,
+            .scannerPermission,
+            .scanning,
+            .manualCardEntry
+        ]
+
+        for step in passiveSteps {
+            let store = FakeOnboardingProgressStore()
+            try? store.save(OnboardingProgress(step: step, language: .en), userId: "user-1")
+            let vm = makeViewModel(progressStore: store)
+
+            await vm.bootstrap()
+
+            XCTAssertEqual(vm.step, step, "Expected resume to land on \(step)")
+            XCTAssertEqual(vm.selectedLanguage, .en)
+        }
+    }
+
+    // MARK: Scanner helpers / progress
+
+    func testDidTapOpenSettingsClearsCameraDeniedAlertAndTracks() {
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(analytics: analytics)
+        advanceToScannerPermission(vm)
+        vm.cameraPermissionDenied()
+        XCTAssertEqual(vm.activeAlert, .cameraPermissionDenied)
+
+        vm.didTapOpenSettings()
+
+        XCTAssertNil(vm.activeAlert)
+        XCTAssertTrue(analytics.trackOpenSettingsTappedCalled)
+    }
+
+    func testGoBackFromScanningReturnsToLoyaltyDecision() {
+        let vm = makeViewModel()
+        advanceToScanning(vm)
+
+        vm.goBack()
+
+        XCTAssertEqual(vm.step, .loyaltyDecision)
+        XCTAssertEqual(vm.selectedBranch, .existingCard)
+    }
+
+    func testProgressFractionJumpsToCompleteOnceLinkedCardIsSet() async {
+        let loyaltyRepo = FakeLoyaltyCardRepository()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo)
+        advanceToLoyaltyDecision(vm)
+        vm.selectBranch(.newCustomer)
+        XCTAssertEqual(vm.progressFraction, OnboardingStep.loyaltyDecision.progressFraction())
+
+        vm.continueFromLoyaltyDecision()
+        XCTAssertEqual(vm.step, .creatingCard)
+        XCTAssertEqual(vm.progressFraction, 0.85, accuracy: 0.001)
+
+        await settle()
+
+        XCTAssertNotNil(vm.linkedCard)
+        XCTAssertEqual(vm.progressFraction, 1.0, accuracy: 0.001)
+    }
 }
 
 // MARK: - Fakes

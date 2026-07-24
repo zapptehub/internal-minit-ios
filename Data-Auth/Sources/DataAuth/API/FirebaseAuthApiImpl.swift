@@ -59,7 +59,7 @@ public final class FirebaseAuthApiImpl: AuthApi {
             let idToken = try await user.getIDToken()
             return AuthDto(accessToken: idToken, userId: user.uid)
         } catch {
-            guard Self.isRevokedSessionError(error) else {
+            guard AuthSessionErrorClassifier.isRevokedSessionError(error) else {
                 // Could not determine validity either way (e.g. offline) — surface it so
                 // the caller can distinguish "definitely signed out" from "try again".
                 throw error
@@ -74,20 +74,6 @@ public final class FirebaseAuthApiImpl: AuthApi {
 
     public func signOut() async throws {
         try Auth.auth().signOut()
-    }
-
-    /// Error codes where the persisted Firebase Auth identity is permanently invalid rather
-    /// than just temporarily unreachable — see `AuthErrorCode` in FirebaseAuth.
-    private static func isRevokedSessionError(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        guard nsError.domain == AuthErrors.domain else { return false }
-        let revokedCodes: Set<Int> = [
-            AuthErrorCode.userTokenExpired.rawValue,
-            AuthErrorCode.userDisabled.rawValue,
-            AuthErrorCode.userNotFound.rawValue,
-            AuthErrorCode.invalidUserToken.rawValue
-        ]
-        return revokedCodes.contains(nsError.code)
     }
 }
 
