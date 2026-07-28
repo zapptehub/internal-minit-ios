@@ -11,7 +11,8 @@ let package = Package(
     dependencies: [
         .package(path: "../Data-LoyaltyCard"),
         .package(path: "../Data-Profile"),
-        .package(path: "../Core-DesignSystem")
+        .package(path: "../Core-DesignSystem"),
+        .package(path: "../Core-Extensions")
     ],
     targets: [
         .target(
@@ -19,7 +20,8 @@ let package = Package(
             dependencies: [
                 .product(name: "DataLoyaltyCard", package: "Data-LoyaltyCard"),
                 .product(name: "DataProfile", package: "Data-Profile"),
-                .product(name: "DesignSystem", package: "Core-DesignSystem")
+                .product(name: "DesignSystem", package: "Core-DesignSystem"),
+                .product(name: "CoreExtensions", package: "Core-Extensions")
             ],
             path: "Sources/FeatureOnboarding",
             resources: [.process("Resources")]
@@ -31,7 +33,11 @@ let package = Package(
         ),
         .testTarget(
             name: "FeatureOnboardingTests",
-            dependencies: ["FeatureOnboarding", "OnboardingTestUtilities"],
+            dependencies: [
+                "FeatureOnboarding",
+                "OnboardingTestUtilities",
+                .product(name: "CoreExtensions", package: "Core-Extensions")
+            ],
             path: "Tests/FeatureOnboardingTests"
         )
     ]

@@ -1,4 +1,5 @@
 import CoreLogging
+import CoreExtensions
 import DataAuth
 import DataProfile
 import DataLoyaltyCard
@@ -21,6 +22,9 @@ final class AppDependencies {
     /// backend data, so it lives here as a plain `UserDefaults`-backed store rather
     /// than behind a Data-* package.
     let onboardingProgressStore: any OnboardingProgressStoring
+    /// Device-wide (not account-scoped) language preference — survives logout/
+    /// re-login, unlike `onboardingProgressStore`. See `AppLanguagePreferenceStoring`.
+    let appLanguagePreference: any AppLanguagePreferenceStoring
     let errorReporter: ErrorReporter
     let loginAnalytics: LoginAnalyticsTracking
     let startAnalytics: StartAnalyticsTracking
@@ -43,6 +47,7 @@ final class AppDependencies {
         self.loyaltyCardRepository = loyaltyCardDataModule.makeLoyaltyCardRepository()
 
         self.onboardingProgressStore = UserDefaultsOnboardingProgressStore()
+        self.appLanguagePreference = UserDefaultsAppLanguagePreferenceStore()
 
         self.errorReporter = ConsoleErrorReporter()
         self.loginAnalytics = ConsoleAnalyticsAdapter()

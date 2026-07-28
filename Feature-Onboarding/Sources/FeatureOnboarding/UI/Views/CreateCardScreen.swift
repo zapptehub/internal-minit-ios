@@ -13,6 +13,7 @@ import DesignSystem
 struct CreateCardScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         // The scaffold's own content slot is squeezed between the headline block and
@@ -23,9 +24,9 @@ struct CreateCardScreen: View {
         // screen center regardless of how tall the surrounding chrome is.
         GeometryReader { screen in
             OnboardingScaffold(
-                subtitle: String(localized: "onboarding.finish.subtitle", bundle: .module),
-                headline: String(localized: "onboarding.finish.headline", bundle: .module),
-                primaryTitle: String(localized: "onboarding.button.enterMinit", bundle: .module),
+                subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
+                headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
+                primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
                 isPrimaryEnabled: viewModel.linkedCard != nil,
                 showsBack: false,
                 onPrimary: {
@@ -46,17 +47,17 @@ struct CreateCardScreen: View {
             analytics.trackCreatingCardScreenViewed(file: #fileID)
         }
         .alert(
-            String(localized: "onboarding.alert.createFailed.title", bundle: .module),
+            OnboardingLocalizedString.string("onboarding.alert.createFailed.title", locale: locale),
             isPresented: createFailedAlertPresented
         ) {
-            Button(String(localized: "onboarding.alert.action.retry", bundle: .module)) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.retry", locale: locale)) {
                 viewModel.retryCreateCard()
             }
-            Button(String(localized: "onboarding.alert.action.dismiss", bundle: .module), role: .cancel) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.dismiss", locale: locale), role: .cancel) {
                 viewModel.dismissCreateCardFailure()
             }
         } message: {
-            Text(String(localized: "onboarding.alert.createFailed.message", bundle: .module))
+            Text(OnboardingLocalizedString.string("onboarding.alert.createFailed.message", locale: locale))
         }
     }
 
@@ -64,12 +65,12 @@ struct CreateCardScreen: View {
     private var statusCard: some View {
         if viewModel.linkedCard != nil {
             DSStatusCard(state: .success(
-                title: String(localized: "onboarding.finish.success.title", bundle: .module)
+                title: OnboardingLocalizedString.string("onboarding.finish.success.title", locale: locale)
             ))
         } else {
             DSStatusCard(state: .loading(
-                title: String(localized: "onboarding.finish.creating.title", bundle: .module),
-                subtitle: String(localized: "onboarding.finish.processing.subtitle", bundle: .module)
+                title: OnboardingLocalizedString.string("onboarding.finish.creating.title", locale: locale),
+                subtitle: OnboardingLocalizedString.string("onboarding.finish.processing.subtitle", locale: locale)
             ))
         }
     }

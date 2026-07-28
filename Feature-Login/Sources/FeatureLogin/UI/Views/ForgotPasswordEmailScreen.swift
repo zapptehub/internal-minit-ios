@@ -8,24 +8,25 @@ import DataAuth
 struct ForgotPasswordEmailScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     private let headlineToFieldsSpacing: CGFloat = DSConstant.xxLarge.value
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(String(localized: "forgotPassword.headline", bundle: .module))
+                Text(LoginLocalizedString.string("forgotPassword.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
                     .tracking(-1)
 
-                Text(String(localized: "forgotPassword.subtitle", bundle: .module))
+                Text(LoginLocalizedString.string("forgotPassword.subtitle", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.secondary)
             }
 
             DSInputField(
-                label: String(localized: "createAccount.field.email", bundle: .module),
+                label: LoginLocalizedString.string("createAccount.field.email", locale: locale),
                 text: $viewModel.email,
                 validationState: viewModel.hasEmailFormatError ? .error : .none,
                 keyboardTypeOverride: .emailAddress
@@ -41,7 +42,7 @@ struct ForgotPasswordEmailScreen: View {
             }
 
             DSButton(
-                title: String(localized: "forgotPassword.button.resetPassword", bundle: .module),
+                title: LoginLocalizedString.string("forgotPassword.button.resetPassword", locale: locale),
                 type: .tertiary,
                 isEnabled: isResetEnabled,
                 isLoading: viewModel.state.isLoading
@@ -66,7 +67,7 @@ struct ForgotPasswordEmailScreen: View {
             viewModel.showFeatureUnderConstruction()
         } label: {
             HStack(spacing: DSConstant.small.value) {
-                Text(String(localized: "forgotPassword.link.contactSupport", bundle: .module))
+                Text(LoginLocalizedString.string("forgotPassword.link.contactSupport", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.link)
                     .underline()

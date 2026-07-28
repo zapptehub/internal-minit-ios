@@ -7,6 +7,7 @@
 
 import SwiftUI
 import DesignSystem
+import CoreExtensions
 import FeatureLogin
 import FeatureStart
 import FeatureOnboarding
@@ -34,17 +35,32 @@ struct ContentView: View {
     /// Set right before dismissing the login sheet on password-reset success; consumed in
     /// `onDismiss` once that sheet has fully gone, to present the Password Changed sheet.
     @State private var pendingPasswordChanged = false
+    /// Device-wide language choice (see `AppLanguagePreferenceStoring`) — `@AppStorage`
+    /// (rather than reading `AppDependencies.shared.appLanguagePreference` once) so this
+    /// view re-renders immediately when `OnboardingViewModel.continueFromLanguage()`
+    /// writes a new value, without any direct coupling between the two. Empty string is
+    /// the "never explicitly set yet" sentinel — `@AppStorage` can't hold `String?`.
+    @AppStorage(UserDefaultsAppLanguagePreferenceStore.defaultKey) private var appLanguageCode = ""
 
     var body: some View {
         content
-            // Restores whatever language a resuming onboarding checkpoint carries (see
-            // `AppFlowViewModel.restoredLocale`'s doc comment) before `FeatureOnboarding`'s
-            // own screens mount and apply their own override. Falls back to the same value
-            // SwiftUI would use anyway when nothing was restored.
-            .environment(\.locale, appFlow.restoredLocale ?? .autoupdatingCurrent)
+            .environment(\.locale, currentLocale)
             .task {
                 await appFlow.bootstrap()
             }
+    }
+
+    /// A confirmed device-wide language choice applies everywhere — Start, Login, the
+    /// whole onboarding flow, and post-onboarding screens alike — and survives logout,
+    /// since it's stored independently of any account. Only falls back to whatever
+    /// language a resuming *mid-onboarding* checkpoint carries (see
+    /// `AppFlowViewModel.restoredLocale`'s doc comment), and then to the system default,
+    /// when nothing has been explicitly confirmed yet.
+    private var currentLocale: Locale {
+        if !appLanguageCode.isEmpty {
+            return Locale(identifier: appLanguageCode)
+        }
+        return appFlow.restoredLocale ?? .autoupdatingCurrent
     }
 
     @ViewBuilder
@@ -59,7 +75,7 @@ struct ContentView: View {
         case .onboarding(let userId):
             onboardingFlow(userId: userId)
         case .authenticated:
-            Text("Welcome!")
+            DashboardPlaceholderView(onLogOut: appFlow.logOut)
         }
     }
 
@@ -136,10 +152,42 @@ struct ContentView: View {
             profileRepository: AppDependencies.shared.profileRepository,
             loyaltyCardRepository: AppDependencies.shared.loyaltyCardRepository,
             progressStore: AppDependencies.shared.onboardingProgressStore,
+            appLanguagePreference: AppDependencies.shared.appLanguagePreference,
             analytics: AppDependencies.shared.onboardingAnalytics,
             onCompleted: {
                 appFlow.didCompleteOnboarding()
             }
         )
+    }
+}
+
+/// Stand-in for the real dashboard until that screen exists. Owns its own Log Out
+/// loading state so it resets whenever `.authenticated` remounts after a re-login
+/// (a `@State` on `ContentView` would otherwise stay `true` across the handoff).
+private struct DashboardPlaceholderView: View {
+    let onLogOut: () -> Void
+    @State private var isLoggingOut = false
+
+    var body: some View {
+        VStack(spacing: DSConstant.large.value) {
+            Spacer()
+            VStack(spacing: DSConstant.medium.value) {
+                Text("Dashboard")
+                    .typography(.headingMediumBold)
+                    .foregroundColor(DSColor.Text.heading)
+                Text("This screen is under construction. Check back soon!")
+                    .typography(.paragraphRegular)
+                    .foregroundColor(DSColor.Text.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Spacer()
+            DSButton(title: "Log Out", type: .primary, isLoading: isLoggingOut) {
+                isLoggingOut = true
+                onLogOut()
+            }
+        }
+        .padding(DSConstant.xxLarge.value)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DSColor.Background.Layer.level0.ignoresSafeArea())
     }
 }

@@ -18,6 +18,7 @@ struct LoyaltyCard: View {
     /// Decorative rank-ring fill fraction (0...1). Purely marketing art for now — there
     /// is no real "rank progress" backend concept yet (see the Task 1.1 checklist).
     var rankProgress: Double = 0.75
+    @Environment(\.locale) private var locale
 
     /// Figma default display size for the hero points number; scales with Dynamic Type.
     @ScaledMetric(relativeTo: .largeTitle) private var pointsFontSize: CGFloat = 40
@@ -71,7 +72,7 @@ struct LoyaltyCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             String(
-                format: String(localized: "onboarding.a11y.loyaltyCardSummary", bundle: .module),
+                format: OnboardingLocalizedString.string("onboarding.a11y.loyaltyCardSummary", locale: locale),
                 rankTitle,
                 rankSubtitle,
                 Self.pointsString(points)

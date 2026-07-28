@@ -15,15 +15,16 @@ import DesignSystem
 struct ProcessingScanScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         // Same screen-center positioning as `CreateCardScreen` — the scaffold's
         // content slot isn't vertically centered on the full screen.
         GeometryReader { screen in
             OnboardingScaffold(
-                subtitle: String(localized: "onboarding.finish.subtitle", bundle: .module),
-                headline: String(localized: "onboarding.finish.headline", bundle: .module),
-                primaryTitle: String(localized: "onboarding.button.enterMinit", bundle: .module),
+                subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
+                headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
+                primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
                 isPrimaryEnabled: viewModel.linkedCard != nil,
                 showsBack: false,
                 onPrimary: {
@@ -46,12 +47,12 @@ struct ProcessingScanScreen: View {
             isPresented: claimFailedAlertPresented
         ) {
             if case .claimCardFailed(let kind) = viewModel.activeAlert, kind == .generic {
-                Button(String(localized: "onboarding.alert.action.retry", bundle: .module)) {
+                Button(OnboardingLocalizedString.string("onboarding.alert.action.retry", locale: locale)) {
                     viewModel.retryClaimCard()
                 }
             }
             Button(
-                String(localized: "onboarding.alert.action.dismiss", bundle: .module),
+                OnboardingLocalizedString.string("onboarding.alert.action.dismiss", locale: locale),
                 role: .cancel
             ) {
                 viewModel.dismissClaimFailure()
@@ -65,12 +66,12 @@ struct ProcessingScanScreen: View {
     private var statusCard: some View {
         if viewModel.linkedCard != nil {
             DSStatusCard(state: .success(
-                title: String(localized: "onboarding.finish.success.title", bundle: .module)
+                title: OnboardingLocalizedString.string("onboarding.finish.success.title", locale: locale)
             ))
         } else {
             DSStatusCard(state: .loading(
-                title: String(localized: "onboarding.finish.processing.title", bundle: .module),
-                subtitle: String(localized: "onboarding.finish.processing.subtitle", bundle: .module)
+                title: OnboardingLocalizedString.string("onboarding.finish.processing.title", locale: locale),
+                subtitle: OnboardingLocalizedString.string("onboarding.finish.processing.subtitle", locale: locale)
             ))
         }
     }
@@ -91,18 +92,18 @@ struct ProcessingScanScreen: View {
     private var claimFailedAlertTitle: String {
         switch viewModel.activeAlert {
         case .claimCardFailed(.alreadyClaimedByOtherUser):
-            return String(localized: "onboarding.alert.alreadyClaimed.title", bundle: .module)
+            return OnboardingLocalizedString.string("onboarding.alert.alreadyClaimed.title", locale: locale)
         default:
-            return String(localized: "onboarding.alert.claimFailed.title", bundle: .module)
+            return OnboardingLocalizedString.string("onboarding.alert.claimFailed.title", locale: locale)
         }
     }
 
     private var claimFailedAlertMessage: String {
         switch viewModel.activeAlert {
         case .claimCardFailed(.alreadyClaimedByOtherUser):
-            return String(localized: "onboarding.alert.alreadyClaimed.message", bundle: .module)
+            return OnboardingLocalizedString.string("onboarding.alert.alreadyClaimed.message", locale: locale)
         default:
-            return String(localized: "onboarding.alert.claimFailed.message", bundle: .module)
+            return OnboardingLocalizedString.string("onboarding.alert.claimFailed.message", locale: locale)
         }
     }
 }

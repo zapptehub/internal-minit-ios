@@ -5,6 +5,7 @@ import DesignSystem
 struct NameEntryScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
     @FocusState private var isNameFieldFocused: Bool
 
     /// Figma default size (30pt); `@ScaledMetric` keeps oversized-field look while
@@ -15,9 +16,9 @@ struct NameEntryScreen: View {
 
     var body: some View {
         OnboardingScaffold(
-            subtitle: String(localized: "onboarding.name.subtitle", bundle: .module),
-            headline: String(localized: "onboarding.name.headline", bundle: .module),
-            primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
+            subtitle: OnboardingLocalizedString.string("onboarding.name.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.name.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
             isPrimaryEnabled: viewModel.canContinueFromName && !viewModel.isLoading,
             isPrimaryLoading: viewModel.isLoading,
             showsBack: false,
@@ -27,7 +28,7 @@ struct NameEntryScreen: View {
         ) {
             VStack(alignment: .leading, spacing: DSConstant.medium.value) {
                 TextField(
-                    String(localized: "onboarding.name.placeholder", bundle: .module),
+                    OnboardingLocalizedString.string("onboarding.name.placeholder", locale: locale),
                     text: $viewModel.name
                 )
                 .font(.system(size: nameFieldFontSize))

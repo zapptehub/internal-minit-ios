@@ -10,6 +10,7 @@ import DataAuth
 struct EmailEntryScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
+    @Environment(\.locale) private var locale
     @FocusState private var isEmailFieldFocused: Bool
 
     /// Figma spec (node `6161:2128`) — the email field's oversized placeholder-style
@@ -20,18 +21,18 @@ struct EmailEntryScreen: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DSConstant.large.value) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(String(localized: "login.headline", bundle: .module))
+                Text(LoginLocalizedString.string("login.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
                     .tracking(-1)
 
-                Text(String(localized: "login.subtitle", bundle: .module))
+                Text(LoginLocalizedString.string("login.subtitle", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.secondary)
             }
 
             TextField(
-                String(localized: "login.field.email", bundle: .module),
+                LoginLocalizedString.string("login.field.email", locale: locale),
                 text: $viewModel.email
             )
             .font(.system(size: emailFieldFontSize))
@@ -48,7 +49,7 @@ struct EmailEntryScreen: View {
 
             VStack(spacing: DSConstant.mediumLarge.value) {
                 DSButton(
-                    title: String(localized: "login.button.login", bundle: .module),
+                    title: LoginLocalizedString.string("login.button.login", locale: locale),
                     type: .primary,
                     isEnabled: viewModel.isEmailValid && !viewModel.state.isLoading,
                     isLoading: viewModel.state.isLoading
@@ -59,7 +60,7 @@ struct EmailEntryScreen: View {
 
                 HStack(spacing: DSConstant.small.value) {
                     DSButton(
-                        title: String(localized: "login.button.apple", bundle: .module),
+                        title: LoginLocalizedString.string("login.button.apple", locale: locale),
                         type: .social,
                         icon: .appleLogo,
                         heightStyle: .large
@@ -68,7 +69,7 @@ struct EmailEntryScreen: View {
                         viewModel.signInWithApple()
                     }
                     DSButton(
-                        title: String(localized: "login.button.google", bundle: .module),
+                        title: LoginLocalizedString.string("login.button.google", locale: locale),
                         type: .social,
                         icon: .google,
                         heightStyle: .large

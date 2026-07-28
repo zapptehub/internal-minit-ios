@@ -5,6 +5,7 @@ import DesignSystem
 struct StartScreen: View {
     let analytics: StartAnalyticsTracking?
     let onGetStarted: () -> Void
+    @Environment(\.locale) private var locale
 
     /// Matches the Figma frame's fixed top offset before the centered logo/headline group.
     /// Not a reusable DSConstant — it's a one-off screen offset, not a spacing-scale token in Figma either.
@@ -24,7 +25,7 @@ struct StartScreen: View {
                     DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
                         .accessibilityHidden(true)
 
-                    Text("start.headline", bundle: .module)
+                    Text(StartLocalizedString.string("start.headline", locale: locale))
                         .typography(.headingLargeBold)
                         .foregroundColor(DSColor.Text.inverse)
                         .multilineTextAlignment(.center)
@@ -60,7 +61,7 @@ struct StartScreen: View {
     private var bottomContainer: some View {
         VStack(spacing: DSConstant.large.value) {
             DSButton(
-                title: String(localized: "start.button.getStarted", bundle: .module),
+                title: StartLocalizedString.string("start.button.getStarted", locale: locale),
                 type: .primary
             ) {
                 analytics?.trackGetStartedTapped(file: #fileID)
@@ -81,8 +82,13 @@ struct StartScreen: View {
     /// "terms" and "privacy policy" are markdown links in `start.legal` (see Localizable.xcstrings).
     /// SwiftUI keeps them tappable automatically, but doesn't bold/underline links by default —
     /// so those runs get the styling applied explicitly here to match the Figma spec.
+    ///
+    /// Resolves the raw markdown source via `StartLocalizedString` (locale-aware, unlike
+    /// `AttributedString(localized:bundle:)`) and parses it manually, since that's the only way
+    /// to get both an explicit `Locale` and markdown link parsing at once.
     private var legalAttributedString: AttributedString {
-        var attributed = AttributedString(localized: "start.legal", bundle: .module)
+        let raw = StartLocalizedString.string("start.legal", locale: locale)
+        var attributed = (try? AttributedString(markdown: raw)) ?? AttributedString(raw)
         for run in attributed.runs where run.link != nil {
             attributed[run.range].font = FontType.paragraphBold.font
             attributed[run.range].underlineStyle = .single

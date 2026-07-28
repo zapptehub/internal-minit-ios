@@ -17,6 +17,15 @@ struct OnboardingScaffold<Content: View>: View {
     let isPrimaryEnabled: Bool
     var isPrimaryLoading: Bool = false
     var showsBack: Bool = false
+    /// When set, reserves this many lines' worth of vertical space for `headline`
+    /// regardless of how many lines the translated text actually wraps to. Without this,
+    /// a headline that wraps to a different line count per locale (e.g. English's 2-line
+    /// "Choose your app language" vs. Slovak's 1-line "Vyber jazyk aplikácie") changes how
+    /// much vertical space the header takes, which shifts the position of any content below
+    /// it that's laid out relative to the remaining space (like `LanguageSelectionScreen`'s
+    /// row list). `nil` (the default) preserves the previous "size to fit" behavior for
+    /// screens that don't need this.
+    var headlineLineLimit: Int? = nil
     let onPrimary: () -> Void
     var onBack: (() -> Void)? = nil
     @ViewBuilder let content: () -> Content
@@ -28,11 +37,7 @@ struct OnboardingScaffold<Content: View>: View {
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.heading)
 
-                Text(headline)
-                    .typography(.headingLargeSemibold)
-                    .foregroundColor(DSColor.Text.inverse)
-                    .tracking(-1)
-                    .fixedSize(horizontal: false, vertical: true)
+                headlineText
             }
             .padding(.top, DSConstant.large.value)
 
@@ -57,6 +62,20 @@ struct OnboardingScaffold<Content: View>: View {
         // background past the scaffold's bounds covers that bar (especially when the
         // screen wraps the scaffold in a `GeometryReader`, as create/claim finish do).
         .background(LinearGradient.onboardingBackground)
+    }
+
+    @ViewBuilder
+    private var headlineText: some View {
+        let text = Text(headline)
+            .typography(.headingLargeSemibold)
+            .foregroundColor(DSColor.Text.inverse)
+            .tracking(-1)
+
+        if let headlineLineLimit {
+            text.lineLimit(headlineLineLimit, reservesSpace: true)
+        } else {
+            text.fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

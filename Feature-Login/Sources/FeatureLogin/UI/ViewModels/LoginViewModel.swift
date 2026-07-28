@@ -1,4 +1,5 @@
 import Observation
+import Foundation
 import DataAuth
 import CoreExtensions
 
@@ -40,11 +41,42 @@ public final class LoginViewModel {
     /// Matches Figma/screenshot countdown display (`01:44`).
     private static let resendCooldownSeconds = 104
 
+    /// Firebase Auth's minimum password length for `createUser`. Validated client-side in
+    /// `submitCreateAccount()` so a too-short password is rejected on the Create Account step
+    /// itself — without this, the failure only surfaced once `confirmVerification()` actually
+    /// called `register()`, showing a password-length error on the Verification Code screen,
+    /// which has no password field and made no sense to the user.
+    public static let minimumPasswordLength = 6
+
     private let authRepository: AuthRepository
+    /// Device-wide language choice (see `AppLanguagePreferenceStoring`) — read for every
+    /// locally-generated error message so they respect an in-app language switch made during
+    /// onboarding, without Login needing a language picker of its own. Defaults to the real
+    /// `UserDefaults`-backed store so existing call sites (previews, most tests) don't need to
+    /// know about it; tests that care can inject a fake explicitly.
+    private let appLanguagePreference: any AppLanguagePreferenceStoring
     private var countdownTask: Task<Void, Never>?
 
-    public init(authRepository: AuthRepository) {
+    /// Default-value expressions aren't isolated to the enclosing type's global actor, so a
+    /// `= UserDefaultsAppLanguagePreferenceStore()` default here can't satisfy that
+    /// `@MainActor`-isolated initializer directly — hence the separate convenience init below,
+    /// whose body runs on `LoginViewModel`'s own `@MainActor` isolation instead.
+    public convenience init(authRepository: AuthRepository) {
+        self.init(authRepository: authRepository, appLanguagePreference: UserDefaultsAppLanguagePreferenceStore())
+    }
+
+    public init(
+        authRepository: AuthRepository,
+        appLanguagePreference: any AppLanguagePreferenceStoring
+    ) {
         self.authRepository = authRepository
+        self.appLanguagePreference = appLanguagePreference
+    }
+
+    /// Falls back to the system's current locale when no app-wide language has ever been
+    /// explicitly confirmed yet (e.g. a brand-new install that hasn't been through onboarding).
+    private var currentLocale: Locale {
+        appLanguagePreference.languageCode.map { Locale(identifier: $0) } ?? .autoupdatingCurrent
     }
 
     public var canResendCode: Bool {
@@ -70,13 +102,19 @@ public final class LoginViewModel {
 
     public var hasEmailFormatError: Bool { !email.isBlank && !isEmailValid }
 
+    /// Drives the Create Account password field's error state — mirrors `hasEmailFormatError`'s
+    /// "only flag once there's something to judge" behavior.
+    public var hasPasswordLengthError: Bool {
+        !password.isEmpty && password.count < Self.minimumPasswordLength
+    }
+
     private func guardValidEmail() -> Bool {
         guard !email.isBlank else {
-            errorMessage = String(localized: "login.error.emptyEmail", bundle: .module)
+            errorMessage = LoginLocalizedString.string("login.error.emptyEmail", locale: currentLocale)
             return false
         }
         guard isEmailValid else {
-            errorMessage = String(localized: "login.error.invalidEmail", bundle: .module)
+            errorMessage = LoginLocalizedString.string("login.error.invalidEmail", locale: currentLocale)
             return false
         }
         return true
@@ -111,8 +149,12 @@ public final class LoginViewModel {
     /// pushes that step.
     public func submitCreateAccount() {
         guard guardValidEmail() else { return }
-        guard !password.isEmpty, password == confirmPassword else {
-            errorMessage = String(localized: "createAccount.error.passwordMismatch", bundle: .module)
+        guard password.count >= Self.minimumPasswordLength else {
+            errorMessage = LoginLocalizedString.string("createAccount.error.passwordTooShort", locale: currentLocale)
+            return
+        }
+        guard password == confirmPassword else {
+            errorMessage = LoginLocalizedString.string("createAccount.error.passwordMismatch", locale: currentLocale)
             return
         }
         errorMessage = nil
@@ -136,7 +178,7 @@ public final class LoginViewModel {
     public func submitSignIn() {
         guard guardValidEmail() else { return }
         guard !password.isEmpty else {
-            errorMessage = String(localized: "welcomeBack.error.emptyPassword", bundle: .module)
+            errorMessage = LoginLocalizedString.string("welcomeBack.error.emptyPassword", locale: currentLocale)
             return
         }
         errorMessage = nil
@@ -210,7 +252,7 @@ public final class LoginViewModel {
     /// `confirmPasswordReset()` then signals `passwordResetCompleted`.
     public func confirmVerification(purpose: VerificationPurpose) {
         guard otpCode.count == 4 else {
-            errorMessage = String(localized: "verification.error.incompleteCode", bundle: .module)
+            errorMessage = LoginLocalizedString.string("verification.error.incompleteCode", locale: currentLocale)
             return
         }
         errorMessage = nil
@@ -256,7 +298,7 @@ public final class LoginViewModel {
     public func login() {
         guard guardValidEmail() else { return }
         guard !password.isEmpty else {
-            errorMessage = String(localized: "login.error.emptyFields", bundle: .module)
+            errorMessage = LoginLocalizedString.string("login.error.emptyFields", locale: currentLocale)
             return
         }
         state = .loading

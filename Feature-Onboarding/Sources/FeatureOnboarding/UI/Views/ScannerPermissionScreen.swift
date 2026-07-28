@@ -12,12 +12,13 @@ import DesignSystem
 struct ScannerPermissionScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         OnboardingScaffold(
-            subtitle: String(localized: "onboarding.loyalty.subtitle", bundle: .module),
-            headline: String(localized: "onboarding.loyalty.headline", bundle: .module),
-            primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
+            subtitle: OnboardingLocalizedString.string("onboarding.loyalty.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.loyalty.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
             isPrimaryEnabled: false,
             isPrimaryLoading: true,
             showsBack: true,
@@ -30,21 +31,21 @@ struct ScannerPermissionScreen: View {
             await requestAccessIfNeeded()
         }
         .alert(
-            String(localized: "onboarding.alert.cameraDenied.title", bundle: .module),
+            OnboardingLocalizedString.string("onboarding.alert.cameraDenied.title", locale: locale),
             isPresented: cameraDeniedAlertPresented
         ) {
-            Button(String(localized: "onboarding.alert.action.openSettings", bundle: .module)) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.openSettings", locale: locale)) {
                 openSettings()
                 viewModel.didTapOpenSettings()
             }
-            Button(String(localized: "onboarding.alert.action.enterManually", bundle: .module)) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.enterManually", locale: locale)) {
                 viewModel.chooseManualCardEntry()
             }
-            Button(String(localized: "onboarding.alert.action.cancel", bundle: .module), role: .cancel) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.cancel", locale: locale), role: .cancel) {
                 viewModel.dismissCameraPermissionAlert()
             }
         } message: {
-            Text(String(localized: "onboarding.alert.cameraDenied.message", bundle: .module))
+            Text(OnboardingLocalizedString.string("onboarding.alert.cameraDenied.message", locale: locale))
         }
     }
 

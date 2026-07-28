@@ -2,6 +2,7 @@ import XCTest
 import OnboardingTestUtilities
 import DataProfile
 import DataLoyaltyCard
+import CoreExtensions
 @testable import FeatureOnboarding
 
 @MainActor
@@ -11,6 +12,7 @@ final class OnboardingViewModelTests: XCTestCase {
         profileRepository: FakeProfileRepository = FakeProfileRepository(),
         loyaltyCardRepository: FakeLoyaltyCardRepository = FakeLoyaltyCardRepository(),
         progressStore: FakeOnboardingProgressStore? = nil,
+        appLanguagePreference: FakeAppLanguagePreferenceStore? = nil,
         analytics: MockOnboardingAnalyticsTracking = MockOnboardingAnalyticsTracking(),
         preferredLanguages: [String] = ["en-US"],
         onCompleted: @escaping () -> Void = {}
@@ -20,6 +22,7 @@ final class OnboardingViewModelTests: XCTestCase {
             profileRepository: profileRepository,
             loyaltyCardRepository: loyaltyCardRepository,
             progressStore: progressStore ?? FakeOnboardingProgressStore(),
+            appLanguagePreference: appLanguagePreference ?? FakeAppLanguagePreferenceStore(),
             analytics: analytics,
             preferredLanguages: preferredLanguages,
             onCompleted: onCompleted
@@ -74,6 +77,35 @@ final class OnboardingViewModelTests: XCTestCase {
     func testInitFallsBackToEnglishForUnsupportedDeviceLocale() {
         let vm = makeViewModel(preferredLanguages: ["fr-FR"])
         XCTAssertEqual(vm.selectedLanguage, .en)
+    }
+
+    /// A device-wide preference from a previous confirmed choice (e.g. before a
+    /// logout/re-login, or under a different account on the same device) takes
+    /// priority over the device's own system-language guess.
+    func testInitPrefersStoredAppLanguageOverDeviceLocale() {
+        let appLanguagePreference = FakeAppLanguagePreferenceStore()
+        appLanguagePreference.languageCode = OnboardingLanguageCode.hu.rawValue
+        let vm = makeViewModel(appLanguagePreference: appLanguagePreference, preferredLanguages: ["en-US"])
+        XCTAssertEqual(vm.selectedLanguage, .hu)
+    }
+
+    /// No stored preference yet — falls back to the existing device-locale detection.
+    func testInitFallsBackToDeviceLocaleWhenNoAppLanguageStored() {
+        let appLanguagePreference = FakeAppLanguagePreferenceStore()
+        appLanguagePreference.languageCode = nil
+        let vm = makeViewModel(appLanguagePreference: appLanguagePreference, preferredLanguages: ["sk-SK"])
+        XCTAssertEqual(vm.selectedLanguage, .sk)
+    }
+
+    /// Confirming a language writes it to the device-wide store — this is what makes
+    /// it survive logout/re-login and outlive the (account-scoped, complete-on-finish)
+    /// onboarding progress checkpoint.
+    func testContinueFromLanguagePersistsToAppLanguagePreference() {
+        let appLanguagePreference = FakeAppLanguagePreferenceStore()
+        let vm = makeViewModel(appLanguagePreference: appLanguagePreference, preferredLanguages: ["en-US"])
+        vm.selectLanguage(.hu)
+        vm.continueFromLanguage()
+        XCTAssertEqual(appLanguagePreference.languageCode, OnboardingLanguageCode.hu.rawValue)
     }
 
     func testCanContinueFromLanguageIsAlwaysTrue() {
@@ -701,4 +733,9 @@ private final class FakeOnboardingProgressStore: OnboardingProgressStoring {
     func clear(userId: String) {
         progressByUserId[userId] = nil
     }
+}
+
+@MainActor
+private final class FakeAppLanguagePreferenceStore: AppLanguagePreferenceStoring {
+    var languageCode: String?
 }

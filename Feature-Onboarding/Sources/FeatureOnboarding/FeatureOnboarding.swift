@@ -2,6 +2,7 @@ import SwiftUI
 import DesignSystem
 import DataProfile
 @_exported import DataLoyaltyCard
+@_exported import CoreExtensions
 
 public enum FeatureOnboarding {
     /// Entry point for the post-auth onboarding flow. Owns a resumable
@@ -13,6 +14,7 @@ public enum FeatureOnboarding {
         profileRepository: ProfileRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
         progressStore: any OnboardingProgressStoring,
+        appLanguagePreference: any AppLanguagePreferenceStoring,
         analytics: OnboardingAnalyticsTracking,
         onCompleted: @escaping () -> Void
     ) -> some View {
@@ -21,6 +23,7 @@ public enum FeatureOnboarding {
             profileRepository: profileRepository,
             loyaltyCardRepository: loyaltyCardRepository,
             progressStore: progressStore,
+            appLanguagePreference: appLanguagePreference,
             analytics: analytics,
             onCompleted: onCompleted
         )

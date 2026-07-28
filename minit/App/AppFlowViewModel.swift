@@ -104,6 +104,16 @@ final class AppFlowViewModel {
         state = .authenticated
     }
 
+    /// Signs the user out and returns them to the unauthenticated flow (e.g. from the
+    /// dashboard-under-construction placeholder's Log Out button).
+    func logOut() {
+        Task {
+            await authRepository.logout()
+            restoredLocale = nil
+            state = .unauthenticated
+        }
+    }
+
     /// Routes a known-authenticated `userId` based on whether a loyalty card is already
     /// linked: skip onboarding when complete, otherwise mount the flow (and restore any
     /// mid-onboarding locale checkpoint).

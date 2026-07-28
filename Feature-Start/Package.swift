@@ -8,13 +8,15 @@ let package = Package(
         .library(name: "FeatureStart", targets: ["FeatureStart"])
     ],
     dependencies: [
-        .package(path: "../Core-DesignSystem")
+        .package(path: "../Core-DesignSystem"),
+        .package(path: "../Core-Extensions")
     ],
     targets: [
         .target(
             name: "FeatureStart",
             dependencies: [
-                .product(name: "DesignSystem", package: "Core-DesignSystem")
+                .product(name: "DesignSystem", package: "Core-DesignSystem"),
+                .product(name: "CoreExtensions", package: "Core-Extensions")
             ],
             path: "Sources/FeatureStart",
             resources: [.process("Resources")]

@@ -9,6 +9,7 @@ import DataAuth
 struct CreateAccountScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     /// Figma spec — gap between adjacent `DSInputField`s on this screen.
     private let fieldSpacing: CGFloat = 24
@@ -20,42 +21,43 @@ struct CreateAccountScreen: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(String(localized: "createAccount.headline", bundle: .module))
+                Text(LoginLocalizedString.string("createAccount.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
                     .tracking(-1)
 
-                Text(String(localized: "createAccount.subtitle", bundle: .module))
+                Text(LoginLocalizedString.string("createAccount.subtitle", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.secondary)
             }
 
             VStack(spacing: fieldSpacing) {
                 DSInputField(
-                    label: String(localized: "createAccount.field.email", bundle: .module),
+                    label: LoginLocalizedString.string("createAccount.field.email", locale: locale),
                     text: $viewModel.email,
                     validationState: viewModel.hasEmailFormatError ? .error : .none,
                     isEnabled: true,
                     keyboardTypeOverride: .emailAddress
                 )
                 DSInputField(
-                    label: String(localized: "login.field.password", bundle: .module),
+                    label: LoginLocalizedString.string("login.field.password", locale: locale),
                     text: $viewModel.password,
                     type: .password,
-                    placeholder: String(localized: "createAccount.field.placeholder", bundle: .module)
+                    placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
+                    validationState: viewModel.hasPasswordLengthError ? .error : .none
                 )
                 DSInputField(
-                    label: String(localized: "createAccount.field.confirmPassword", bundle: .module),
+                    label: LoginLocalizedString.string("createAccount.field.confirmPassword", locale: locale),
                     text: $viewModel.confirmPassword,
                     type: .password,
-                    placeholder: String(localized: "createAccount.field.placeholder", bundle: .module),
+                    placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
                     validationState: passwordsMismatch ? .error : .none
                 )
             }
             .padding(.top, headlineToFieldsSpacing)
 
             DSCheckbox(
-                label: String(localized: "createAccount.checkbox.marketingOptIn", bundle: .module),
+                label: LoginLocalizedString.string("createAccount.checkbox.marketingOptIn", locale: locale),
                 isChecked: $viewModel.marketingOptIn
             )
             .padding(.top, DSConstant.large.value)
@@ -67,7 +69,7 @@ struct CreateAccountScreen: View {
 
             VStack(spacing: DSConstant.mediumLarge.value) {
                 DSButton(
-                    title: String(localized: "createAccount.button.continue", bundle: .module),
+                    title: LoginLocalizedString.string("createAccount.button.continue", locale: locale),
                     type: .primary,
                     isEnabled: isContinueEnabled,
                     isLoading: viewModel.state.isLoading
@@ -78,7 +80,7 @@ struct CreateAccountScreen: View {
 
                 HStack(spacing: DSConstant.small.value) {
                     DSButton(
-                        title: String(localized: "login.button.apple", bundle: .module),
+                        title: LoginLocalizedString.string("login.button.apple", locale: locale),
                         type: .social,
                         icon: .appleLogo,
                         heightStyle: .large
@@ -87,7 +89,7 @@ struct CreateAccountScreen: View {
                         viewModel.signInWithApple()
                     }
                     DSButton(
-                        title: String(localized: "login.button.google", bundle: .module),
+                        title: LoginLocalizedString.string("login.button.google", locale: locale),
                         type: .social,
                         icon: .google,
                         heightStyle: .large
@@ -109,10 +111,12 @@ struct CreateAccountScreen: View {
     }
 
     /// Matches the plan's "disabled/enabled screenshots" spec exactly: non-empty, matching
-    /// passwords, and the marketing checkbox checked.
+    /// passwords, and the marketing checkbox checked. Also requires `LoginViewModel
+    /// .minimumPasswordLength` so a too-short password is caught here rather than surfacing
+    /// as a server-side error once the user reaches the Verification Code step.
     private var isContinueEnabled: Bool {
         viewModel.isEmailValid
-            && !viewModel.password.isEmpty
+            && viewModel.password.count >= LoginViewModel.minimumPasswordLength
             && viewModel.password == viewModel.confirmPassword
             && viewModel.marketingOptIn
             && !viewModel.state.isLoading

@@ -2,6 +2,7 @@ import Observation
 import Foundation
 import DataProfile
 import DataLoyaltyCard
+import CoreExtensions
 
 /// Resumable onboarding state machine's core: shared state, lifecycle (bootstrap /
 /// completion), and routing plumbing. What each *section* actually does lives in its
@@ -36,8 +37,8 @@ public final class OnboardingViewModel {
     /// Source of truth for the onboarding UI's locale. Screens apply it via
     /// `.environment(\.locale, Locale(identifier: selectedLanguage.rawValue))`. Updated
     /// immediately on `selectLanguage(_:)` (per the matrix's "switches immediately on
-    /// row tap") but only becomes durable — written to the progress store — once
-    /// `continueFromLanguage()` runs.
+    /// row tap") but only becomes durable — written to the progress store and the
+    /// device-wide `appLanguagePreference` — once `continueFromLanguage()` runs.
     public internal(set) var selectedLanguage: OnboardingLanguageCode
     /// Row choice on the `loyaltyDecision` step. Not persisted until `continueFromLoyaltyDecision()`.
     public internal(set) var selectedBranch: OnboardingLoyaltyBranch?
@@ -62,6 +63,11 @@ public final class OnboardingViewModel {
     let profileRepository: ProfileRepository
     let loyaltyCardRepository: LoyaltyCardRepository
     let progressStore: any OnboardingProgressStoring
+    /// Device-wide (not account-scoped) language preference — read once at `init` to
+    /// pre-select a returning device-owner's last confirmed language ahead of the
+    /// device's own system-language guess, and written on `continueFromLanguage()` so
+    /// it survives logout/re-login. See `AppLanguagePreferenceStoring`'s doc comment.
+    let appLanguagePreference: any AppLanguagePreferenceStoring
     let analytics: OnboardingAnalyticsTracking
     private let onCompleted: () -> Void
     private let router = OnboardingRouter()
@@ -79,6 +85,7 @@ public final class OnboardingViewModel {
         profileRepository: ProfileRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
         progressStore: any OnboardingProgressStoring,
+        appLanguagePreference: any AppLanguagePreferenceStoring,
         analytics: OnboardingAnalyticsTracking,
         preferredLanguages: [String] = Locale.preferredLanguages,
         onCompleted: @escaping () -> Void
@@ -87,10 +94,14 @@ public final class OnboardingViewModel {
         self.profileRepository = profileRepository
         self.loyaltyCardRepository = loyaltyCardRepository
         self.progressStore = progressStore
+        self.appLanguagePreference = appLanguagePreference
         self.analytics = analytics
         self.onCompleted = onCompleted
         self.step = .name
-        self.selectedLanguage = Self.systemPreferredLanguage(preferredLanguages: preferredLanguages)
+        self.selectedLanguage = Self.initialLanguage(
+            appLanguagePreference: appLanguagePreference,
+            preferredLanguages: preferredLanguages
+        )
     }
 
     // MARK: Routing
@@ -166,7 +177,10 @@ public final class OnboardingViewModel {
             // Can't trust the record — clear it and start over rather than get stuck
             // re-throwing on every subsequent launch.
             progressStore.clear(userId: userId)
-            errorMessage = String(localized: "onboarding.error.corruptedProgress", bundle: .module)
+            errorMessage = OnboardingLocalizedString.string(
+                "onboarding.error.corruptedProgress",
+                locale: Locale(identifier: selectedLanguage.rawValue)
+            )
             step = .name
         } catch {
             step = .name

@@ -2,6 +2,7 @@ import SwiftUI
 import DesignSystem
 import DataProfile
 import DataLoyaltyCard
+import CoreExtensions
 
 /// Root onboarding content — owns the view model via `@State` (same pattern as
 /// `LoginFlowContainer`), applies the selected locale, runs bootstrap once, and
@@ -18,6 +19,7 @@ struct OnboardingFlowScreen: View {
         profileRepository: ProfileRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
         progressStore: any OnboardingProgressStoring,
+        appLanguagePreference: any AppLanguagePreferenceStoring,
         analytics: OnboardingAnalyticsTracking,
         onCompleted: @escaping () -> Void
     ) {
@@ -27,6 +29,7 @@ struct OnboardingFlowScreen: View {
                 profileRepository: profileRepository,
                 loyaltyCardRepository: loyaltyCardRepository,
                 progressStore: progressStore,
+                appLanguagePreference: appLanguagePreference,
                 analytics: analytics,
                 onCompleted: onCompleted
             )
@@ -68,20 +71,24 @@ struct OnboardingFlowScreen: View {
                 .animation(.easeInOut(duration: 0.32), value: viewModel.progressFraction)
             }
         }
-        .environment(\.locale, Locale(identifier: viewModel.selectedLanguage.rawValue))
+        .environment(\.locale, currentLocale)
         .task {
             await viewModel.bootstrap()
         }
         .alert(
-            String(localized: "onboarding.alert.createFailed.title", bundle: .module),
+            OnboardingLocalizedString.string("onboarding.alert.createFailed.title", locale: currentLocale),
             isPresented: bootstrapAlertPresented
         ) {
-            Button(String(localized: "onboarding.alert.action.retry", bundle: .module)) {
+            Button(OnboardingLocalizedString.string("onboarding.alert.action.retry", locale: currentLocale)) {
                 viewModel.retryBootstrap()
             }
         } message: {
-            Text(String(localized: "onboarding.alert.bootstrapFailed.message", bundle: .module))
+            Text(OnboardingLocalizedString.string("onboarding.alert.bootstrapFailed.message", locale: currentLocale))
         }
+    }
+
+    private var currentLocale: Locale {
+        Locale(identifier: viewModel.selectedLanguage.rawValue)
     }
 
     @ViewBuilder
@@ -135,6 +142,7 @@ struct OnboardingFlowScreen: View {
         profileRepository: PreviewProfileRepository(),
         loyaltyCardRepository: PreviewLoyaltyCardRepository(),
         progressStore: PreviewOnboardingProgressStore(),
+        appLanguagePreference: PreviewAppLanguagePreferenceStore(),
         analytics: PreviewOnboardingAnalyticsTracking(),
         onCompleted: {}
     )

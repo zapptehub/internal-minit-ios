@@ -1,6 +1,28 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "start.button.getStarted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get started"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kezdjük el"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Začať"
+          }
+        }
+      }
+    },
     "start.headline" : {
       "localizations" : {
         "en" : {
@@ -8,15 +30,17 @@
             "state" : "translated",
             "value" : "Make your\nday better"
           }
-        }
-      }
-    },
-    "start.button.getStarted" : {
-      "localizations" : {
-        "en" : {
+        },
+        "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get started"
+            "value" : "Tedd szebbé\na napodat"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urob svoj\ndeň lepším"
           }
         }
       }
@@ -27,6 +51,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "By tapping “Get started” you’re accepting our [terms](https://www.google.com) and [privacy policy](https://www.google.com)."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A „Kezdjük el” gombra kattintva elfogadod [felhasználási feltételeinket](https://www.google.com) és [adatvédelmi szabályzatunkat](https://www.google.com)."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kliknutím na „Začať” súhlasíte s našimi [podmienkami](https://www.google.com) a [zásadami ochrany osobných údajov](https://www.google.com)."
           }
         }
       }

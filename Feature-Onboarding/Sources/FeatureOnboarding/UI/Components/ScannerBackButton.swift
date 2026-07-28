@@ -10,6 +10,7 @@ import DesignSystem
 /// in the flow — only the background differs here.
 struct ScannerBackButton: View {
     let action: () -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         DSButton(
@@ -19,7 +20,7 @@ struct ScannerBackButton: View {
             iconSize: 20,
             heightStyle: .large,
             widthStyle: .icon,
-            accessibilityLabel: String(localized: "onboarding.a11y.back", bundle: .module),
+            accessibilityLabel: OnboardingLocalizedString.string("onboarding.a11y.back", locale: locale),
             action: action
         )
     }

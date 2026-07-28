@@ -6,6 +6,7 @@ import DesignSystem
 /// shares one visual.
 struct OnboardingBackButton: View {
     let action: () -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         DSButton(
@@ -13,7 +14,7 @@ struct OnboardingBackButton: View {
             type: .social,
             icon: .miniArrowLeft,
             widthStyle: .icon,
-            accessibilityLabel: String(localized: "onboarding.a11y.back", bundle: .module),
+            accessibilityLabel: OnboardingLocalizedString.string("onboarding.a11y.back", locale: locale),
             action: action
         )
     }

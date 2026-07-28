@@ -8,6 +8,18 @@
             "state" : "translated",
             "value" : "OK"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
         }
       }
     },
@@ -18,12 +30,36 @@
             "state" : "translated",
             "value" : "This feature is under construction."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a funkció még fejlesztés alatt áll."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Táto funkcia je vo vývoji."
+          }
         }
       }
     },
     "common.alert.underConstruction.title" : {
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "👷"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "👷"
+          }
+        },
+        "sk" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "👷"
@@ -38,6 +74,18 @@
             "state" : "translated",
             "value" : "Continue"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folytatás"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovať"
+          }
         }
       }
     },
@@ -47,6 +95,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "We may email you occasionally about updates and services similar to those we offer on our platform. You can opt out at any time by adjusting your preferences regarding commercial communications in the settings."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Időnként e-mailben tájékoztathatjuk frissítésekről és az általunk kínált szolgáltatásokhoz hasonló ajánlatokról. A beállításokban bármikor leiratkozhatsz a kereskedelmi célú értesítésekről."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Občas vám môžeme poslať e-mail o aktualizáciách a službách podobných tým, ktoré ponúkame na našej platforme. Kedykoľvek sa môžete odhlásiť úpravou nastavení obchodnej komunikácie."
           }
         }
       }
@@ -58,6 +118,40 @@
             "state" : "translated",
             "value" : "Passwords don't match."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A jelszavak nem egyeznek."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heslá sa nezhodujú."
+          }
+        }
+      }
+    },
+    "createAccount.error.passwordTooShort" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The password must be 6 characters long or more."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A jelszónak legalább 6 karakter hosszúnak kell lennie."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heslo musí mať aspoň 6 znakov."
+          }
         }
       }
     },
@@ -67,6 +161,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Re-Type Password"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszó megerősítése"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zopakujte heslo"
           }
         }
       }
@@ -78,6 +184,18 @@
             "state" : "translated",
             "value" : "Email Address"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-mail cím"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-mailová adresa"
+          }
         }
       }
     },
@@ -87,6 +205,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Value"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Érték"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hodnota"
           }
         }
       }
@@ -98,6 +228,18 @@
             "state" : "translated",
             "value" : "Create a new account"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fiók létrehozása"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vytvoriť nový účet"
+          }
         }
       }
     },
@@ -107,6 +249,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "It looks like this is your first time here! Create a new account to continue."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úgy tűnik, most jársz itt először! Hozz létre egy fiókot a folytatáshoz."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zdá sa, že ste tu prvýkrát! Ak chcete pokračovať, vytvorte si nový účet."
           }
         }
       }
@@ -118,6 +272,18 @@
             "state" : "translated",
             "value" : "Reset Password"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszó visszaállítása"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnoviť heslo"
+          }
         }
       }
     },
@@ -127,6 +293,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reset your password"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszó visszaállítása"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovte si heslo"
           }
         }
       }
@@ -138,6 +316,18 @@
             "state" : "translated",
             "value" : "Contact Support if you lost access to 2FA"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedd fel a kapcsolatot az ügyfélszolgálattal, ha elvesztetted a hozzáférést a kétlépcsős azonosításhoz"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ak ste stratili prístup k dvojfaktorovému overeniu, kontaktujte podporu"
+          }
         }
       }
     },
@@ -148,12 +338,36 @@
             "state" : "translated",
             "value" : "We'll send you a password reset code. Enter this code at the next screen."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küldünk egy jelszó-visszaállító kódot. Add meg ezt a kódot a következő képernyőn."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pošleme vám kód na obnovenie hesla. Zadajte tento kód na ďalšej obrazovke."
+          }
         }
       }
     },
     "login.button.apple" : {
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "sk" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple"
@@ -168,6 +382,18 @@
             "state" : "translated",
             "value" : "Google"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
         }
       }
     },
@@ -177,6 +403,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continue"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folytatás"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovať"
           }
         }
       }
@@ -188,15 +426,17 @@
             "state" : "translated",
             "value" : "Please enter your email address."
           }
-        }
-      }
-    },
-    "login.error.invalidEmail" : {
-      "localizations" : {
-        "en" : {
+        },
+        "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Please enter a valid email address."
+            "value" : "Kérjük, add meg az e-mail címedet."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte, prosím, svoju e-mailovú adresu."
           }
         }
       }
@@ -208,12 +448,58 @@
             "state" : "translated",
             "value" : "Please enter your email and password."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kérjük, add meg az e-mail címedet és a jelszavadat."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte, prosím, svoju e-mailovú adresu a heslo."
+          }
+        }
+      }
+    },
+    "login.error.invalidEmail" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please enter a valid email address."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kérjük, adj meg egy érvényes e-mail címet."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte, prosím, platnú e-mailovú adresu."
+          }
         }
       }
     },
     "login.field.email" : {
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iveta@example.com"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iveta@example.com"
+          }
+        },
+        "sk" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "iveta@example.com"
@@ -228,6 +514,18 @@
             "state" : "translated",
             "value" : "Password"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszó"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heslo"
+          }
         }
       }
     },
@@ -237,6 +535,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter your email address"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add meg az e-mail címedet"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte svoju e-mailovú adresu"
           }
         }
       }
@@ -248,6 +558,18 @@
             "state" : "translated",
             "value" : "We'll send you a verification code."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küldünk egy ellenőrző kódot."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pošleme vám overovací kód."
+          }
         }
       }
     },
@@ -257,6 +579,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Back to Login"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vissza a bejelentkezéshez"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Späť na prihlásenie"
           }
         }
       }
@@ -268,6 +602,18 @@
             "state" : "translated",
             "value" : "Password changed"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszó megváltoztatva"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heslo zmenené"
+          }
         }
       }
     },
@@ -277,6 +623,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your new password has been saved successfully. Try logging in with it."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az új jelszavadat sikeresen elmentettük. Próbálj meg bejelentkezni vele."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaše nové heslo bolo úspešne uložené. Skúste sa s ním prihlásiť."
           }
         }
       }
@@ -288,6 +646,18 @@
             "state" : "translated",
             "value" : "Confirm Password Change"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelszóváltoztatás megerősítése"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Potvrdiť zmenu hesla"
+          }
         }
       }
     },
@@ -297,6 +667,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Confirm & Sign In"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Megerősítés és bejelentkezés"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Potvrdiť a prihlásiť sa"
           }
         }
       }
@@ -308,6 +690,18 @@
             "state" : "translated",
             "value" : "Please enter the 4-digit verification code."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kérjük, add meg a 4 jegyű ellenőrző kódot."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte, prosím, 4-miestny overovací kód."
+          }
         }
       }
     },
@@ -317,6 +711,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verification code digit"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az ellenőrző kód számjegye"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Číslica overovacieho kódu"
           }
         }
       }
@@ -328,6 +734,18 @@
             "state" : "translated",
             "value" : "Enter verification code"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add meg az ellenőrző kódot"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte overovací kód"
+          }
         }
       }
     },
@@ -337,6 +755,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Send Again"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küldés újra"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odoslať znova"
           }
         }
       }
@@ -348,6 +778,18 @@
             "state" : "translated",
             "value" : "Support"
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ügyfélszolgálat"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podpora"
+          }
         }
       }
     },
@@ -357,6 +799,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trouble with login? "
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problémád van a bejelentkezéssel? "
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máte problém s prihlásením? "
           }
         }
       }
@@ -368,6 +822,18 @@
             "state" : "translated",
             "value" : "We've sent a verification code to "
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elküldtük az ellenőrző kódot ide: "
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overovací kód sme odoslali na "
+          }
         }
       }
     },
@@ -377,6 +843,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sign In"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bejelentkezés"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prihlásiť sa"
           }
         }
       }
@@ -388,6 +866,18 @@
             "state" : "translated",
             "value" : "Please enter your password."
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kérjük, add meg a jelszavadat."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadajte, prosím, svoje heslo."
+          }
         }
       }
     },
@@ -398,6 +888,18 @@
             "state" : "translated",
             "value" : "Welcome back "
           }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üdvözlünk újra, "
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitajte späť, "
+          }
         }
       }
     },
@@ -407,6 +909,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forgot Password?"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elfelejtett jelszó?"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zabudnuté heslo?"
           }
         }
       }

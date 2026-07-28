@@ -11,13 +11,14 @@ import DesignSystem
 struct ManualCardEntryScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
     @State private var code: String = ""
 
     var body: some View {
         OnboardingScaffold(
-            subtitle: String(localized: "onboarding.manualEntry.subtitle", bundle: .module),
-            headline: String(localized: "onboarding.manualEntry.headline", bundle: .module),
-            primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
+            subtitle: OnboardingLocalizedString.string("onboarding.manualEntry.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.manualEntry.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
             isPrimaryEnabled: canContinue,
             isPrimaryLoading: viewModel.isLoading,
             showsBack: true,
@@ -30,9 +31,9 @@ struct ManualCardEntryScreen: View {
         ) {
             VStack(alignment: .leading, spacing: DSConstant.medium.value) {
                 DSInputField(
-                    label: String(localized: "onboarding.manualEntry.placeholder", bundle: .module),
+                    label: OnboardingLocalizedString.string("onboarding.manualEntry.placeholder", locale: locale),
                     text: $code,
-                    placeholder: String(localized: "onboarding.manualEntry.placeholder", bundle: .module)
+                    placeholder: OnboardingLocalizedString.string("onboarding.manualEntry.placeholder", locale: locale)
                 )
                 .textInputAutocapitalization(.characters)
                 .submitLabel(.continue)

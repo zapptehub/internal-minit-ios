@@ -22,6 +22,7 @@ import DesignSystem
 struct ScanningScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         ZStack {
@@ -37,7 +38,7 @@ struct ScanningScreen: View {
                     viewModel.didScanCode(code)
                 })
                 .ignoresSafeArea()
-                .accessibilityLabel(String(localized: "onboarding.a11y.scannerCamera", bundle: .module))
+                .accessibilityLabel(OnboardingLocalizedString.string("onboarding.a11y.scannerCamera", locale: locale))
 
                 overlay(simulatedScanAction: nil)
             } else if QRScannerView.isRunningInSimulator {
@@ -76,7 +77,7 @@ struct ScanningScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                 VStack(spacing: DSConstant.small.value) {
-                    Text(String(localized: "onboarding.scanner.caption", bundle: .module))
+                    Text(OnboardingLocalizedString.string("onboarding.scanner.caption", locale: locale))
                         .typography(.paragraphRegular)
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)
@@ -118,7 +119,7 @@ struct ScanningScreen: View {
             widthStyle: .icon,
             accessibilityLabel: action == nil
                 ? nil
-                : String(localized: "onboarding.a11y.simulateScan", bundle: .module),
+                : OnboardingLocalizedString.string("onboarding.a11y.simulateScan", locale: locale),
             action: action ?? {}
         )
         .allowsHitTesting(action != nil)
@@ -132,14 +133,14 @@ struct ScanningScreen: View {
 
             Spacer()
 
-            Text(String(localized: "onboarding.scanner.unsupported", bundle: .module))
+            Text(OnboardingLocalizedString.string("onboarding.scanner.unsupported", locale: locale))
                 .typography(.paragraphRegular)
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DSConstant.xLarge.value)
 
             DSButton(
-                title: String(localized: "onboarding.alert.action.enterManually", bundle: .module),
+                title: OnboardingLocalizedString.string("onboarding.alert.action.enterManually", locale: locale),
                 type: .tertiary,
                 action: { viewModel.chooseManualCardEntry() }
             )

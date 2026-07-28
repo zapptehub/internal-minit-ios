@@ -7,14 +7,20 @@ import DesignSystem
 struct LanguageSelectionScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         OnboardingScaffold(
-            subtitle: String(localized: "onboarding.language.subtitle", bundle: .module),
-            headline: String(localized: "onboarding.language.headline", bundle: .module),
-            primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
+            subtitle: OnboardingLocalizedString.string("onboarding.language.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.language.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
             isPrimaryEnabled: viewModel.canContinueFromLanguage,
             showsBack: true,
+            // The row list's position below is computed as a fraction of the remaining
+            // space (see the GeometryReader below), so without a fixed headline height the
+            // list shifts depending on whether the translated headline wraps to 1 or 2
+            // lines (e.g. Slovak's 1-line vs. English's 2-line copy).
+            headlineLineLimit: 2,
             onPrimary: {
                 viewModel.continueFromLanguage()
             },
@@ -32,15 +38,15 @@ struct LanguageSelectionScreen: View {
                         options: [
                             .init(
                                 value: OnboardingLanguageCode.sk,
-                                label: String(localized: "onboarding.language.slovak", bundle: .module)
+                                label: OnboardingLocalizedString.string("onboarding.language.slovak", locale: locale)
                             ),
                             .init(
                                 value: .hu,
-                                label: String(localized: "onboarding.language.hungarian", bundle: .module)
+                                label: OnboardingLocalizedString.string("onboarding.language.hungarian", locale: locale)
                             ),
                             .init(
                                 value: .en,
-                                label: String(localized: "onboarding.language.english", bundle: .module)
+                                label: OnboardingLocalizedString.string("onboarding.language.english", locale: locale)
                             )
                         ],
                         selection: languageBinding

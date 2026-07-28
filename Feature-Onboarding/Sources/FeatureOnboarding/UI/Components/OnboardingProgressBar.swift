@@ -5,6 +5,7 @@ import DesignSystem
 /// translucent white track, nearly full-bleed within the scaffold's horizontal margins.
 struct OnboardingProgressBar: View {
     let progress: Double
+    @Environment(\.locale) private var locale
 
     private static let height: CGFloat = 4
 
@@ -22,7 +23,7 @@ struct OnboardingProgressBar: View {
         .frame(maxWidth: .infinity)
         .frame(height: Self.height)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(String(localized: "onboarding.a11y.progress", bundle: .module))
+        .accessibilityLabel(OnboardingLocalizedString.string("onboarding.a11y.progress", locale: locale))
         .accessibilityValue("\(Int((min(max(progress, 0), 1) * 100).rounded()))%")
     }
 }

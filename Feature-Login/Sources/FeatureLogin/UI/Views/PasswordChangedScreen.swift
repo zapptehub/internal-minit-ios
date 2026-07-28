@@ -15,6 +15,7 @@ import DesignSystem
 struct PasswordChangedScreen: View {
     let analytics: LoginAnalyticsTracking
     let onBackToLogin: () -> Void
+    @Environment(\.locale) private var locale
 
     @State private var sheetHeight: CGFloat = .zero
 
@@ -36,19 +37,19 @@ struct PasswordChangedScreen: View {
             successIcon
 
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(String(localized: "passwordChanged.headline", bundle: .module))
+                Text(LoginLocalizedString.string("passwordChanged.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
                     .tracking(-1)
 
-                Text(String(localized: "passwordChanged.subtitle", bundle: .module))
+                Text(LoginLocalizedString.string("passwordChanged.subtitle", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.secondary)
             }
             .padding(.top, iconToHeadlineSpacing)
 
             DSButton(
-                title: String(localized: "passwordChanged.button.backToLogin", bundle: .module),
+                title: LoginLocalizedString.string("passwordChanged.button.backToLogin", locale: locale),
                 type: .tertiary
             ) {
                 analytics.trackPasswordChangedBackToLoginTapped(file: #fileID)

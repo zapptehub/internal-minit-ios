@@ -9,6 +9,8 @@ import DesignSystem
 /// card sits behind and slightly below the real one, so only a soft sliver peeks out
 /// past its bottom edge, matching the Figma reference.
 struct LoyaltyCardPreview: View {
+    @Environment(\.locale) private var locale
+
     private static let backCardScale: CGFloat = 0.92
     private static let backCardOffsetY: CGFloat = 38
     private static let backCardBlurRadius: CGFloat = 6
@@ -30,10 +32,10 @@ struct LoyaltyCardPreview: View {
 
     private var card: some View {
         LoyaltyCard(
-            rankTitle: String(localized: "onboarding.loyalty.preview.rankUp", bundle: .module),
-            rankSubtitle: String(localized: "onboarding.loyalty.preview.benefits", bundle: .module),
+            rankTitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.rankUp", locale: locale),
+            rankSubtitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.benefits", locale: locale),
             points: 1410,
-            chipLabel: String(localized: "onboarding.loyalty.preview.chip", bundle: .module)
+            chipLabel: OnboardingLocalizedString.string("onboarding.loyalty.preview.chip", locale: locale)
         )
     }
 }

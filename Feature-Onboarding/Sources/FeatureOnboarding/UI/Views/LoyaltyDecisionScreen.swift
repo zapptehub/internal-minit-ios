@@ -8,12 +8,13 @@ import DesignSystem
 struct LoyaltyDecisionScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     var body: some View {
         OnboardingScaffold(
-            subtitle: String(localized: "onboarding.loyalty.subtitle", bundle: .module),
-            headline: String(localized: "onboarding.loyalty.headline", bundle: .module),
-            primaryTitle: String(localized: "onboarding.button.continue", bundle: .module),
+            subtitle: OnboardingLocalizedString.string("onboarding.loyalty.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.loyalty.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
             isPrimaryEnabled: viewModel.canContinueFromLoyaltyDecision,
             showsBack: true,
             onPrimary: {
@@ -32,11 +33,11 @@ struct LoyaltyDecisionScreen: View {
                     options: [
                         .init(
                             value: OnboardingLoyaltyBranch.newCustomer,
-                            label: String(localized: "onboarding.loyalty.option.newCustomer", bundle: .module)
+                            label: OnboardingLocalizedString.string("onboarding.loyalty.option.newCustomer", locale: locale)
                         ),
                         .init(
                             value: .existingCard,
-                            label: String(localized: "onboarding.loyalty.option.existingCard", bundle: .module)
+                            label: OnboardingLocalizedString.string("onboarding.loyalty.option.existingCard", locale: locale)
                         )
                     ],
                     selection: branchBinding

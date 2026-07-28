@@ -168,6 +168,20 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .authenticated)
         XCTAssertNil(vm.restoredLocale)
     }
+
+    func testLogOutCallsRepositoryAndReturnsUnauthenticated() async {
+        let auth = FakeAuthRepository()
+        let vm = makeViewModel(auth: auth)
+        vm.didCompleteOnboarding()
+        XCTAssertEqual(vm.state, .authenticated)
+
+        vm.logOut()
+        await settle()
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertNil(vm.restoredLocale)
+    }
 }
 
 // MARK: - Fakes
@@ -180,12 +194,15 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
     var sessionToReturn: AuthData?
     var errorToThrow: Error?
     private(set) var currentSessionCallCount = 0
+    private(set) var logoutCallCount = 0
 
     func login(email: String, password: String) async throws -> AuthData {
         AuthData(token: "t", userId: "user")
     }
 
-    func logout() async {}
+    func logout() async {
+        logoutCallCount += 1
+    }
 
     func currentSession() async throws -> AuthData? {
         currentSessionCallCount += 1

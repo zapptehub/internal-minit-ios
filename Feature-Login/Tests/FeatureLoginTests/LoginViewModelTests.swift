@@ -159,6 +159,45 @@ final class LoginViewModelTests: XCTestCase {
         XCTAssertTrue(vm.path.isEmpty)
     }
 
+    /// Guards against the password-length error only surfacing once `register()` fires from
+    /// `confirmVerification()` — by then we've already navigated past the Create Account
+    /// screen, so a Firebase "password too short" error would show up on the Verification
+    /// Code screen, which has no password field.
+    func testSubmitCreateAccountWithTooShortPasswordSetsErrorMessageAndDoesNotNavigate() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+
+        vm.email = "new@minit.com"
+        vm.password = "abc12"
+        vm.confirmPassword = "abc12"
+        vm.submitCreateAccount()
+
+        XCTAssertEqual(
+            vm.errorMessage,
+            String(localized: "createAccount.error.passwordTooShort", bundle: .module)
+        )
+        XCTAssertTrue(vm.path.isEmpty)
+    }
+
+    func testHasPasswordLengthErrorWhenNonEmptyAndTooShort() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+        vm.password = "abc12"
+
+        XCTAssertTrue(vm.hasPasswordLengthError)
+    }
+
+    func testHasPasswordLengthErrorFalseWhenEmpty() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+
+        XCTAssertFalse(vm.hasPasswordLengthError)
+    }
+
+    func testHasPasswordLengthErrorFalseWhenLongEnough() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+        vm.password = "abcdef"
+
+        XCTAssertFalse(vm.hasPasswordLengthError)
+    }
+
     func testSubmitCreateAccountWithMatchingPasswordsPushesVerificationCode() async {
         let vm = LoginViewModel(authRepository: MockAuthRepository())
 

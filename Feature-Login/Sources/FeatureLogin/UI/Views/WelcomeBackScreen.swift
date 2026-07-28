@@ -9,6 +9,7 @@ import DataAuth
 struct WelcomeBackScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
+    @Environment(\.locale) private var locale
 
     private let fieldSpacing: CGFloat = 24
     private let headlineToFieldsSpacing: CGFloat = DSConstant.xxLarge.value
@@ -23,16 +24,16 @@ struct WelcomeBackScreen: View {
 
             VStack(spacing: fieldSpacing) {
                 DSInputField(
-                    label: String(localized: "createAccount.field.email", bundle: .module),
+                    label: LoginLocalizedString.string("createAccount.field.email", locale: locale),
                     text: $viewModel.email,
                     validationState: viewModel.hasEmailFormatError ? .error : .none,
                     keyboardTypeOverride: .emailAddress
                 )
                 DSInputField(
-                    label: String(localized: "login.field.password", bundle: .module),
+                    label: LoginLocalizedString.string("login.field.password", locale: locale),
                     text: $viewModel.password,
                     type: .password,
-                    placeholder: String(localized: "createAccount.field.placeholder", bundle: .module)
+                    placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale)
                 )
             }
             .padding(.top, headlineToFieldsSpacing)
@@ -46,7 +47,7 @@ struct WelcomeBackScreen: View {
             }
 
             DSButton(
-                title: String(localized: "welcomeBack.button.signIn", bundle: .module),
+                title: LoginLocalizedString.string("welcomeBack.button.signIn", locale: locale),
                 type: .primary,
                 isEnabled: isSignInEnabled,
                 isLoading: viewModel.state.isLoading
@@ -69,7 +70,7 @@ struct WelcomeBackScreen: View {
             analytics.trackForgotPasswordLinkTapped(file: #fileID)
             viewModel.openForgotPassword()
         } label: {
-            Text(String(localized: "welcomeBack.link.forgotPassword", bundle: .module))
+            Text(LoginLocalizedString.string("welcomeBack.link.forgotPassword", locale: locale))
                 .typography(.uiRegular)
                 .foregroundColor(DSColor.Text.secondary)
         }
@@ -79,7 +80,7 @@ struct WelcomeBackScreen: View {
 
     private var headline: some View {
         (
-            Text(String(localized: "welcomeBack.headline.prefix", bundle: .module))
+            Text(LoginLocalizedString.string("welcomeBack.headline.prefix", locale: locale))
                 .foregroundColor(DSColor.Text.heading)
             + Text(viewModel.firstName)
                 .foregroundColor(DSColor.Text.accent)

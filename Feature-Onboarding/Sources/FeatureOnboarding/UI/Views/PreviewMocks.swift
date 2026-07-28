@@ -1,6 +1,7 @@
 import Foundation
 import DataProfile
 import DataLoyaltyCard
+import CoreExtensions
 
 /// Minimal no-op / in-memory conformances shared by every `#Preview` in this
 /// module — `OnboardingTestUtilities` depends on `FeatureOnboarding`, so it
@@ -28,6 +29,11 @@ final class PreviewOnboardingProgressStore: OnboardingProgressStoring {
     func clear(userId: String) {
         progressByUserId[userId] = nil
     }
+}
+
+@MainActor
+final class PreviewAppLanguagePreferenceStore: AppLanguagePreferenceStoring {
+    var languageCode: String?
 }
 
 struct PreviewLoyaltyCardRepository: LoyaltyCardRepository {
@@ -82,6 +88,7 @@ enum PreviewOnboarding {
             profileRepository: PreviewProfileRepository(),
             loyaltyCardRepository: PreviewLoyaltyCardRepository(),
             progressStore: PreviewOnboardingProgressStore(),
+            appLanguagePreference: PreviewAppLanguagePreferenceStore(),
             analytics: PreviewOnboardingAnalyticsTracking(),
             preferredLanguages: preferredLanguages,
             onCompleted: {}

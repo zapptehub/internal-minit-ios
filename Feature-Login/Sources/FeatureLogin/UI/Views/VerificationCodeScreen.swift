@@ -9,6 +9,7 @@ struct VerificationCodeScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
     let purpose: VerificationPurpose
+    @Environment(\.locale) private var locale
 
     /// Set when the user taps Confirm; cleared after async outcome is tracked so resend
     /// failures don't fire sign-in/sign-up failure events.
@@ -19,7 +20,7 @@ struct VerificationCodeScreen: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(String(localized: "verification.headline", bundle: .module))
+                Text(LoginLocalizedString.string("verification.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
                     .tracking(-1)
@@ -28,7 +29,7 @@ struct VerificationCodeScreen: View {
             }
 
             DSOTPField(
-                label: String(localized: "verification.field.otp", bundle: .module),
+                label: LoginLocalizedString.string("verification.field.otp", locale: locale),
                 code: $viewModel.otpCode
             )
             .padding(.top, headlineToContentSpacing)
@@ -101,7 +102,7 @@ struct VerificationCodeScreen: View {
 
     private var subtitle: some View {
         (
-            Text(String(localized: "verification.subtitle.prefix", bundle: .module))
+            Text(LoginLocalizedString.string("verification.subtitle.prefix", locale: locale))
                 .foregroundColor(DSColor.Text.secondary)
             + Text(viewModel.email)
                 .foregroundColor(DSColor.Text.accent)
@@ -125,7 +126,7 @@ struct VerificationCodeScreen: View {
 
     private var sendAgainButton: some View {
         DSButton(
-            title: String(localized: "verification.link.sendAgain", bundle: .module),
+            title: LoginLocalizedString.string("verification.link.sendAgain", locale: locale),
             type: .tertiary,
             isEnabled: isSendAgainEnabled,
             heightStyle: .small,
@@ -145,9 +146,9 @@ struct VerificationCodeScreen: View {
             viewModel.showFeatureUnderConstruction()
         } label: {
             (
-                Text(String(localized: "verification.link.support.prefix", bundle: .module))
+                Text(LoginLocalizedString.string("verification.link.support.prefix", locale: locale))
                     .foregroundColor(DSColor.Text.secondary)
-                + Text(String(localized: "verification.link.support.action", bundle: .module))
+                + Text(LoginLocalizedString.string("verification.link.support.action", locale: locale))
                     .foregroundColor(DSColor.Text.primary)
                     .underline()
             )
@@ -160,9 +161,9 @@ struct VerificationCodeScreen: View {
     private var confirmButtonTitle: String {
         switch purpose {
         case .signUp, .signIn:
-            String(localized: "verification.button.confirmSignIn", bundle: .module)
+            LoginLocalizedString.string("verification.button.confirmSignIn", locale: locale)
         case .passwordReset:
-            String(localized: "verification.button.confirmPasswordChange", bundle: .module)
+            LoginLocalizedString.string("verification.button.confirmPasswordChange", locale: locale)
         }
     }
 
