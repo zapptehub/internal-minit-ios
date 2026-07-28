@@ -47,6 +47,10 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
         let reference = cardReference(code: code)
         let abortBox = TransactionAbortBox()
 
+        // Unlike `claimExistingCard`, a `null`/uncached first pass here is not a bug:
+        // this method's job is precisely "create the card if it doesn't exist yet", so
+        // the default `withLocalEvents: true` is fine — there's no false-`notFound` risk
+        // to guard against.
         let snapshot = try await runTransaction(on: reference) { currentData in
             if currentData.value == nil || currentData.value is NSNull {
                 currentData.value = [
@@ -84,14 +88,59 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
         return try decodeCard(from: snapshot, fallbackCode: code)
     }
 
+    // NOTE: This method is only exercised manually (simulator + live DB inspection).
+    // `LoyaltyCardRepositoryTests` covers `LoyaltyCardRepositoryImpl` against
+    // `InMemoryLoyaltyCardApi`, which does not go through this Firebase transaction
+    // code at all, so it would not catch a regression here. If we ever stand up a
+    // Firebase emulator harness for tests, this method (and its null/race branches
+    // below) should be the first thing covered.
     public func claimExistingCard(code: String, userId: String) async throws -> LoyaltyCardDto {
+        // Definitive existence check via a normal read (`getData()` is a real server
+        // round-trip). RTDB transaction blocks can still run their *first* pass against
+        // a locally-cached `null` for a path the client has never synced before, even
+        // when the node exists on the server — returning `.abort()` there cancels the
+        // transaction outright instead of letting it resolve, which produced a false
+        // `notFound` for seed cards like `MINIT-SEED-0001`. Doing this authoritative
+        // check up front rules out real `notFound`/`alreadyClaimed` before we ever touch
+        // the transaction.
+        guard let prefetched = try await fetchCard(code: code) else {
+            throw LoyaltyCardError.notFound
+        }
+        if let existingOwner = Self.nonEmptyString(from: prefetched.ownerUserId),
+           existingOwner != userId {
+            throw LoyaltyCardError.alreadyClaimed
+        }
+        if Self.nonEmptyString(from: prefetched.ownerUserId) == userId {
+            return prefetched
+        }
+
         let reference = cardReference(code: code)
         let abortBox = TransactionAbortBox()
+        let fallbackPoints = prefetched.points ?? 0
 
-        let snapshot = try await runTransaction(on: reference) { currentData in
-            guard currentData.value != nil, !(currentData.value is NSNull) else {
-                abortBox.reason = .notFound
-                return .abort()
+        // `withLocalEvents: false` does *not* change what data the update block below
+        // sees (per FIRDatabaseReference.h it only suppresses intermediate values from
+        // being delivered to *other* listeners on this path) — it's kept here purely so
+        // any other screen observing this card doesn't briefly flash our optimistic
+        // guess before the transaction's final, server-confirmed state lands.
+        let snapshot = try await runTransaction(on: reference, withLocalEvents: false) { currentData in
+            if currentData.value == nil || currentData.value is NSNull {
+                // Still null after the pre-read (concurrent delete, or a genuine
+                // cache miss): propose the claim from the prefetched snapshot rather
+                // than aborting. If the node actually still exists server-side, this
+                // write will conflict with the real data — per RTDB's documented
+                // "stale data" retry, the SDK re-invokes this block with the real
+                // dictionary and we fall into the branch below instead of silently
+                // committing wrong data. Rules-side, an existing card also requires
+                // `newData.points === data.points`, so a stale `fallbackPoints` guess
+                // here would be rejected (surfacing as a thrown error) rather than
+                // corrupting the stored value.
+                currentData.value = [
+                    "code": code,
+                    "ownerUserId": userId,
+                    "points": fallbackPoints
+                ]
+                return .success(withValue: currentData)
             }
 
             guard var dictionary = currentData.value as? [String: Any] else {
@@ -143,10 +192,11 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
 
     private func runTransaction(
         on reference: DatabaseReference,
+        withLocalEvents: Bool = true,
         update: @escaping (MutableData) -> TransactionResult
     ) async throws -> DataSnapshot {
         try await withCheckedThrowingContinuation { continuation in
-            reference.runTransactionBlock(update) { error, committed, snapshot in
+            reference.runTransactionBlock(update, andCompletionBlock: { error, committed, snapshot in
                 if let error {
                     continuation.resume(
                         throwing: LoyaltyCardError.underlying(error.localizedDescription)
@@ -166,7 +216,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
                     return
                 }
                 continuation.resume(returning: snapshot)
-            }
+            }, withLocalEvents: withLocalEvents)
         }
     }
 
