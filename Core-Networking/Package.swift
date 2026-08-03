@@ -11,6 +11,11 @@ let package = Package(
         .target(
             name: "CoreNetworking",
             path: "Sources/CoreNetworking"
+        ),
+        .testTarget(
+            name: "CoreNetworkingTests",
+            dependencies: ["CoreNetworking"],
+            path: "Tests/CoreNetworkingTests"
         )
     ]
 )
