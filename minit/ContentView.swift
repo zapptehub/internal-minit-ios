@@ -75,8 +75,12 @@ struct ContentView: View {
             unauthenticatedFlow
         case .onboarding(let userId):
             onboardingFlow(userId: userId)
-        case .authenticated:
-            FeatureTabRoot.createScreen(onLogOut: appFlow.logOut)
+        case .authenticated(let userId):
+            FeatureTabRoot.createScreen(
+                userId: userId,
+                profileRepository: AppDependencies.shared.profileRepository,
+                onLogOut: appFlow.logOut
+            )
         }
     }
 
@@ -156,7 +160,7 @@ struct ContentView: View {
             appLanguagePreference: AppDependencies.shared.appLanguagePreference,
             analytics: AppDependencies.shared.onboardingAnalytics,
             onCompleted: {
-                appFlow.didCompleteOnboarding()
+                appFlow.didCompleteOnboarding(userId: userId)
             }
         )
     }

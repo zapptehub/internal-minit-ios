@@ -9,20 +9,25 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Core-DesignSystem"),
-        .package(path: "../Core-Extensions")
+        .package(path: "../Core-Extensions"),
+        .package(path: "../Data-Profile")
     ],
     targets: [
         .target(
             name: "FeatureHome",
             dependencies: [
                 .product(name: "DesignSystem", package: "Core-DesignSystem"),
-                .product(name: "CoreExtensions", package: "Core-Extensions")
+                .product(name: "CoreExtensions", package: "Core-Extensions"),
+                .product(name: "DataProfile", package: "Data-Profile")
             ],
             path: "Sources/FeatureHome"
         ),
         .testTarget(
             name: "FeatureHomeTests",
-            dependencies: ["FeatureHome"],
+            dependencies: [
+                "FeatureHome",
+                .product(name: "DataProfile", package: "Data-Profile")
+            ],
             path: "Tests/FeatureHomeTests"
         )
     ]

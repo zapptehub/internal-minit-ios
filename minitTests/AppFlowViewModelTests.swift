@@ -83,7 +83,7 @@ final class AppFlowViewModelTests: XCTestCase {
 
         await vm.bootstrap()
 
-        XCTAssertEqual(vm.state, .authenticated)
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
         XCTAssertNil(vm.restoredLocale)
     }
 
@@ -136,7 +136,7 @@ final class AppFlowViewModelTests: XCTestCase {
         vm.retryBootstrap()
         await settle()
 
-        XCTAssertEqual(vm.state, .authenticated)
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
         XCTAssertEqual(auth.currentSessionCallCount, 1, "Retry should not re-hit session restore")
     }
 
@@ -150,7 +150,7 @@ final class AppFlowViewModelTests: XCTestCase {
         vm.didLogIn(AuthData(token: "t", userId: "user-1"))
         await settle()
 
-        XCTAssertEqual(vm.state, .authenticated)
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
     }
 
     func testDidLogInWithoutCardMountsOnboarding() async {
@@ -181,16 +181,16 @@ final class AppFlowViewModelTests: XCTestCase {
 
     func testDidCompleteOnboardingEntersAuthenticated() {
         let vm = makeViewModel()
-        vm.didCompleteOnboarding()
-        XCTAssertEqual(vm.state, .authenticated)
+        vm.didCompleteOnboarding(userId: "user-1")
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
         XCTAssertNil(vm.restoredLocale)
     }
 
     func testLogOutCallsRepositoryAndReturnsUnauthenticated() async {
         let auth = FakeAuthRepository()
         let vm = makeViewModel(auth: auth)
-        vm.didCompleteOnboarding()
-        XCTAssertEqual(vm.state, .authenticated)
+        vm.didCompleteOnboarding(userId: "user-1")
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
 
         vm.logOut()
         await settle()

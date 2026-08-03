@@ -1,3 +1,4 @@
+import DataProfile
 import DesignSystem
 import FeatureCard
 import FeatureGame
@@ -7,12 +8,18 @@ import FeatureOffers
 import SwiftUI
 
 struct TabRootView: View {
+    let userId: String
+    let profileRepository: ProfileRepository
     let onLogOut: () -> Void
     @State private var selectedTab: AppTab = .home
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            FeatureHome.createScreen(onLogOut: onLogOut)
+            FeatureHome.createScreen(
+                userId: userId,
+                profileRepository: profileRepository,
+                onLogOut: onLogOut
+            )
                 .tabItem { tabLabel(for: .home) }
                 .tag(AppTab.home)
 

@@ -1,23 +1,23 @@
 import SwiftUI
-import DesignSystem
 
-/// Generic (parameterized) loyalty-card visual: a rank badge + title/subtitle, a large
-/// points value, a decorative illustration that sits *behind* the foreground content
-/// (including partially under the "Loyalty Card" chip), and a full-width chip pill.
+/// Parameterized loyalty-card visual: rank badge + title/subtitle, large points value,
+/// decorative illustration behind foreground content, and a full-width chip pill.
 ///
-/// Feature-local per the Task 2.1 mapping — highly bespoke/illustration-driven, no
-/// design-system equivalent (`DSCard` doesn't accommodate the rank ring, large points
-/// number, or bleeding illustration). `LoyaltyCardPreview` is a thin preset wrapper
-/// around this for the onboarding loyalty-decision screen; a future real "my card"
-/// screen can reuse this same view with live repository data instead of duplicating it.
-struct LoyaltyCard: View {
+/// Used by onboarding's marketing preview and Home's live (currently hardcoded) card.
+public struct LoyaltyCard: View {
     let rankTitle: String
     let rankSubtitle: String
     let points: Int
     let chipLabel: String
     /// Decorative rank-ring fill fraction (0...1). Purely marketing art for now — there
-    /// is no real "rank progress" backend concept yet (see the Task 1.1 checklist).
+    /// is no real "rank progress" backend concept yet.
     var rankProgress: Double = 0.75
+    /// Home sits the card on a solid orange field where the shared card shadow reads too
+    /// heavy; onboarding keeps the default shadow over the gradient.
+    var showsShadow: Bool = true
+    /// Tapping the chip is a no-op until a real destination exists (e.g. onboarding's
+    /// marketing preview); Home passes a closure that presents the full-screen QR detail.
+    var onChipTap: (() -> Void)?
     @Environment(\.locale) private var locale
 
     /// Figma default display size for the hero points number; scales with Dynamic Type.
@@ -29,21 +29,37 @@ struct LoyaltyCard: View {
     /// never renders shorter (e.g. with a smaller locale's shorter rank subtitle).
     private static let minHeight: CGFloat = 200
     private static let badgeDiameter: CGFloat = 40
-    private static let badgeDiscDiameter: CGFloat = 28
     private static let badgeIconSize: CGFloat = 18
     private static let badgeRingWidth: CGFloat = 2.5
     /// Matches `minitArmorIcon`'s own gradient dark stop (`#C91157`) so the ring's solid
     /// arc reads as the same brand pink as the glyph it surrounds.
     private static let rankAccent = Color(red: 0.788, green: 0.067, blue: 0.341)
     private static let rankTrack = Color(red: 0.969, green: 0.827, blue: 0.878)
-    private static let rankDisc = Color(red: 0.984, green: 0.906, blue: 0.933)
 
     /// Figma display size for `minitCashPersonImage`. Drawn first in a `ZStack` so the
     /// header / points / chip sit on top of it — matching Figma where the illustration
     /// tucks partially under the loyalty-card button.
     private static let illustrationSize = CGSize(width: 205, height: 130)
 
-    var body: some View {
+    public init(
+        rankTitle: String,
+        rankSubtitle: String,
+        points: Int,
+        chipLabel: String,
+        rankProgress: Double = 0.75,
+        showsShadow: Bool = true,
+        onChipTap: (() -> Void)? = nil
+    ) {
+        self.rankTitle = rankTitle
+        self.rankSubtitle = rankSubtitle
+        self.points = points
+        self.chipLabel = chipLabel
+        self.rankProgress = rankProgress
+        self.showsShadow = showsShadow
+        self.onChipTap = onChipTap
+    }
+
+    public var body: some View {
         // `.topTrailing` + matching top padding aligns the illustration's top edge
         // with the header row (instead of centering across the whole card, which sat
         // too low) while keeping it flush against the trailing edge — its bottom
@@ -67,12 +83,11 @@ struct LoyaltyCard: View {
         .frame(maxWidth: .infinity, minHeight: Self.minHeight, alignment: .leading)
         .background(DSColor.Background.Layer.level0)
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        // Shared with `DSStatusCard` — see `dsCardShadow()`'s doc comment.
-        .dsCardShadow()
+        .modifier(LoyaltyCardShadowModifier(isEnabled: showsShadow))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             String(
-                format: OnboardingLocalizedString.string("onboarding.a11y.loyaltyCardSummary", locale: locale),
+                format: DesignSystemLocalizedString.string("common.a11y.loyaltyCardSummary", locale: locale),
                 rankTitle,
                 rankSubtitle,
                 Self.pointsString(points)
@@ -97,8 +112,7 @@ struct LoyaltyCard: View {
     }
 
     /// Pale dashed track + solid brand-pink progress arc behind a small filled disc
-    /// holding the `minitArmor` glyph — not a plain flat icon (see the Task 1.1
-    /// checklist correction against the Figma reference).
+    /// holding the `minitArmor` glyph.
     private var rankBadge: some View {
         ZStack {
             Circle()
@@ -139,24 +153,37 @@ struct LoyaltyCard: View {
         return String(result.reversed())
     }
 
-    /// Purely decorative for now — no card/QR screen exists yet to navigate to (see the
-    /// Task 1.1 checklist), so the action is a no-op until that destination lands.
     private var chip: some View {
         DSButton(
             title: chipLabel,
             type: .loyaltyCard,
             icon: .minitQrCode,
             heightStyle: .large
-        ) { }
+        ) {
+            onChipTap?()
+        }
+    }
+}
+
+private struct LoyaltyCardShadowModifier: ViewModifier {
+    let isEnabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.dsCardShadow()
+        } else {
+            content
+        }
     }
 }
 
 #Preview("LoyaltyCard") {
     LoyaltyCard(
-        rankTitle: "Rank Up",
-        rankSubtitle: "Earn unique benefits",
-        points: 1410,
-        chipLabel: "Loyalty Card"
+        rankTitle: "Silver",
+        rankSubtitle: "540 pts until Platinum",
+        points: 3210,
+        chipLabel: "Minit Card"
     )
     .padding()
     .background(Color(white: 0.95))

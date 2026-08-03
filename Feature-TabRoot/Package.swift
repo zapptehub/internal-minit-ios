@@ -10,6 +10,7 @@ let package = Package(
     dependencies: [
         .package(path: "../Core-DesignSystem"),
         .package(path: "../Core-Extensions"),
+        .package(path: "../Data-Profile"),
         .package(path: "../Feature-Home"),
         .package(path: "../Feature-Offers"),
         .package(path: "../Feature-Map"),
@@ -22,6 +23,7 @@ let package = Package(
             dependencies: [
                 .product(name: "DesignSystem", package: "Core-DesignSystem"),
                 .product(name: "CoreExtensions", package: "Core-Extensions"),
+                .product(name: "DataProfile", package: "Data-Profile"),
                 .product(name: "FeatureHome", package: "Feature-Home"),
                 .product(name: "FeatureOffers", package: "Feature-Offers"),
                 .product(name: "FeatureMap", package: "Feature-Map"),
@@ -32,7 +34,10 @@ let package = Package(
         ),
         .testTarget(
             name: "FeatureTabRootTests",
-            dependencies: ["FeatureTabRoot"],
+            dependencies: [
+                "FeatureTabRoot",
+                .product(name: "DataProfile", package: "Data-Profile")
+            ],
             path: "Tests/FeatureTabRootTests"
         )
     ]

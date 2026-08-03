@@ -1,3 +1,4 @@
+import DataProfile
 import XCTest
 @testable import FeatureTabRoot
 
@@ -11,6 +12,16 @@ final class FeatureTabRootTests: XCTestCase {
 
     @MainActor
     func testCreateScreenBuilds() {
-        _ = FeatureTabRoot.createScreen(onLogOut: {})
+        _ = FeatureTabRoot.createScreen(
+            userId: "user-1",
+            profileRepository: StubProfileRepository(),
+            onLogOut: {}
+        )
     }
+}
+
+private struct StubProfileRepository: ProfileRepository {
+    func saveProfile(userId: String, name: String, surname: String, email: String) async throws {}
+    func updateName(userId: String, name: String) async throws {}
+    func fetchProfile(userId: String) async throws -> ProfileData? { nil }
 }

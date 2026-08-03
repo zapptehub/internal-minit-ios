@@ -11,6 +11,8 @@ public enum DSImage {
     case minitCashPerson
     /// Placeholder avatar for the Home header profile button.
     case mockUserProfile
+    /// Placeholder QR artwork for the full-screen "My loyalty card" detail view.
+    case mockQrCode
 
     public var image: Image {
         switch self {
@@ -18,6 +20,7 @@ public enum DSImage {
         case .startHero: return Image("Image/StartHero", bundle: .module)
         case .minitCashPerson: return Image("Image/minitCashPersonImage", bundle: .module)
         case .mockUserProfile: return Image("Image/mockUserProfile", bundle: .module)
+        case .mockQrCode: return Image("Image/mockQrCode", bundle: .module)
         }
     }
 }

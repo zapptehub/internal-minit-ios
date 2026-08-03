@@ -34,7 +34,7 @@ final class AppFlowViewModel {
         case onboardingStatusFailed(userId: String)
         case unauthenticated
         case onboarding(userId: String)
-        case authenticated
+        case authenticated(userId: String)
     }
 
     private(set) var state: State = .loading
@@ -99,9 +99,9 @@ final class AppFlowViewModel {
 
     /// `FeatureOnboarding`'s `onCompleted` callback — fires only after "Enter Minit" is
     /// tapped with a confirmed linked card (in-flow completion), never from bootstrap.
-    func didCompleteOnboarding() {
+    func didCompleteOnboarding(userId: String) {
         restoredLocale = nil
-        state = .authenticated
+        state = .authenticated(userId: userId)
     }
 
     /// Signs the user out and returns them to the unauthenticated flow (e.g. from the
@@ -121,7 +121,7 @@ final class AppFlowViewModel {
         do {
             if try await loyaltyCardRepository.fetchLinkedCard(userId: userId) != nil {
                 restoredLocale = nil
-                state = .authenticated
+                state = .authenticated(userId: userId)
                 return
             }
 
