@@ -11,6 +11,11 @@ let package = Package(
         .target(
             name: "CoreLogging",
             path: "Sources/CoreLogging"
+        ),
+        .testTarget(
+            name: "CoreLoggingTests",
+            dependencies: ["CoreLogging"],
+            path: "Tests/CoreLoggingTests"
         )
     ]
 )

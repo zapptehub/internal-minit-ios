@@ -1,15 +1,43 @@
 import Foundation
 import os
 
+/// Abstracts `LogFileWriter.write(_:)` so `AppLogger`'s level-dispatch and message formatting
+/// can be verified against a fake in tests, without touching the real singleton or filesystem.
+protocol LogFileWriting: Sendable {
+    func write(_ line: String) async
+}
+
+extension LogFileWriter: LogFileWriting {}
+
 public struct AppLogger: Sendable {
     private let subsystem: String
     private let category: String
     private let osLogger: Logger
+    private let writer: LogFileWriting
+    private let isFileLoggingEnabled: @Sendable () -> Bool
 
     public init(subsystem: String, category: String) {
+        self.init(
+            subsystem: subsystem,
+            category: category,
+            writer: LogFileWriter.shared,
+            isFileLoggingEnabled: { LoggingConfiguration.fileLoggingEnabled }
+        )
+    }
+
+    init(
+        subsystem: String,
+        category: String,
+        writer: LogFileWriting,
+        isFileLoggingEnabled: @escaping @Sendable () -> Bool = {
+            LoggingConfiguration.fileLoggingEnabled
+        }
+    ) {
         self.subsystem = subsystem
         self.category = category
         self.osLogger = Logger(subsystem: subsystem, category: category)
+        self.writer = writer
+        self.isFileLoggingEnabled = isFileLoggingEnabled
     }
 
     public func debug(_ message: String, file: String = #fileID) {
@@ -50,11 +78,11 @@ public struct AppLogger: Sendable {
     }()
 
     private func writeToFile(level: String, message: String) {
-        guard LoggingConfiguration.fileLoggingEnabled else { return }
+        guard isFileLoggingEnabled() else { return }
         let timestamp = AppLogger.timestampFormatter.string(from: Date())
         let line = "\(timestamp) [\(level)] \(subsystem)/\(category) — \(message)"
         Task {
-            await LogFileWriter.shared.write(line)
+            await writer.write(line)
         }
     }
 }

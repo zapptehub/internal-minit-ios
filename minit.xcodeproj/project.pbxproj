@@ -29,6 +29,16 @@
 		FAA3D0DB300A874B00181699 /* OnboardingTestUtilities in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FA2FB66BC03C314F9F8B6952 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FA4312982FF234DE00B7DC6A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FA43129F2FF234DE00B7DC6A;
+			remoteInfo = minit;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		FA4312A02FF234DE00B7DC6A /* minit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = minit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAE652F2AA05AD4C85B81515 /* minitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = minitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -48,6 +58,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FA2988685A4D564F21B27BAA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FA43129D2FF234DE00B7DC6A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -72,13 +89,6 @@
 				FA6AA74D30069752006AE0DD /* FirebaseAuth in Frameworks */,
 				FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */,
 				FA7F73B02FF42D590032754F /* LoginTestUtilities in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		FA2988685A4D564F21B27BAA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -227,14 +237,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		FA43129E2FF234DE00B7DC6A /* Resources */ = {
+		FA0B7B31D2D5474DB0A78A27 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		FA0B7B31D2D5474DB0A78A27 /* Resources */ = {
+		FA43129E2FF234DE00B7DC6A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -244,13 +254,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		FA43129C2FF234DE00B7DC6A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FA08073F2F9413445994EEAE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -258,17 +261,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXSourcesBuildPhase section */
-
-/* Begin PBXContainerItemProxy section */
-		FA2FB66BC03C314F9F8B6952 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = FA4312982FF234DE00B7DC6A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = FA43129F2FF234DE00B7DC6A;
-			remoteInfo = minit;
+		FA43129C2FF234DE00B7DC6A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXContainerItemProxy section */
+/* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		FA4FB7DD5B44AD4443B9134F /* PBXTargetDependency */ = {
@@ -279,6 +279,29 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		FA0849831F9A684FFEA7F148 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = saleseverest.minitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/minit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/minit";
+			};
+			name = Release;
+		};
 		FA4312A92FF234DF00B7DC6A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -501,29 +524,6 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/minit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/minit";
 			};
 			name = Debug;
-		};
-		FA0849831F9A684FFEA7F148 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = saleseverest.minitTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/minit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/minit";
-			};
-			name = Release;
 		};
 /* End XCBuildConfiguration section */
 

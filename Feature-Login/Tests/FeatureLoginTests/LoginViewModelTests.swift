@@ -1,6 +1,7 @@
 import XCTest
 @testable import FeatureLogin
 import DataAuth
+import CoreExtensions
 
 @MainActor
 final class LoginViewModelTests: XCTestCase {
@@ -386,16 +387,181 @@ final class LoginViewModelTests: XCTestCase {
         XCTAssertNil(vm.errorMessage)
         XCTAssertEqual(vm.state, .idle)
     }
+
+    func testContinueFromEmailFailureSetsErrorAndDoesNotNavigate() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+
+        vm.continueFromEmail()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertTrue(vm.path.isEmpty)
+    }
+
+    func testSubmitCreateAccountFailureSetsErrorAndDoesNotNavigate() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "new@minit.com"
+        vm.password = "password"
+        vm.confirmPassword = "password"
+
+        vm.submitCreateAccount()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertTrue(vm.path.isEmpty)
+    }
+
+    func testSubmitSignInFailureSetsErrorAndDoesNotNavigate() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+        vm.password = "password"
+
+        vm.submitSignIn()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertTrue(vm.path.isEmpty)
+    }
+
+    func testSubmitForgotPasswordFailureSetsErrorAndDoesNotNavigate() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+
+        vm.submitForgotPasswordEmail()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertTrue(vm.path.isEmpty)
+    }
+
+    func testResendCodeFailureSetsErrorWithoutRestartingCountdown() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+        vm.otpCode = "1234"
+        vm.resendCountdownSeconds = 0
+
+        vm.resendCode()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.otpCode, "1234")
+        XCTAssertEqual(vm.resendCountdownSeconds, 0)
+    }
+
+    func testConfirmSignUpFailureSetsErrorWithoutAuthenticating() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "new@minit.com"
+        vm.password = "password"
+        vm.otpCode = "1234"
+
+        vm.confirmVerification(purpose: .signUp)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertNil(vm.state.authData)
+    }
+
+    func testConfirmSignInFailureSetsErrorWithoutAuthenticating() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+        vm.password = "password"
+        vm.otpCode = "1234"
+
+        vm.confirmVerification(purpose: .signIn)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertNil(vm.state.authData)
+    }
+
+    func testConfirmPasswordResetFailureSetsErrorWithoutCompletingReset() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+        vm.otpCode = "1234"
+
+        vm.confirmVerification(purpose: .passwordReset)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertFalse(vm.passwordResetCompleted)
+    }
+
+    func testClearErrorResetsErrorMessageToNil() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+        vm.login()
+        XCTAssertNotNil(vm.errorMessage, "Precondition: login with empty fields should set an error")
+
+        vm.clearError()
+
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testClearErrorIsANoOpWhenThereIsNoError() {
+        let vm = LoginViewModel(authRepository: MockAuthRepository())
+
+        vm.clearError()
+
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testClearErrorResetsErrorStateToIdle() async {
+        let mockRepo = MockAuthRepository()
+        mockRepo.errorToThrow = MockFailure.expected
+        let vm = LoginViewModel(authRepository: mockRepo)
+        vm.email = "iveta@minitbakery.com"
+
+        vm.continueFromEmail()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+
+        vm.clearError()
+
+        XCTAssertEqual(vm.state, .idle)
+        XCTAssertNil(vm.errorMessage)
+    }
 }
 
 // MARK: - Mock
 
-private final class MockAuthRepository: AuthRepository {
+private enum MockFailure: LocalizedError {
+    case expected
+
+    var errorDescription: String? { "Expected repository failure" }
+}
+
+private final class MockAuthRepository: AuthRepository, @unchecked Sendable {
     var shouldThrow = false
+    var errorToThrow: Error?
     var logoutCalled = false
     var checkEmailExistsResult = true
 
     func login(email: String, password: String) async throws -> AuthData {
+        if let errorToThrow { throw errorToThrow }
         if shouldThrow { throw NSError(domain: "test", code: 0, userInfo: [NSLocalizedDescriptionKey: "Login failed"]) }
         return AuthData(token: "mock-token", userId: "mock-user")
     }
@@ -404,20 +570,38 @@ private final class MockAuthRepository: AuthRepository {
     func currentSession() async throws -> AuthData? { nil }
 
     func checkEmailExists(email: String) async throws -> Bool {
+        if let errorToThrow { throw errorToThrow }
         if shouldThrow { throw NSError(domain: "test", code: 0) }
         return checkEmailExistsResult
     }
 
     func register(email: String, password: String, marketingOptIn: Bool) async throws -> AuthData {
+        if let errorToThrow { throw errorToThrow }
         if shouldThrow { throw NSError(domain: "test", code: 0) }
         return AuthData(token: "mock-token", userId: "mock-user")
     }
 
     func sendVerificationCode(email: String) async throws {
+        if let errorToThrow { throw errorToThrow }
         if shouldThrow { throw NSError(domain: "test", code: 0) }
     }
 
     func confirmPasswordReset(email: String, code: String) async throws {
+        if let errorToThrow { throw errorToThrow }
         if shouldThrow { throw NSError(domain: "test", code: 0) }
+    }
+}
+
+@MainActor
+private final class TestAppLanguagePreferenceStore: AppLanguagePreferenceStoring {
+    var languageCode: String?
+}
+
+private extension LoginViewModel {
+    convenience init(authRepository: MockAuthRepository) {
+        self.init(
+            authRepository: authRepository as any AuthRepository,
+            appLanguagePreference: TestAppLanguagePreferenceStore()
+        )
     }
 }

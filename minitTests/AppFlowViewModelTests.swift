@@ -162,6 +162,23 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .onboarding(userId: "user-2"))
     }
 
+    func testDidLogInWhenCardLookupFailsShowsRetryableOnboardingStatusFailure() async {
+        let auth = FakeAuthRepository()
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.fetchLinkedCardErrorToThrow = TestError.network
+        let vm = makeViewModel(auth: auth, loyalty: loyalty)
+
+        vm.didLogIn(AuthData(token: "t", userId: "user-2"))
+        await settle()
+
+        XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-2"))
+        XCTAssertEqual(
+            auth.currentSessionCallCount,
+            0,
+            "Post-login routing must use the supplied session instead of restoring it again"
+        )
+    }
+
     func testDidCompleteOnboardingEntersAuthenticated() {
         let vm = makeViewModel()
         vm.didCompleteOnboarding()
