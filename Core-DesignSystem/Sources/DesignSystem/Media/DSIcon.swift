@@ -41,6 +41,26 @@ public enum DSIcon {
     /// typically used directly via `DSIconView` — go through `DSProgressView` instead
     /// so the spin animation stays consistent everywhere loading state is shown.
     case miniLoader
+    /// Tab bar Home selected. Tint via `DSIconView`.
+    case homeSelected
+    /// Tab bar Home unselected.
+    case homeUnselected
+    /// Tab bar Offers selected.
+    case discountSelected
+    /// Tab bar Offers unselected.
+    case discountUnselected
+    /// Tab bar Map selected.
+    case mapSelected
+    /// Tab bar Map unselected.
+    case mapUnselected
+    /// Tab bar Card selected.
+    case cardSelected
+    /// Tab bar Card unselected.
+    case cardUnselected
+    /// Tab bar Game selected.
+    case gameSelected
+    /// Tab bar Game unselected.
+    case gameUnselected
 
     public var image: Image {
         switch self {
@@ -66,6 +86,26 @@ public enum DSIcon {
         case .minitCamera: return Image("Icon/minitCamerIcon", bundle: .module)
         case .miniLoader:
             return Image("Icon/miniLoader", bundle: .module).renderingMode(.template)
+        case .homeSelected:
+            return Image("Icon/minitTabHomeSelected", bundle: .module).renderingMode(.template)
+        case .homeUnselected:
+            return Image("Icon/minitTabHomeUnselected", bundle: .module).renderingMode(.template)
+        case .discountSelected:
+            return Image("Icon/minitTabDiscountSelected", bundle: .module).renderingMode(.template)
+        case .discountUnselected:
+            return Image("Icon/minitTabDiscountUnselected", bundle: .module).renderingMode(.template)
+        case .mapSelected:
+            return Image("Icon/minitTabMapSelected", bundle: .module).renderingMode(.template)
+        case .mapUnselected:
+            return Image("Icon/minitTabMapUnselected", bundle: .module).renderingMode(.template)
+        case .cardSelected:
+            return Image("Icon/minitTabCardSelected", bundle: .module).renderingMode(.template)
+        case .cardUnselected:
+            return Image("Icon/minitTabCardUnselected", bundle: .module).renderingMode(.template)
+        case .gameSelected:
+            return Image("Icon/minitTabGameSelected", bundle: .module).renderingMode(.template)
+        case .gameUnselected:
+            return Image("Icon/minitTabGameUnselected", bundle: .module).renderingMode(.template)
         }
     }
 }
@@ -124,6 +164,13 @@ public struct DSIconView: View {
             DSIconView(icon: .minitQrCode, renderingMode: .original)
             DSIconView(icon: .minitCamera, renderingMode: .original)
             DSIconView(icon: .miniLoader)
+        }
+        HStack(spacing: DSConstant.medium.value) {
+            DSIconView(icon: .homeSelected, size: 24, color: DSColor.Background.Button.secondary)
+            DSIconView(icon: .discountUnselected, size: 24, color: DSColor.Icon.secondary)
+            DSIconView(icon: .mapUnselected, size: 24, color: DSColor.Icon.secondary)
+            DSIconView(icon: .cardUnselected, size: 24, color: DSColor.Icon.secondary)
+            DSIconView(icon: .gameUnselected, size: 24, color: DSColor.Icon.secondary)
         }
     }
     .padding()
