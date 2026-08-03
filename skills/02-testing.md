@@ -171,12 +171,12 @@ func testRepository_emitsCacheThenFresh() async throws {
 ### Long-running stream with expectation
 
 ```swift
-func testNetworkMonitor_updatesHasNetwork() async {
+func testReachability_updatesWhenConnectionDrops() async {
     let expectation = expectation(description: "network update received")
-    let mockMonitor = MockNetworkMonitor()
+    let mock = MockReachability(isConnected: true)
 
     Task {
-        for await isConnected in mockMonitor.stream {
+        for await isConnected in mock.updates {
             if !isConnected {
                 expectation.fulfill()
                 break
@@ -184,7 +184,7 @@ func testNetworkMonitor_updatesHasNetwork() async {
         }
     }
 
-    mockMonitor.simulateConnectionChange(false)
+    mock.simulateConnectionChange(false)
     await fulfillment(of: [expectation], timeout: 2.0)
 }
 ```

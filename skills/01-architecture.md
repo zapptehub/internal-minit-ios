@@ -59,16 +59,25 @@ Each Feature module defines its own `<Domain>AnalyticsTracking` protocol (scoped
 
 ### `Core-Networking` — shared networking protocol package
 
-`Core-Networking` is a Core-layer SPM package that defines the shared `NetworkClient` protocol, `HTTPMethod`, and `NetworkError` types. All Data modules import it instead of each owning a local copy.
+`Core-Networking` is a Core-layer SPM package that defines the shared `NetworkClient`
+protocol, `HTTPMethod`, `NetworkError`, and `Reachability` types. All Data modules
+import it instead of each owning a local copy. Concrete transport and path monitoring
+stay in the App target so this package remains Foundation-only (no `Network` framework).
 
 ```
 Core-Networking/
   Package.swift                        ← zero external deps; one library product
   Sources/CoreNetworking/
     NetworkClient.swift                ← protocol NetworkClient + HTTPMethod + NetworkError
+    Reachability.swift                 ← protocol Reachability (isConnected + updates stream)
 ```
 
-The App target provides a single concrete `NetworkClientImpl` (or adapts its existing `APIClient`) and passes it into each `<Domain>DataModule`. No per-module adapter class is needed.
+The App target provides:
+- `NetworkClientImpl` — `URLSession` implementation, passed into each `<Domain>DataModule`
+- `PathReachability` — `NWPathMonitor`-backed `Reachability`, exposed on `AppDependencies`
+  for Features to inject later
+
+No per-module adapter class is needed for either.
 
 ---
 

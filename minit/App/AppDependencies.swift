@@ -1,5 +1,6 @@
 import CoreLogging
 import CoreExtensions
+import CoreNetworking
 import DataAuth
 import DataProfile
 import DataLoyaltyCard
@@ -12,6 +13,8 @@ final class AppDependencies {
     static let shared = AppDependencies()
 
     let networkClient: NetworkClientImpl
+    /// Live path reachability for Features to inject later (no UI wiring yet).
+    let reachability: any Reachability
     let authDataModule: AuthDataModule
     let authRepository: AuthRepository
     let profileDataModule: ProfileDataModule
@@ -33,6 +36,7 @@ final class AppDependencies {
     private init() {
         let networkClient = NetworkClientImpl(baseURL: "https://api.minit.app")
         self.networkClient = networkClient
+        self.reachability = PathReachability()
 
         let authDataModule = AuthDataModule(networkClient: networkClient)
         self.authDataModule = authDataModule
