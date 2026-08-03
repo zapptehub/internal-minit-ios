@@ -11,6 +11,7 @@ import CoreExtensions
 import FeatureLogin
 import FeatureStart
 import FeatureOnboarding
+import FeatureTabRoot
 
 /// Which of the two sequential, mutually-exclusive sheets is on screen. Using a single
 /// `.sheet(item:)` bound to this — rather than two stacked `.sheet(isPresented:)` modifiers
@@ -75,7 +76,7 @@ struct ContentView: View {
         case .onboarding(let userId):
             onboardingFlow(userId: userId)
         case .authenticated:
-            DashboardPlaceholderView(onLogOut: appFlow.logOut)
+            FeatureTabRoot.createScreen(onLogOut: appFlow.logOut)
         }
     }
 
@@ -158,36 +159,5 @@ struct ContentView: View {
                 appFlow.didCompleteOnboarding()
             }
         )
-    }
-}
-
-/// Stand-in for the real dashboard until that screen exists. Owns its own Log Out
-/// loading state so it resets whenever `.authenticated` remounts after a re-login
-/// (a `@State` on `ContentView` would otherwise stay `true` across the handoff).
-private struct DashboardPlaceholderView: View {
-    let onLogOut: () -> Void
-    @State private var isLoggingOut = false
-
-    var body: some View {
-        VStack(spacing: DSConstant.large.value) {
-            Spacer()
-            VStack(spacing: DSConstant.medium.value) {
-                Text("Dashboard")
-                    .typography(.headingMediumBold)
-                    .foregroundColor(DSColor.Text.heading)
-                Text("This screen is under construction. Check back soon!")
-                    .typography(.paragraphRegular)
-                    .foregroundColor(DSColor.Text.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Spacer()
-            DSButton(title: "Log Out", type: .primary, isLoading: isLoggingOut) {
-                isLoggingOut = true
-                onLogOut()
-            }
-        }
-        .padding(DSConstant.xxLarge.value)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DSColor.Background.Layer.level0.ignoresSafeArea())
     }
 }

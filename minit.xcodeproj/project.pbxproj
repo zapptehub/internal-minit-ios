@@ -27,6 +27,7 @@
 		FAA3D0D6300A863C00181699 /* DataLoyaltyCard in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0D5300A863C00181699 /* DataLoyaltyCard */; };
 		FAA3D0D9300A874B00181699 /* FeatureOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0D8300A874B00181699 /* FeatureOnboarding */; };
 		FAA3D0DB300A874B00181699 /* OnboardingTestUtilities in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */; };
+		FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */ = {isa = PBXBuildFile; productRef = FAC0E116300B010100181707 /* FeatureTabRoot */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,6 +90,7 @@
 				FA6AA74D30069752006AE0DD /* FirebaseAuth in Frameworks */,
 				FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */,
 				FA7F73B02FF42D590032754F /* LoginTestUtilities in Frameworks */,
+				FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +155,7 @@
 				FAA3D0D5300A863C00181699 /* DataLoyaltyCard */,
 				FAA3D0D8300A874B00181699 /* FeatureOnboarding */,
 				FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */,
+				FAC0E116300B010100181707 /* FeatureTabRoot */,
 			);
 			productName = minit;
 			productReference = FA4312A02FF234DE00B7DC6A /* minit.app */;
@@ -224,6 +227,12 @@
 				FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				FAA3D0D4300A863C00181699 /* XCLocalSwiftPackageReference "Data-LoyaltyCard" */,
 				FAA3D0D7300A874B00181699 /* XCLocalSwiftPackageReference "Feature-Onboarding" */,
+				FAC0E110300B010100181701 /* XCLocalSwiftPackageReference "Feature-Home" */,
+				FAC0E111300B010100181702 /* XCLocalSwiftPackageReference "Feature-Offers" */,
+				FAC0E112300B010100181703 /* XCLocalSwiftPackageReference "Feature-Map" */,
+				FAC0E113300B010100181704 /* XCLocalSwiftPackageReference "Feature-Card" */,
+				FAC0E114300B010100181705 /* XCLocalSwiftPackageReference "Feature-Game" */,
+				FAC0E115300B010100181706 /* XCLocalSwiftPackageReference "Feature-TabRoot" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FA4312A12FF234DE00B7DC6A /* Products */;
@@ -602,6 +611,30 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "Feature-Onboarding";
 		};
+		FAC0E110300B010100181701 /* XCLocalSwiftPackageReference "Feature-Home" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-Home";
+		};
+		FAC0E111300B010100181702 /* XCLocalSwiftPackageReference "Feature-Offers" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-Offers";
+		};
+		FAC0E112300B010100181703 /* XCLocalSwiftPackageReference "Feature-Map" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-Map";
+		};
+		FAC0E113300B010100181704 /* XCLocalSwiftPackageReference "Feature-Card" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-Card";
+		};
+		FAC0E114300B010100181705 /* XCLocalSwiftPackageReference "Feature-Game" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-Game";
+		};
+		FAC0E115300B010100181706 /* XCLocalSwiftPackageReference "Feature-TabRoot" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Feature-TabRoot";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -702,6 +735,10 @@
 		FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = OnboardingTestUtilities;
+		};
+		FAC0E116300B010100181707 /* FeatureTabRoot */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FeatureTabRoot;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
