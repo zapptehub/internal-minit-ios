@@ -118,7 +118,7 @@ struct ProcessingScanScreen: View {
             analytics: PreviewOnboardingAnalyticsTracking()
         )
     }
-    .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+    .background(LinearGradient.minitBackground.ignoresSafeArea())
 }
 
 #Preview("ProcessingScanScreen — success") {
@@ -141,7 +141,7 @@ struct ProcessingScanScreen: View {
             analytics: PreviewOnboardingAnalyticsTracking()
         )
     }
-    .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+    .background(LinearGradient.minitBackground.ignoresSafeArea())
 }
 
 #Preview("ProcessingScanScreen — already-claimed alert") {
@@ -163,5 +163,5 @@ struct ProcessingScanScreen: View {
             analytics: PreviewOnboardingAnalyticsTracking()
         )
     }
-    .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+    .background(LinearGradient.minitBackground.ignoresSafeArea())
 }

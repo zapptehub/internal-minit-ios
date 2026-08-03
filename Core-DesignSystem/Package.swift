@@ -7,9 +7,15 @@ let package = Package(
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"])
     ],
+    dependencies: [
+        .package(path: "../Core-Extensions")
+    ],
     targets: [
         .target(
             name: "DesignSystem",
+            dependencies: [
+                .product(name: "CoreExtensions", package: "Core-Extensions")
+            ],
             path: "Sources/DesignSystem",
             resources: [.process("Resources")]
         ),

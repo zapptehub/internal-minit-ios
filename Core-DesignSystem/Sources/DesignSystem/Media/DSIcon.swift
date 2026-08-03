@@ -61,6 +61,8 @@ public enum DSIcon {
     case gameSelected
     /// Tab bar Game unselected.
     case gameUnselected
+    /// Notification bell for the Home header (white glyph on glass circle).
+    case minitBell
 
     public var image: Image {
         switch self {
@@ -106,6 +108,8 @@ public enum DSIcon {
             return Image("Icon/minitTabGameSelected", bundle: .module).renderingMode(.template)
         case .gameUnselected:
             return Image("Icon/minitTabGameUnselected", bundle: .module).renderingMode(.template)
+        case .minitBell:
+            return Image("Icon/minitBell", bundle: .module).renderingMode(.template)
         }
     }
 }

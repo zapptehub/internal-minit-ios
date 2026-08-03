@@ -9,12 +9,15 @@ public enum DSImage {
     /// Decorative line-art illustration on the onboarding loyalty-card preview
     /// ("Rank Up" card, name/language → loyalty-decision screens).
     case minitCashPerson
+    /// Placeholder avatar for the Home header profile button.
+    case mockUserProfile
 
     public var image: Image {
         switch self {
         case .minitLogo: return Image("Image/MinitLogo", bundle: .module)
         case .startHero: return Image("Image/StartHero", bundle: .module)
         case .minitCashPerson: return Image("Image/minitCashPersonImage", bundle: .module)
+        case .mockUserProfile: return Image("Image/mockUserProfile", bundle: .module)
         }
     }
 }

@@ -66,7 +66,7 @@ struct OnboardingFlowScreen: View {
                         .transition(stepTransition)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(LinearGradient.onboardingBackground.ignoresSafeArea())
+                .background(LinearGradient.minitBackground.ignoresSafeArea())
                 .animation(.easeInOut(duration: 0.32), value: viewModel.step)
                 .animation(.easeInOut(duration: 0.32), value: viewModel.progressFraction)
             }
