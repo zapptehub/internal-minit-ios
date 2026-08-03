@@ -1,3 +1,4 @@
+import CoreExtensions
 import SwiftUI
 
 /// Full loyalty-card QR detail card, presented from `LoyaltyCard`'s chip tap as a
@@ -5,9 +6,13 @@ import SwiftUI
 /// (`mockQrCode`) until a real per-user code is wired up; the close action is a plain
 /// dismiss until a real wallet-pass integration lands.
 public struct LoyaltyCardDetailView: View {
-    let title: String
-    let closeLabel: String
+    /// `nil` falls back to the localized `common.loyaltyCardDetail.*` strings, resolved
+    /// against `\.locale` at render time — defaults can't be localized in `init`.
+    let title: String?
+    let closeLabel: String?
     let onClose: () -> Void
+
+    @Environment(\.locale) private var locale
 
     /// Figma spec — fixed card height regardless of content, unlike `LoyaltyCard`'s
     /// content-driven `minHeight`.
@@ -16,8 +21,8 @@ public struct LoyaltyCardDetailView: View {
     private static let qrCodeSize: CGFloat = 195
 
     public init(
-        title: String = "My loyalty card",
-        closeLabel: String = "Close",
+        title: String? = nil,
+        closeLabel: String? = nil,
         onClose: @escaping () -> Void
     ) {
         self.title = title
@@ -27,8 +32,8 @@ public struct LoyaltyCardDetailView: View {
 
     public var body: some View {
         VStack(spacing: DSConstant.large.value) {
-            Text(title)
-                .typography(.headingMediumBold)
+            Text(title ?? DesignSystemLocalizedString.string("common.loyaltyCardDetail.title", locale: locale))
+                .typography(.headingLargeSemibold)
                 .foregroundColor(DSColor.Text.heading)
 
             DSImageView(
@@ -39,7 +44,11 @@ public struct LoyaltyCardDetailView: View {
             // Flat #F2F2F2 pill — `.social` is the only `DSButtonType` that renders a
             // plain neutral background regardless of state (see `DSButton`'s
             // `backgroundColor`), so it's reused here instead of a hardcoded literal.
-            DSButton(title: closeLabel, type: .social, heightStyle: .large) {
+            DSButton(
+                title: closeLabel ?? DesignSystemLocalizedString.string("common.loyaltyCardDetail.close", locale: locale),
+                type: .social,
+                heightStyle: .large
+            ) {
                 onClose()
             }
         }

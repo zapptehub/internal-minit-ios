@@ -11,9 +11,11 @@ struct HomeScreen: View {
 
     @State private var userName = ""
     @State private var showsLogOutConfirmation = false
-    @State private var showsUnderConstructionAlert = false
     @State private var showsLoyaltyCardDetail = false
+    @State private var showsNotifications = false
     @State private var isLoggingOut = false
+
+    @Environment(\.locale) private var locale
 
     private static let headerButtonSize: CGFloat = 44
     private static let bellIconSize: CGFloat = 16
@@ -31,19 +33,23 @@ struct HomeScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(LinearGradient.minitBackground.ignoresSafeArea())
         .task { await loadUserName() }
-        .alert("Log Out", isPresented: $showsLogOutConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Log Out", role: .destructive) {
+        .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: $showsLogOutConfirmation) {
+            Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {}
+            Button(HomeLocalizedString.string("home.logOut.title", locale: locale), role: .destructive) {
                 isLoggingOut = true
                 onLogOut()
             }
         } message: {
-            Text("You are logged in. Do you want to log out?")
+            Text(HomeLocalizedString.string("home.logOut.message", locale: locale))
         }
-        .featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
         .dsPopup(isPresented: $showsLoyaltyCardDetail) {
             LoyaltyCardDetailView {
                 showsLoyaltyCardDetail = false
+            }
+        }
+        .fullScreenCover(isPresented: $showsNotifications) {
+            NotificationsScreen {
+                showsNotifications = false
             }
         }
         .disabled(isLoggingOut)
@@ -63,8 +69,9 @@ struct HomeScreen: View {
     /// Time-of-day prefix in inverse white; profile first name in heading brown.
     /// Pink name underline from the mock is deferred.
     private var greeting: some View {
-        (
-            Text("\(Self.timeOfDayGreeting) ")
+        let timeOfDayGreeting = timeOfDayGreeting
+        return (
+            Text("\(timeOfDayGreeting) ")
                 .foregroundColor(DSColor.Text.inverse)
             + Text(userName)
                 .foregroundColor(DSColor.Text.heading)
@@ -72,16 +79,16 @@ struct HomeScreen: View {
         .typography(.headingLargeSemibold)
         .padding(.horizontal, DSConstant.mediumLarge.value)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(Self.timeOfDayGreeting) \(userName)".trimmingCharacters(in: .whitespaces))
+        .accessibilityLabel("\(timeOfDayGreeting) \(userName)".trimmingCharacters(in: .whitespaces))
     }
 
     /// Hardcoded Home mock values until live rank/points wiring lands.
     private var loyaltyCard: some View {
         LoyaltyCard(
-            rankTitle: "Silver",
-            rankSubtitle: "540 pts until Platinum",
+            rankTitle: HomeLocalizedString.string("home.loyaltyCard.rankTitle", locale: locale),
+            rankSubtitle: HomeLocalizedString.string("home.loyaltyCard.rankSubtitle", locale: locale),
             points: 3210,
-            chipLabel: "Minit Card",
+            chipLabel: HomeLocalizedString.string("home.loyaltyCard.chipLabel", locale: locale),
             showsShadow: false
         ) {
             showsLoyaltyCardDetail = true
@@ -100,14 +107,14 @@ struct HomeScreen: View {
             .clipShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Profile")
+        .accessibilityLabel(HomeLocalizedString.string("home.a11y.profile", locale: locale))
     }
 
     @ViewBuilder
     private var bellButton: some View {
         if #available(iOS 26, *) {
             Button {
-                showsUnderConstructionAlert = true
+                showsNotifications = true
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -118,10 +125,10 @@ struct HomeScreen: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .controlSize(.large)
-            .accessibilityLabel("Notifications")
+            .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         } else {
             Button {
-                showsUnderConstructionAlert = true
+                showsNotifications = true
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -134,7 +141,7 @@ struct HomeScreen: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Notifications")
+            .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         }
     }
 
@@ -148,11 +155,11 @@ struct HomeScreen: View {
     }
 
     /// Matches the mock's "Good Morning" copy; switches for afternoon/evening locally.
-    private static var timeOfDayGreeting: String {
+    private var timeOfDayGreeting: String {
         switch Calendar.current.component(.hour, from: Date()) {
-        case 5..<12: return "Good Morning"
-        case 12..<17: return "Good Afternoon"
-        default: return "Good Evening"
+        case 5..<12: return HomeLocalizedString.string("home.greeting.morning", locale: locale)
+        case 12..<17: return HomeLocalizedString.string("home.greeting.afternoon", locale: locale)
+        default: return HomeLocalizedString.string("home.greeting.evening", locale: locale)
         }
     }
 }

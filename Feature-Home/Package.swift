@@ -20,7 +20,8 @@ let package = Package(
                 .product(name: "CoreExtensions", package: "Core-Extensions"),
                 .product(name: "DataProfile", package: "Data-Profile")
             ],
-            path: "Sources/FeatureHome"
+            path: "Sources/FeatureHome",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "FeatureHomeTests",

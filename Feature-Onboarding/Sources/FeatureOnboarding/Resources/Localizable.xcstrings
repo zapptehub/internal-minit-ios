@@ -74,19 +74,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What should I call you?"
+            "value": "What is your name?"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ako ťa mám volať?"
+            "value": "Ako sa voláš?"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hogyan szólítsalak?"
+            "value": "Mi a neved?"
           }
         }
       }

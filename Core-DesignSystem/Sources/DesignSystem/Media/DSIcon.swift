@@ -63,6 +63,12 @@ public enum DSIcon {
     case gameUnselected
     /// Notification bell for the Home header (white glyph on glass circle).
     case minitBell
+    /// Pastry glyph for notification rows (e.g. "First scan of the day").
+    case minitIcBaguette
+    /// Pastry glyph for notification rows (e.g. "New product discovered").
+    case minitIcBretzel
+    /// Small orange coin prefix for "+N pts" labels on notification rows.
+    case minitPointCoin
 
     public var image: Image {
         switch self {
@@ -110,6 +116,12 @@ public enum DSIcon {
             return Image("Icon/minitTabGameUnselected", bundle: .module).renderingMode(.template)
         case .minitBell:
             return Image("Icon/minitBell", bundle: .module).renderingMode(.template)
+        case .minitIcBaguette:
+            return Image("Icon/minitIcBaguette", bundle: .module).renderingMode(.template)
+        case .minitIcBretzel:
+            return Image("Icon/minitIcBretzel", bundle: .module).renderingMode(.template)
+        case .minitPointCoin:
+            return Image("Icon/minitPointCoin", bundle: .module)
         }
     }
 }

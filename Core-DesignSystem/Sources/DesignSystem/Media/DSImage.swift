@@ -13,6 +13,9 @@ public enum DSImage {
     case mockUserProfile
     /// Placeholder QR artwork for the full-screen "My loyalty card" detail view.
     case mockQrCode
+    /// Full-bleed Daily Offer promo art for Notifications (text + imagery baked in).
+    /// Temporary mock until a real pressable banner component lands.
+    case mockBannerDailyOffer
 
     public var image: Image {
         switch self {
@@ -21,6 +24,7 @@ public enum DSImage {
         case .minitCashPerson: return Image("Image/minitCashPersonImage", bundle: .module)
         case .mockUserProfile: return Image("Image/mockUserProfile", bundle: .module)
         case .mockQrCode: return Image("Image/mockQrCode", bundle: .module)
+        case .mockBannerDailyOffer: return Image("Image/mockBannerDailyOffer", bundle: .module)
         }
     }
 }
