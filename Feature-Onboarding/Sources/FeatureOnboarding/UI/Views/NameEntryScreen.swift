@@ -36,6 +36,7 @@ struct NameEntryScreen: View {
                 .tint(DSColor.Text.heading)
                 .textContentType(.givenName)
                 .autocapitalization(.words)
+                .autocorrectionDisabled()
                 .focused($isNameFieldFocused)
                 .submitLabel(.continue)
                 .onSubmit {

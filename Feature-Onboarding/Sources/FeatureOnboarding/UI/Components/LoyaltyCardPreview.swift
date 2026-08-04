@@ -32,7 +32,7 @@ struct LoyaltyCardPreview: View {
 
     private var card: some View {
         LoyaltyCard(
-            rankTitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.rankUp", locale: locale),
+            rankTitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.rankTitle", locale: locale),
             rankSubtitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.benefits", locale: locale),
             points: 1410,
             chipLabel: OnboardingLocalizedString.string("onboarding.loyalty.preview.chip", locale: locale)

@@ -7,7 +7,7 @@ public enum DSImage {
     case minitLogo
     case startHero
     /// Decorative line-art illustration on the onboarding loyalty-card preview
-    /// ("Rank Up" card, name/language → loyalty-decision screens).
+    /// (rank-badge card, name/language → loyalty-decision screens).
     case minitCashPerson
     /// Placeholder avatar for the Home header profile button.
     case mockUserProfile

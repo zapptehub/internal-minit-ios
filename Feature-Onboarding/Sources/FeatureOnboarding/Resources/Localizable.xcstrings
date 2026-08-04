@@ -311,24 +311,24 @@
         }
       }
     },
-    "onboarding.loyalty.preview.rankUp": {
+    "onboarding.loyalty.preview.rankTitle": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rank Up"
+            "value": "Bronze"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rank Up"
+            "value": "Bronz"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rank Up"
+            "value": "Bronz"
           }
         }
       }

@@ -5,8 +5,14 @@ import XCTest
 final class FeatureTabRootTests: XCTestCase {
     func testAppTab_hasFiveTabsInDesignOrder() {
         XCTAssertEqual(
-            AppTab.allCases.map(\.title),
-            ["Home", "Offers", "Map", "Card", "Game"]
+            AppTab.allCases.map(\.titleKey),
+            [
+                "common.tabName.home",
+                "common.tabName.offers",
+                "common.tabName.map",
+                "common.tabName.card",
+                "common.tabName.game"
+            ]
         )
     }
 

@@ -43,7 +43,7 @@ struct ScanningScreen: View {
                 overlay(simulatedScanAction: nil)
             } else if QRScannerView.isRunningInSimulator {
                 overlay(simulatedScanAction: {
-                    viewModel.didScanCode("MINIT-SEED-0001")
+                    viewModel.didScanCode("MINIT-340ECFF7FF")
                 })
             } else {
                 unsupportedFallback

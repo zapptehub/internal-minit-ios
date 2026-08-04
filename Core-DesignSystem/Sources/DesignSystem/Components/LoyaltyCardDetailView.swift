@@ -33,7 +33,7 @@ public struct LoyaltyCardDetailView: View {
     public var body: some View {
         VStack(spacing: DSConstant.large.value) {
             Text(title ?? DesignSystemLocalizedString.string("common.loyaltyCardDetail.title", locale: locale))
-                .typography(.headingLargeSemibold)
+                .typography(.headingMediumBold)
                 .foregroundColor(DSColor.Text.heading)
 
             DSImageView(

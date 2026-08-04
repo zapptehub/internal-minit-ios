@@ -13,6 +13,8 @@ struct TabRootView: View {
     let onLogOut: () -> Void
     @State private var selectedTab: AppTab = .home
 
+    @Environment(\.locale) private var locale
+
     var body: some View {
         TabView(selection: $selectedTab) {
             FeatureHome.createScreen(
@@ -45,6 +47,6 @@ struct TabRootView: View {
     @ViewBuilder
     private func tabLabel(for tab: AppTab) -> some View {
         (selectedTab == tab ? tab.selectedIcon : tab.unselectedIcon).image
-        Text(tab.title)
+        Text(DesignSystemLocalizedString.string(tab.titleKey, locale: locale))
     }
 }

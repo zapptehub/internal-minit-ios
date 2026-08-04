@@ -10,13 +10,16 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
 
     var id: Self { self }
 
-    var title: String {
+    /// Key into `Core-DesignSystem`'s shared `common.tabName.*` catalog — resolved by the
+    /// caller against `\.locale` via `DesignSystemLocalizedString` so the tab bar switches
+    /// language in lockstep with the rest of the app.
+    var titleKey: String {
         switch self {
-        case .home: return "Home"
-        case .offers: return "Offers"
-        case .map: return "Map"
-        case .card: return "Card"
-        case .game: return "Game"
+        case .home: return "common.tabName.home"
+        case .offers: return "common.tabName.offers"
+        case .map: return "common.tabName.map"
+        case .card: return "common.tabName.card"
+        case .game: return "common.tabName.game"
         }
     }
 

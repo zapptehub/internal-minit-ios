@@ -103,6 +103,7 @@ public struct DSInputField: View {
                 DSInputDescription(text: description, color: colors.descriptionColor)
             }
         }
+        .autocorrectionDisabled()
         .disabled(!isEnabled)
     }
 
@@ -253,6 +254,7 @@ private struct DSNumberBoxTextField: UIViewRepresentable {
         textField.delegate = context.coordinator
         textField.keyboardType = .numberPad
         textField.textAlignment = .center
+        textField.autocorrectionType = .no
         // Kept in sync by hand with `FontType.uiLargeRegular` (`.system(size: 17, weight:
         // .regular)`) — there's no public SwiftUI `Font` -> `UIFont` bridge to derive this from.
         textField.font = .systemFont(ofSize: 17, weight: .regular)

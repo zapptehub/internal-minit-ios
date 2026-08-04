@@ -40,6 +40,7 @@ struct EmailEntryScreen: View {
             .tint(DSColor.Text.primary)
             .keyboardType(.emailAddress)
             .autocapitalization(.none)
+            .autocorrectionDisabled()
             .textContentType(.emailAddress)
             .focused($isEmailFieldFocused)
 

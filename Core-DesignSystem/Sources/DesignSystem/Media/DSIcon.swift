@@ -29,7 +29,7 @@ public enum DSIcon {
     /// Branded left-arrow glyph for circular back buttons (onboarding gradient + scanner).
     /// Asset name keeps the designer's spelling (`miniArrowLeft`).
     case miniArrowLeft
-    /// "Rank Up" badge glyph on the onboarding loyalty-card preview.
+    /// Rank badge glyph on the onboarding loyalty-card preview.
     case minitArmor
     /// Grid/QR-style glyph for the onboarding loyalty-card preview's "Loyalty Card" chip.
     case minitQrCode
