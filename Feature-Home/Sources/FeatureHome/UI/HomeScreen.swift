@@ -147,17 +147,59 @@ struct HomeScreen: View {
         }
     }
 
-    /// Flat-color placeholder banners until real Daily Offer artwork/copy is wired up —
-    /// each currently just shows the shared under-construction alert on tap (see
-    /// `DSBannerCarousel`).
+    /// Same "Daily Offer" mock badge/title/image across all three slots (per design), only
+    /// varying `backgroundColor` — each still just shows the shared under-construction
+    /// alert on tap until real per-banner destinations exist (see `DSBannerCarousel`).
+    /// (`DSBannerCarousel`'s "Daily Offer" badge is a fixed warm tan regardless of
+    /// `backgroundColor`; only `title`'s base color varies here.)
+    ///
+    /// The pink banner is a light fill, so its title uses a warm tan
+    /// (`dailyOfferOnLightTextColor`) instead of the white (`Text.inverse`) the other two
+    /// darker banners use.
     private var dailyOfferBanners: some View {
         DSBannerCarousel(
             items: [
-                .init(id: 0, backgroundColor: DSColor.Background.pink),
-                .init(id: 1, backgroundColor: DSColor.Background.brown),
-                .init(id: 2, backgroundColor: DSColor.Background.green)
+                .init(
+                    id: 0,
+                    backgroundColor: DSColor.Background.pink,
+                    image: nil,
+                    badgeText: dailyOfferBadge,
+                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
+                ),
+                .init(
+                    id: 1,
+                    backgroundColor: DSColor.Background.brown,
+                    image: .mockPasteryImage1,
+                    badgeText: dailyOfferBadge,
+                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
+                ),
+                .init(
+                    id: 2,
+                    backgroundColor: DSColor.Background.green,
+                    image: .mockPasteryImage1,
+                    badgeText: dailyOfferBadge,
+                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
+                )
             ]
         )
+    }
+
+    private var dailyOfferBadge: String {
+        HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale)
+    }
+
+    /// Two-tone title, same `Text` + `Text` concatenation idiom as `greeting` — the "1"/"2"
+    /// quantities always render in the shared brand-orange highlight color, while the rest
+    /// takes `textColor` (white on dark banners, brown on the light pink one).
+    private func dailyOfferTitle(textColor: Color) -> Text {
+        Text(HomeLocalizedString.string("home.dailyOfferBanner.title.buy", locale: locale))
+            .foregroundColor(textColor)
+        + Text("1").foregroundColor(DSColor.Text.accent)
+        + Text(HomeLocalizedString.string("home.dailyOfferBanner.title.get", locale: locale))
+            .foregroundColor(textColor)
+        + Text("2").foregroundColor(DSColor.Text.accent)
+        + Text(HomeLocalizedString.string("home.dailyOfferBanner.title.croissants", locale: locale))
+            .foregroundColor(textColor)
     }
 
     private func loadUserName() async {

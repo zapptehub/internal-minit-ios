@@ -6,19 +6,36 @@ import SwiftUI
 /// (iOS 17's "one page wide, neighbors peek at the edges" pattern) rather than
 /// `TabView(.page)`, which hides neighboring pages entirely.
 ///
-/// Each item currently renders as a flat color rectangle — no text/copy or artwork yet, see
-/// `Item`. Tapping any banner shows the shared under-construction alert until real banner
-/// destinations exist.
+/// Each item fills with `backgroundColor`; optional `image` / `badgeText` / `title` layer
+/// content on top when provided. Tapping any banner shows the shared under-construction
+/// alert until real banner destinations exist.
 public struct DSBannerCarousel: View {
-    /// Placeholder banner content: just a background color until real banner
-    /// copy/artwork is wired up.
-    public struct Item: Identifiable, Hashable {
+    /// Banner slot: required fill color, plus optional artwork and copy.
+    ///
+    /// `title` is a pre-built `Text` (not a plain `String`) so callers can concatenate
+    /// differently-colored runs themselves — same idiom as `HomeScreen.greeting` — keeping
+    /// the carousel agnostic to per-word coloring/localization. Not `Hashable` because
+    /// `Text` isn't, and nothing here requires it (`ForEach` / `.scrollPosition` only need
+    /// `Identifiable`).
+    public struct Item: Identifiable {
         public let id: Int
         public let backgroundColor: Color
+        public let image: DSImage?
+        public let badgeText: String?
+        public let title: Text?
 
-        public init(id: Int, backgroundColor: Color) {
+        public init(
+            id: Int,
+            backgroundColor: Color,
+            image: DSImage? = nil,
+            badgeText: String? = nil,
+            title: Text? = nil
+        ) {
             self.id = id
             self.backgroundColor = backgroundColor
+            self.image = image
+            self.badgeText = badgeText
+            self.title = title
         }
     }
 
@@ -46,6 +63,15 @@ public struct DSBannerCarousel: View {
     private static let indicatorHeight: CGFloat = 3
     private static let indicatorActiveWidth: CGFloat = 24
     private static let indicatorInactiveWidth: CGFloat = 8
+    /// Decorative artwork sits top-trailing, sized to roughly fill the banner's height
+    /// while still tucking behind the title/button content in front of it.
+    private static let illustrationSize = CGSize(width: bannerHeight, height: bannerHeight)
+    private static let arrowButtonDiameter: CGFloat = 32
+    private static let arrowIconSize: CGFloat = 16
+    /// Warm tan mock color for the "Daily Offer" badge, uniform across every banner fill
+    /// (light or dark) — matches the mock's badge tone rather than deriving from
+    /// `backgroundColor`. No dedicated Figma token to copy this round.
+    private static let badgeTextColor = Color(red: 0.878, green: 0.725, blue: 0.569)
     /// Countdown update rate. Frequent-but-discrete steps (rather than one long `withAnimation`
     /// from 0→1) are what make pausing/resuming mid-flight possible — each step just checks
     /// `isPressed` before advancing `progress` further.
@@ -95,19 +121,60 @@ public struct DSBannerCarousel: View {
     /// swipe's movement fail the long-press before it fires, releasing the touch back to the
     /// scroll view, while a stationary press still pauses almost immediately.
     private func banner(_ item: Item) -> some View {
-        RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-            .fill(item.backgroundColor)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                showsUnderConstructionAlert = true
+        ZStack(alignment: .topTrailing) {
+            if let image = item.image {
+                DSImageView(image: image, size: Self.illustrationSize, contentMode: .fill)
+                    .allowsHitTesting(false)
+                    .padding(.trailing, 60)
+                    .accessibilityHidden(true)
             }
-            .onLongPressGesture(
-                minimumDuration: 0.15,
-                maximumDistance: 10,
-                pressing: { isPressed = $0 },
-                perform: {}
-            )
-            .accessibilityAddTraits(.isButton)
+
+            HStack(alignment: .center, spacing: DSConstant.small.value) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let badgeText = item.badgeText {
+                        Text(badgeText)
+                            .typography(.uiRegular)
+                            .foregroundColor(Self.badgeTextColor)
+                    }
+                    if let title = item.title {
+                        title.typography(.headingMediumBold)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                if item.title != nil {
+                    arrowButton
+                }
+            }
+            .padding(DSConstant.mediumLarge.value)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(item.backgroundColor)
+        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showsUnderConstructionAlert = true
+        }
+        .onLongPressGesture(
+            minimumDuration: 0.15,
+            maximumDistance: 10,
+            pressing: { isPressed = $0 },
+            perform: {}
+        )
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// Decorative only — the arrow itself has no separate action; tapping it (like
+    /// anywhere else on the banner) triggers the same under-construction alert.
+    private var arrowButton: some View {
+        Circle()
+            .fill(Color.white.opacity(0.15))
+            .frame(width: Self.arrowButtonDiameter, height: Self.arrowButtonDiameter)
+            .overlay {
+                DSIconView(icon: .arrowRight, size: Self.arrowIconSize, color: .white)
+            }
+            .accessibilityHidden(true)
     }
 
     private var selectedIndex: Int {
@@ -194,6 +261,47 @@ public struct DSBannerCarousel: View {
             .init(id: 2, backgroundColor: DSColor.Background.green)
         ],
         autoAdvanceInterval: 3
+    )
+    .padding(.vertical)
+    .background(Color(white: 0.95))
+}
+
+#Preview("DSBannerCarousel — with content") {
+
+    func title(textColor: Color) -> Text {
+        Text("Buy ")
+            .foregroundColor(textColor)
+        + Text("1").foregroundColor(DSColor.Text.accent)
+        + Text(" get ").foregroundColor(textColor)
+        + Text("2").foregroundColor(DSColor.Text.accent)
+        + Text(" Croissants").foregroundColor(textColor)
+    }
+
+    return DSBannerCarousel(
+        items: [
+            // Light fill — warm tan text instead of the other two's white.
+            .init(
+                id: 0,
+                backgroundColor: DSColor.Background.pink,
+                image: nil,
+                badgeText: "Daily Offer",
+                title: title(textColor: DSColor.Text.inverse)
+            ),
+            .init(
+                id: 1,
+                backgroundColor: DSColor.Background.brown,
+                image: .mockPasteryImage1,
+                badgeText: "Daily Offer",
+                title: title(textColor: DSColor.Text.inverse)
+            ),
+            .init(
+                id: 2,
+                backgroundColor: DSColor.Background.green,
+                image: .mockPasteryImage1,
+                badgeText: "Daily Offer",
+                title: title(textColor: DSColor.Text.inverse)
+            )
+        ]
     )
     .padding(.vertical)
     .background(Color(white: 0.95))

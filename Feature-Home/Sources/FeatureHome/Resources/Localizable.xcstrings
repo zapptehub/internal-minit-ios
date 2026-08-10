@@ -462,6 +462,94 @@
           }
         }
       }
+    },
+    "home.dailyOfferBanner.badge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Offer"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napi ajánlat"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denná ponuka"
+          }
+        }
+      }
+    },
+    "home.dailyOfferBanner.title.buy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy "
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegyél "
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kúp "
+          }
+        }
+      }
+    },
+    "home.dailyOfferBanner.title.get": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " get "
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " kapj "
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " získaj "
+          }
+        }
+      }
+    },
+    "home.dailyOfferBanner.title.croissants": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Croissants"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " croissant-t"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " croissanty"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -16,6 +16,10 @@ public enum DSImage {
     /// Full-bleed Daily Offer promo art for Notifications (text + imagery baked in).
     /// Temporary mock until a real pressable banner component lands.
     case mockBannerDailyOffer
+    /// Transparent-background croissant pastry art for `DSBannerCarousel`'s Daily Offer
+    /// mock content, layered over the banner's flat color fill rather than baked into a
+    /// full-bleed image like `mockBannerDailyOffer`.
+    case mockPasteryImage1
 
     public var image: Image {
         switch self {
@@ -25,6 +29,7 @@ public enum DSImage {
         case .mockUserProfile: return Image("Image/mockUserProfile", bundle: .module)
         case .mockQrCode: return Image("Image/mockQrCode", bundle: .module)
         case .mockBannerDailyOffer: return Image("Image/mockBannerDailyOffer", bundle: .module)
+        case .mockPasteryImage1: return Image("Image/mockPasteryImage1", bundle: .module)
         }
     }
 }

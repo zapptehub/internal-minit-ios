@@ -69,6 +69,10 @@ public enum DSIcon {
     case minitIcBretzel
     /// Small orange coin prefix for "+N pts" labels on notification rows.
     case minitPointCoin
+    /// Plain right-pointing shaft arrow (not a chevron) for `DSBannerCarousel`'s
+    /// decorative circular CTA glyph. Asset filename keeps the designer's spelling
+    /// ("minitArrowRight").
+    case arrowRight
 
     public var image: Image {
         switch self {
@@ -122,6 +126,8 @@ public enum DSIcon {
             return Image("Icon/minitIcBretzel", bundle: .module).renderingMode(.template)
         case .minitPointCoin:
             return Image("Icon/minitPointCoin", bundle: .module)
+        case .arrowRight:
+            return Image("Icon/minitArrowRight", bundle: .module).renderingMode(.template)
         }
     }
 }
