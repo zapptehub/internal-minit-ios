@@ -28,6 +28,8 @@ struct HomeScreen: View {
             loyaltyCard
                 .padding(.top, DSConstant.mediumLarge.value)
                 .padding(.horizontal, DSConstant.mediumLarge.value)
+            dailyOfferBanners
+                .padding(.top, DSConstant.small.value)
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -143,6 +145,19 @@ struct HomeScreen: View {
             .buttonStyle(.plain)
             .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         }
+    }
+
+    /// Flat-color placeholder banners until real Daily Offer artwork/copy is wired up —
+    /// each currently just shows the shared under-construction alert on tap (see
+    /// `DSBannerCarousel`).
+    private var dailyOfferBanners: some View {
+        DSBannerCarousel(
+            items: [
+                .init(id: 0, backgroundColor: DSColor.Background.pink),
+                .init(id: 1, backgroundColor: DSColor.Background.brown),
+                .init(id: 2, backgroundColor: DSColor.Background.green)
+            ]
+        )
     }
 
     private func loadUserName() async {

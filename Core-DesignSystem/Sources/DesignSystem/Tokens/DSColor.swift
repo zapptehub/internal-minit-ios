@@ -43,6 +43,15 @@ public enum DSColor {
             /// `DSSelectableRowGroup`'s selected-row fill.
             public static let accent = Color("Background/Button/Accent", bundle: .module)
         }
+        /// `#331A00` — same hex as `Text.heading`, coincidentally; this is a distinct token
+        /// so banner fills don't semantically depend on a text color. Home's first promo
+        /// banner slot until real banner artwork/copy exists.
+        public static let brown = Color("Background/Brown", bundle: .module)
+        /// `#C91157` — same brand pink as `LoyaltyCard`'s rank-progress ring /
+        /// `minitArmorIcon`. Home's second promo banner slot.
+        public static let pink = Color("Background/Pink", bundle: .module)
+        /// `#094528`. Home's third promo banner slot.
+        public static let green = Color("Background/Green", bundle: .module)
         public enum Control {
             /// Checked `DSCheckbox` / selected `DSRadio` fill. Unchecked/unselected controls
             /// stay unfilled (stroke-only against the surrounding layer background), so there
