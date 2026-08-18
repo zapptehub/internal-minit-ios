@@ -21,18 +21,14 @@ struct HomeScreen: View {
     private static let bellIconSize: CGFloat = 16
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            headerBar
-            greeting
-                .padding(.top, DSConstant.mediumLarge.value)
-            loyaltyCard
-                .padding(.top, DSConstant.mediumLarge.value)
-                .padding(.horizontal, DSConstant.mediumLarge.value)
-            dailyOfferBanners
-                .padding(.top, DSConstant.small.value)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        DSPinnedHeaderSheet(
+            header: { pinnedHeader },
+            sheet: {
+                // Empty placeholder for now — Produkty/Challenges content is a follow-up;
+                // this just establishes the pinned-header/scrolling-sheet mechanism.
+                Color.clear
+            }
+        )
         .background(LinearGradient.minitBackground.ignoresSafeArea())
         .task { await loadUserName() }
         .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: $showsLogOutConfirmation) {
@@ -55,6 +51,23 @@ struct HomeScreen: View {
             }
         }
         .disabled(isLoggingOut)
+    }
+
+    /// Everything above the scrolling sheet: profile/bell bar, greeting, loyalty card, and
+    /// the Daily Offer banners. Stays visually pinned as the sheet below scrolls up over it
+    /// (see `DSPinnedHeaderSheet`).
+    private var pinnedHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            headerBar
+            greeting
+                .padding(.top, DSConstant.mediumLarge.value)
+            loyaltyCard
+                .padding(.top, DSConstant.mediumLarge.value)
+                .padding(.horizontal, DSConstant.mediumLarge.value)
+            dailyOfferBanners
+                .padding(.top, DSConstant.small.value)
+                .padding(.bottom, DSConstant.mediumLarge.value)
+        }
     }
 
     /// Leading profile + trailing bell, matching standard navigation-bar item placement.
