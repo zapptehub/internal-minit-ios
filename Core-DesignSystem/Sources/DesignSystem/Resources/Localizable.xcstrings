@@ -89,6 +89,28 @@
         }
       }
     },
+    "common.a11y.seeAll": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mind megtekintése"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobraziť všetko"
+          }
+        }
+      }
+    },
     "common.loyaltyCardDetail.title": {
       "localizations": {
         "en": {

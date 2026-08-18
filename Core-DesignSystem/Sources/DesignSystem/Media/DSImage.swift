@@ -20,6 +20,18 @@ public enum DSImage {
     /// mock content, layered over the banner's flat color fill rather than baked into a
     /// full-bleed image like `mockBannerDailyOffer`.
     case mockPasteryImage1
+    /// Transparent-background loaf/bread pastry art. Used by `DSCircleItemList`'s
+    /// "Chleby" (bread) mock item.
+    case mockPasteryImage2
+    /// Transparent-background knot/pretzel pastry art. Used by `DSCircleItemList`'s
+    /// "Pagáče" mock item.
+    case mockPasteryImage3
+    /// Transparent-background topped square pastry art. Used by `DSCircleItemList`'s
+    /// "Pizza" mock item.
+    case mockPasteryImage4
+    /// Transparent-background round bun pastry art. Used by `DSCircleItemList`'s
+    /// "Mini" mock item.
+    case mockPasteryImage5
 
     public var image: Image {
         switch self {
@@ -30,6 +42,10 @@ public enum DSImage {
         case .mockQrCode: return Image("Image/mockQrCode", bundle: .module)
         case .mockBannerDailyOffer: return Image("Image/mockBannerDailyOffer", bundle: .module)
         case .mockPasteryImage1: return Image("Image/mockPasteryImage1", bundle: .module)
+        case .mockPasteryImage2: return Image("Image/mockPasteryImage2", bundle: .module)
+        case .mockPasteryImage3: return Image("Image/mockPasteryImage3", bundle: .module)
+        case .mockPasteryImage4: return Image("Image/mockPasteryImage4", bundle: .module)
+        case .mockPasteryImage5: return Image("Image/mockPasteryImage5", bundle: .module)
         }
     }
 }
