@@ -32,6 +32,10 @@ public enum DSImage {
     /// Transparent-background round bun pastry art. Used by `DSCircleItemList`'s
     /// second "Chleby" (bread) mock item.
     case mockPasteryImage5
+    /// Full-bleed recipe photo. Used by the News & Recipes card list's first mock item.
+    case mockRecipe1
+    /// Full-bleed recipe photo. Used by the News & Recipes card list's second mock item.
+    case mockRecipe2
 
     public var image: Image {
         switch self {
@@ -46,6 +50,8 @@ public enum DSImage {
         case .mockPasteryImage3: return Image("Image/mockPasteryImage3", bundle: .module)
         case .mockPasteryImage4: return Image("Image/mockPasteryImage4", bundle: .module)
         case .mockPasteryImage5: return Image("Image/mockPasteryImage5", bundle: .module)
+        case .mockRecipe1: return Image("Image/mockRecipe1", bundle: .module)
+        case .mockRecipe2: return Image("Image/mockRecipe2", bundle: .module)
         }
     }
 }
@@ -82,6 +88,10 @@ public struct DSImageView: View {
     VStack {
         DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
         DSImageView(image: .minitCashPerson, size: CGSize(width: 120, height: 120))
+        HStack {
+            DSImageView(image: .mockRecipe1, size: CGSize(width: 120, height: 120), contentMode: .fill)
+            DSImageView(image: .mockRecipe2, size: CGSize(width: 120, height: 120), contentMode: .fill)
+        }
     }
     .padding()
 }

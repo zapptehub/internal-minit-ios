@@ -52,6 +52,10 @@ public enum DSColor {
         public static let pink = Color("Background/Pink", bundle: .module)
         /// `#094528`. Home's third promo banner slot.
         public static let green = Color("Background/Green", bundle: .module)
+        /// `#FF8200` — same hex as `Background.Button.accent`, coincidentally; distinct
+        /// token so card fills don't semantically depend on a button color. First
+        /// challenge-card slot until an exact Figma hex exists for it.
+        public static let orange = Color("Background/Orange", bundle: .module)
         public enum Control {
             /// Checked `DSCheckbox` / selected `DSRadio` fill. Unchecked/unselected controls
             /// stay unfilled (stroke-only against the surrounding layer background), so there

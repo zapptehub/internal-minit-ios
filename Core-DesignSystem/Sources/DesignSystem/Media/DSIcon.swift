@@ -76,6 +76,15 @@ public enum DSIcon {
     /// Branded right chevron for circular "see all" affordances (`DSCircleItemList`).
     /// Asset filename keeps the designer's spelling ("minitChevronRight").
     case chevronRight
+    /// QR-scan line glyph for `DSBadgeCardList`'s "use your loyalty card" challenge.
+    /// Asset filename keeps the designer's spelling ("minitIcQrScanLine").
+    case qrScanLine
+    /// Croissant pastry glyph for `DSBadgeCardList`'s "pizza/bakery"-style challenges.
+    /// Asset filename keeps the designer's spelling ("minitIcCroissant").
+    case croissant
+    /// Drinks line glyph for `DSBadgeCardList`'s "add a coffee" challenge. Asset
+    /// filename keeps the designer's spelling ("minitIcDrinksLine").
+    case coffeeCup
 
     public var image: Image {
         switch self {
@@ -133,6 +142,12 @@ public enum DSIcon {
             return Image("Icon/minitArrowRight", bundle: .module).renderingMode(.template)
         case .chevronRight:
             return Image("Icon/minitChevronRight", bundle: .module).renderingMode(.template)
+        case .qrScanLine:
+            return Image("Icon/minitIcQrScanLine", bundle: .module).renderingMode(.template)
+        case .croissant:
+            return Image("Icon/minitIcCroissant", bundle: .module).renderingMode(.template)
+        case .coffeeCup:
+            return Image("Icon/minitIcDrinksLine", bundle: .module).renderingMode(.template)
         }
     }
 }
@@ -192,6 +207,11 @@ public struct DSIconView: View {
             DSIconView(icon: .minitQrCode, renderingMode: .original)
             DSIconView(icon: .minitCamera, renderingMode: .original)
             DSIconView(icon: .miniLoader)
+        }
+        HStack(spacing: DSConstant.medium.value) {
+            DSIconView(icon: .qrScanLine)
+            DSIconView(icon: .croissant)
+            DSIconView(icon: .coffeeCup)
         }
         HStack(spacing: DSConstant.medium.value) {
             DSIconView(icon: .homeSelected, size: 24, color: DSColor.Background.Button.secondary)
