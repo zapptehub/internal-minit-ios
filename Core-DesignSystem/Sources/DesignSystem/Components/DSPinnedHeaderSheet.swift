@@ -81,26 +81,43 @@ public struct DSPinnedHeaderSheet<Header: View, Sheet: View>: View {
     }
 
     private func sheetContent(geometry: GeometryProxy) -> some View {
-        sheet()
-            // Forces the sheet to be at least screen-tall so there's always something to
-            // scroll — otherwise the pin/reveal effect can't be seen with little or no content.
-            .frame(
-                maxWidth: .infinity,
-                minHeight: geometry.size.height - geometry.safeAreaInsets.top,
-                alignment: .top
-            )
-            .background(DSColor.Background.Layer.level0)
-            .clipShape(RoundedRectangle(cornerRadius: DSConstant.cardCornerRadius.value, style: .continuous))
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: -2)
-            .overlay(
-                // Tracks the sheet's live vertical position in global coordinates as it
-                // scrolls — the pinned header uses this to compute its counter-offset.
-                GeometryReader { sheetGeo in
-                    Color.clear.onChange(of: sheetGeo.frame(in: .global).minY) { _, newValue in
-                        sheetOffsetY = newValue
-                    }
+        VStack(spacing: 0) {
+            handle
+            sheet()
+        }
+        // Forces the sheet to be at least screen-tall so there's always something to
+        // scroll — otherwise the pin/reveal effect can't be seen with little or no content.
+        .frame(
+            maxWidth: .infinity,
+            minHeight: geometry.size.height - geometry.safeAreaInsets.top,
+            alignment: .top
+        )
+        .background(DSColor.Background.Layer.level0)
+        .clipShape(RoundedRectangle(cornerRadius: DSConstant.cardCornerRadius.value, style: .continuous))
+        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: -2)
+        .overlay(
+            // Tracks the sheet's live vertical position in global coordinates as it
+            // scrolls — the pinned header uses this to compute its counter-offset.
+            GeometryReader { sheetGeo in
+                Color.clear.onChange(of: sheetGeo.frame(in: .global).minY) { _, newValue in
+                    sheetOffsetY = newValue
                 }
-            )
+            }
+        )
+    }
+
+    /// Decorative drag-handle grabber at the top of the sheet, matching Figma. Purely
+    /// visual — the sheet doesn't support drag-to-dismiss, this just signals "sheet" the
+    /// same way system sheets do. `sheet()`'s own top padding (if any) provides the gap
+    /// below the handle, so only top padding lives here.
+    private var handle: some View {
+        Capsule()
+            // iOS's own grabber color (`UIColor.label` at 30% opacity) — matches Figma's
+            // "#3C3C434D" spec exactly, no dedicated DSColor token for this one-off.
+            .fill(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.3))
+            .frame(width: 36, height: 5)
+            .padding(.top, 5)
+            .accessibilityHidden(true)
     }
 }
 

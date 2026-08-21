@@ -30,7 +30,7 @@ public enum DSImage {
     /// "Pizza" mock item.
     case mockPasteryImage4
     /// Transparent-background round bun pastry art. Used by `DSCircleItemList`'s
-    /// "Mini" mock item.
+    /// second "Chleby" (bread) mock item.
     case mockPasteryImage5
 
     public var image: Image {

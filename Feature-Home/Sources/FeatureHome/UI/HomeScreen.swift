@@ -24,9 +24,10 @@ struct HomeScreen: View {
         DSPinnedHeaderSheet(
             header: { pinnedHeader },
             sheet: {
-                // Empty placeholder for now — Produkty/Challenges content is a follow-up;
-                // this just establishes the pinned-header/scrolling-sheet mechanism.
-                Color.clear
+                productsSection
+                    // Matches Figma's 14pt gap between the sheet's drag handle and the
+                    // products section's title/"see all" row.
+                    .padding(.top, 14)
             }
         )
         .background(LinearGradient.minitBackground.ignoresSafeArea())
@@ -195,6 +196,49 @@ struct HomeScreen: View {
                 )
             ]
         )
+    }
+
+    /// Mock product categories for the sheet — labels come from `home.products.category.*`;
+    /// pastry art and which slots show a "%" badge match the Home mock. Tapping a circle
+    /// or the trailing chevron still just shows the shared under-construction alert
+    /// (see `DSCircleItemList`).
+    private var productsSection: some View {
+        DSCircleItemList(
+            title: HomeLocalizedString.string("home.products.title", locale: locale),
+            items: productCategories
+        )
+    }
+
+    private var productCategories: [DSCircleItemList.Item] {
+        [
+            .init(
+                id: 0,
+                image: .mockPasteryImage5,
+                label: HomeLocalizedString.string("home.products.category.bread", locale: locale)
+            ),
+            .init(
+                id: 1,
+                image: .mockPasteryImage2,
+                label: HomeLocalizedString.string("home.products.category.bread", locale: locale),
+                showDiscount: true
+            ),
+            .init(
+                id: 2,
+                image: .mockPasteryImage3,
+                label: HomeLocalizedString.string("home.products.category.savoryScones", locale: locale)
+            ),
+            .init(
+                id: 3,
+                image: .mockPasteryImage4,
+                label: HomeLocalizedString.string("home.products.category.pizza", locale: locale),
+                showDiscount: true
+            ),
+            .init(
+                id: 4,
+                image: .mockPasteryImage1,
+                label: HomeLocalizedString.string("home.products.category.mini", locale: locale)
+            )
+        ]
     }
 
     private var dailyOfferBadge: String {

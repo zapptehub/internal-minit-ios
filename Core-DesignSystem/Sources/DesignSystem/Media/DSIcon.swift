@@ -73,6 +73,9 @@ public enum DSIcon {
     /// decorative circular CTA glyph. Asset filename keeps the designer's spelling
     /// ("minitArrowRight").
     case arrowRight
+    /// Branded right chevron for circular "see all" affordances (`DSCircleItemList`).
+    /// Asset filename keeps the designer's spelling ("minitChevronRight").
+    case chevronRight
 
     public var image: Image {
         switch self {
@@ -128,6 +131,8 @@ public enum DSIcon {
             return Image("Icon/minitPointCoin", bundle: .module)
         case .arrowRight:
             return Image("Icon/minitArrowRight", bundle: .module).renderingMode(.template)
+        case .chevronRight:
+            return Image("Icon/minitChevronRight", bundle: .module).renderingMode(.template)
         }
     }
 }
@@ -181,6 +186,7 @@ public struct DSIconView: View {
         }
         HStack(spacing: DSConstant.medium.value) {
             DSIconView(icon: .chevronLeft)
+            DSIconView(icon: .chevronRight)
             DSIconView(icon: .miniArrowLeft)
             DSIconView(icon: .minitArmor, renderingMode: .original)
             DSIconView(icon: .minitQrCode, renderingMode: .original)

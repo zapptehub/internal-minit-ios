@@ -9,21 +9,20 @@ import SwiftUI
 /// placeholder pattern `DSBannerCarousel` uses — there's no real "see all"/item-tap
 /// destination wired up yet.
 public struct DSCircleItemList: View {
-    /// One circle slot: an image, its label, and optional badge copy (e.g. `"%"` for a
-    /// discount, `"New"` for a highlight — `nil` hides the badge entirely). Not `Hashable` —
-    /// nothing here requires it (`ForEach` only needs `Identifiable`), same rationale as
-    /// `DSBannerCarousel.Item`.
+    /// One circle slot: an image, its label, and whether to show the small pink "%"
+    /// discount badge. Not `Hashable` — nothing here requires it (`ForEach` only needs
+    /// `Identifiable`), same rationale as `DSBannerCarousel.Item`.
     public struct Item: Identifiable {
         public let id: Int
         public let image: DSImage
         public let label: String
-        public let badgeText: String?
+        public let showDiscount: Bool
 
-        public init(id: Int, image: DSImage, label: String, badgeText: String? = nil) {
+        public init(id: Int, image: DSImage, label: String, showDiscount: Bool = false) {
             self.id = id
             self.image = image
             self.label = label
-            self.badgeText = badgeText
+            self.showDiscount = showDiscount
         }
     }
 
@@ -33,10 +32,17 @@ public struct DSCircleItemList: View {
     @State private var showsUnderConstructionAlert = false
     @Environment(\.locale) private var locale
 
-    private static let circleDiameter: CGFloat = 64
-    private static let imageSize = CGSize(width: 40, height: 40)
+    private static let circleDiameter: CGFloat = 56
+    private static let imageSize = CGSize(width: 49, height: 49)
     private static let badgeDiameter: CGFloat = 20
-    private static let seeAllButtonDiameter: CGFloat = 32
+    private static let badgeBorderWidth: CGFloat = 3
+    /// Extra nudge past the grey circle's corner so most of the badge hangs outside,
+    /// matching Figma. Combined with centering the badge on that corner.
+    private static let badgeOutsideExtra: CGFloat = 8
+    /// How far the badge extends above the grey circle — used as top inset on the row
+    /// so the outward-hanging badge isn't clipped by the horizontal scroll view.
+    private static let badgeVisualRadius: CGFloat = (badgeDiameter / 2) + badgeBorderWidth + badgeOutsideExtra
+    private static let seeAllButtonDiameter: CGFloat = 24
     private static let seeAllChevronSize: CGFloat = 14
     private static let itemSpacing: CGFloat = DSConstant.large.value
 
@@ -46,7 +52,7 @@ public struct DSCircleItemList: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: DSConstant.mediumLarge.value) {
+        VStack(alignment: .leading, spacing: DSConstant.small.value) {
             header
             itemRow
         }
@@ -74,7 +80,7 @@ public struct DSCircleItemList: View {
                 .fill(DSColor.Background.Layer.level1)
                 .frame(width: Self.seeAllButtonDiameter, height: Self.seeAllButtonDiameter)
                 .overlay {
-                    DSIconView(icon: .next, size: Self.seeAllChevronSize, color: DSColor.Icon.primary)
+                    DSIconView(icon: .chevronRight, size: Self.seeAllChevronSize, color: DSColor.Icon.primary)
                 }
         }
         .buttonStyle(.plain)
@@ -89,23 +95,26 @@ public struct DSCircleItemList: View {
                 }
             }
             .padding(.horizontal, DSConstant.mediumLarge.value)
+            .padding(.top, Self.badgeVisualRadius)
         }
     }
 
     private func circleItem(_ item: Item) -> some View {
         VStack(spacing: DSConstant.small.value) {
-            ZStack(alignment: .topTrailing) {
-                Circle()
-                    .fill(DSColor.Background.Layer.level1)
-                    .frame(width: Self.circleDiameter, height: Self.circleDiameter)
-                    .overlay {
-                        DSImageView(image: item.image, size: Self.imageSize, contentMode: .fit)
-                    }
-
-                if let badgeText = item.badgeText {
-                    badge(text: badgeText)
+            Circle()
+                .fill(DSColor.Background.Layer.level1)
+                .frame(width: Self.circleDiameter, height: Self.circleDiameter)
+                .overlay {
+                    DSImageView(image: item.image, size: Self.imageSize, contentMode: .fit)
                 }
-            }
+                .overlay(alignment: .topTrailing) {
+                    if item.showDiscount {
+                        discountBadge
+                            .alignmentGuide(.trailing) { $0[HorizontalAlignment.center] }
+                            .alignmentGuide(.top) { $0[VerticalAlignment.center] }
+                            .offset(x: Self.badgeOutsideExtra, y: -Self.badgeOutsideExtra)
+                    }
+                }
 
             Text(item.label)
                 .typography(.uiRegular)
@@ -124,14 +133,18 @@ public struct DSCircleItemList: View {
 
     /// Same brand pink as `LoyaltyCard`'s rank-progress ring / `DSColor.Background.pink` —
     /// no dedicated "badge" token in Figma to copy this round.
-    private func badge(text: String) -> some View {
+    private var discountBadge: some View {
         Circle()
             .fill(DSColor.Background.pink)
             .frame(width: Self.badgeDiameter, height: Self.badgeDiameter)
             .overlay {
-                Text(text)
+                Text("%")
                     .typography(.uiSmallSemibold)
                     .foregroundColor(.white)
+            }
+            .padding(Self.badgeBorderWidth)
+            .background {
+                Circle().fill(Color.white)
             }
             .accessibilityHidden(true)
     }
@@ -141,11 +154,11 @@ public struct DSCircleItemList: View {
     DSCircleItemList(
         title: "Produkty",
         items: [
-            .init(id: 0, image: .mockPasteryImage5, label: "Mini"),
-            .init(id: 1, image: .mockPasteryImage2, label: "Chleby", badgeText: "%"),
+            .init(id: 0, image: .mockPasteryImage5, label: "Chleby"),
+            .init(id: 1, image: .mockPasteryImage2, label: "Chleby", showDiscount: true),
             .init(id: 2, image: .mockPasteryImage3, label: "Pagáče"),
-            .init(id: 3, image: .mockPasteryImage4, label: "Pizza", badgeText: "%"),
-            .init(id: 4, image: .mockPasteryImage1, label: "Croissanty")
+            .init(id: 3, image: .mockPasteryImage4, label: "Pizza", showDiscount: true),
+            .init(id: 4, image: .mockPasteryImage1, label: "Mini")
         ]
     )
     .padding(.vertical)
@@ -156,7 +169,7 @@ public struct DSCircleItemList: View {
     DSCircleItemList(
         title: "Produkty",
         items: [
-            .init(id: 0, image: .mockPasteryImage5, label: "Mini"),
+            .init(id: 0, image: .mockPasteryImage5, label: "Chleby"),
             .init(id: 1, image: .mockPasteryImage2, label: "Chleby"),
             .init(id: 2, image: .mockPasteryImage3, label: "Pagáče")
         ]
