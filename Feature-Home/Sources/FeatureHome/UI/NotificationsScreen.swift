@@ -56,14 +56,12 @@ struct NotificationsScreen: View {
         )
     }
 
-    /// Figma spec: "Sharp Grotesk SmBold 20" @ 30px/600 weight — a one-off size rather
-    /// than the shared `.headingLargeSemibold` (40pt, same family/weight but used for
-    /// hero/marketing headlines in onboarding/login), which read too large here. Falls
-    /// back to the system font like every other `FontType` case until the real Sharp
-    /// Grotesk files are added to the project.
+    /// Figma spec: "Sharp Grotesk SmBold 20" @ 30px — a one-off size rather than the
+    /// shared `.headingLargeSemibold` (40pt, same family but used for hero/marketing
+    /// headlines in onboarding/login), which read too large here.
     private var title: some View {
         Text(HomeLocalizedString.string("home.notifications.title", locale: locale))
-            .font(.system(size: 30, weight: .semibold))
+            .font(DSFont.heading(size: 30))
             .foregroundColor(DSColor.Text.heading)
     }
 

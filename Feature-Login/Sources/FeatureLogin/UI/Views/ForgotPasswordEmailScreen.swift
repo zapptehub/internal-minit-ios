@@ -18,7 +18,6 @@ struct ForgotPasswordEmailScreen: View {
                 Text(LoginLocalizedString.string("forgotPassword.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
-                    .tracking(-1)
 
                 Text(LoginLocalizedString.string("forgotPassword.subtitle", locale: locale))
                     .typography(.paragraphRegular)

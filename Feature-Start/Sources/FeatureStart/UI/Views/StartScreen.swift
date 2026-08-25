@@ -29,7 +29,6 @@ struct StartScreen: View {
                         .typography(.headingLargeBold)
                         .foregroundColor(DSColor.Text.inverse)
                         .multilineTextAlignment(.center)
-                        .tracking(-1.68)
                 }
 
                 Spacer()

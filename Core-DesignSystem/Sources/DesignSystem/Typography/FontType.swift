@@ -1,7 +1,6 @@
 import SwiftUI
 
 public enum FontType {
-    // TODO: replace system fallback with "Sharp Grotesk SmBold 20" once the font file is added to the project.
     case headingLargeBold
     /// Figma "Heading/H1" (40pt, weight 600) — e.g. the login sheet's "Enter your email address".
     case headingLargeSemibold
@@ -18,12 +17,13 @@ public enum FontType {
     case uiSmallSemibold
 
     /// Exposed for the rare case where a `Font` value is needed directly (e.g. styling
-    /// individual runs of an `AttributedString`). Prefer `.typography(_:)` for plain `Text`.
+    /// individual runs of an `AttributedString`). Prefer `.typography(_:)` for plain `Text`,
+    /// which also applies `tracking` — a raw `Font` alone can't carry letter-spacing.
     public var font: Font {
         switch self {
-        case .headingLargeBold: return .system(size: 56, weight: .bold)
-        case .headingLargeSemibold: return .system(size: 40, weight: .semibold)
-        case .headingMediumBold: return .system(size: 20, weight: .bold)
+        case .headingLargeBold: return DSFont.heading(size: 56)
+        case .headingLargeSemibold: return DSFont.heading(size: 40)
+        case .headingMediumBold: return DSFont.heading(size: 20)
         case .paragraphLargeRegular: return .system(size: 17, weight: .regular)
         case .paragraphRegular: return .system(size: 15, weight: .regular)
         case .paragraphBold: return .system(size: 15, weight: .bold)
@@ -33,10 +33,37 @@ public enum FontType {
         case .uiSmallSemibold: return .system(size: 13, weight: .semibold)
         }
     }
+
+    /// Figma letter-spacing for this style, applied by `.typography(_:)` alongside `font`.
+    /// Only the large headings carry a non-zero value in Figma; every other case is `0`
+    /// (SwiftUI's default), so callers no longer need their own `.tracking(_:)` afterward.
+    public var tracking: CGFloat {
+        switch self {
+        case .headingLargeBold: return -1.68
+        case .headingLargeSemibold: return -1
+        default: return 0
+        }
+    }
 }
 
 public extension View {
     func typography(_ type: FontType) -> some View {
-        self.font(type.font)
+        self.font(type.font).tracking(type.tracking)
     }
+}
+
+#Preview {
+    VStack(alignment: .leading, spacing: 12) {
+        Text("headingLargeBold").typography(.headingLargeBold)
+        Text("headingLargeSemibold").typography(.headingLargeSemibold)
+        Text("headingMediumBold").typography(.headingMediumBold)
+        Text("paragraphLargeRegular").typography(.paragraphLargeRegular)
+        Text("paragraphRegular").typography(.paragraphRegular)
+        Text("paragraphBold").typography(.paragraphBold)
+        Text("uiLargeBold").typography(.uiLargeBold)
+        Text("uiLargeRegular").typography(.uiLargeRegular)
+        Text("uiRegular").typography(.uiRegular)
+        Text("uiSmallSemibold").typography(.uiSmallSemibold)
+    }
+    .padding()
 }

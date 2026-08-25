@@ -40,7 +40,6 @@ struct PasswordChangedScreen: View {
                 Text(LoginLocalizedString.string("passwordChanged.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
-                    .tracking(-1)
 
                 Text(LoginLocalizedString.string("passwordChanged.subtitle", locale: locale))
                     .typography(.paragraphRegular)

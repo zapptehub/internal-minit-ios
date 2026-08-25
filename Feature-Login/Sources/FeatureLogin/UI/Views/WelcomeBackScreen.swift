@@ -86,7 +86,6 @@ struct WelcomeBackScreen: View {
                 .foregroundColor(DSColor.Text.accent)
         )
         .typography(.headingLargeSemibold)
-        .tracking(-1)
     }
 
     private var isSignInEnabled: Bool {

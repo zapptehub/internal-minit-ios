@@ -24,7 +24,6 @@ struct EmailEntryScreen: View {
                 Text(LoginLocalizedString.string("login.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
-                    .tracking(-1)
 
                 Text(LoginLocalizedString.string("login.subtitle", locale: locale))
                     .typography(.paragraphRegular)

@@ -24,7 +24,6 @@ struct CreateAccountScreen: View {
                 Text(LoginLocalizedString.string("createAccount.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
-                    .tracking(-1)
 
                 Text(LoginLocalizedString.string("createAccount.subtitle", locale: locale))
                     .typography(.paragraphRegular)

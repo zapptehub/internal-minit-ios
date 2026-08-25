@@ -69,7 +69,6 @@ struct OnboardingScaffold<Content: View>: View {
         let text = Text(headline)
             .typography(.headingLargeSemibold)
             .foregroundColor(DSColor.Text.inverse)
-            .tracking(-1)
 
         if let headlineLineLimit {
             text.lineLimit(headlineLineLimit, reservesSpace: true)

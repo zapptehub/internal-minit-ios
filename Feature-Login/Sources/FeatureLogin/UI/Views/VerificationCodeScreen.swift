@@ -23,7 +23,6 @@ struct VerificationCodeScreen: View {
                 Text(LoginLocalizedString.string("verification.headline", locale: locale))
                     .typography(.headingLargeSemibold)
                     .foregroundColor(DSColor.Text.heading)
-                    .tracking(-1)
 
                 subtitle
             }
