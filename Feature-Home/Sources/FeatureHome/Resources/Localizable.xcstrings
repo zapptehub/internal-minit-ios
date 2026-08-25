@@ -682,6 +682,182 @@
           }
         }
       }
+    },
+    "home.challenges.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Challenges"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kihívások"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Výzvy"
+          }
+        }
+      }
+    },
+    "home.challenges.item.loyaltyCard.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the minit loyalty card 4 times"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Használd a minit hűségkártyát 4 alkalommal"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použi minit vernostnú kartu 4-krát"
+          }
+        }
+      }
+    },
+    "home.challenges.item.bakery.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy 1 Pizza or any other type of bakery"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vásárolj 1 pizzát vagy más pékárut"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kúp 1 pizzu alebo iný druh pekárenského výrobku"
+          }
+        }
+      }
+    },
+    "home.challenges.item.coffee.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a Coffee to your morning breakfast"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adj egy kávét a reggelidhez"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridaj si kávu k raňajkám"
+          }
+        }
+      }
+    },
+    "home.challenges.item.bakeryTypes.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taste multiple Minit bakery types"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kóstolj meg több Minit pékáru fajtát"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyskúšaj viac druhov Minit pekárenských výrobkov"
+          }
+        }
+      }
+    },
+    "home.newsAndRecipes.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "News & Recipes"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hírek és receptek"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novinky a recepty"
+          }
+        }
+      }
+    },
+    "home.newsAndRecipes.item.gulas.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guláš á la Kukučka s kváskovým chlebom Ďuro Truľo"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guláš á la Kukučka s kváskovým chlebom Ďuro Truľo"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guláš á la Kukučka s kváskovým chlebom Ďuro Truľo"
+          }
+        }
+      }
+    },
+    "home.newsAndRecipes.item.pinsa.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINIT PINSA - Kvalita, ktorá sa stretáva s dokonalou chuťou"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINIT PINSA - Kvalita, ktorá sa stretáva s dokonalou chuťou"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINIT PINSA - Kvalita, ktorá sa stretáva s dokonalou chuťou"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -24,10 +24,19 @@ struct HomeScreen: View {
         DSPinnedHeaderSheet(
             header: { pinnedHeader },
             sheet: {
-                productsSection
-                    // Matches Figma's 14pt gap between the sheet's drag handle and the
-                    // products section's title/"see all" row.
-                    .padding(.top, 14)
+                VStack(spacing: 0) {
+                    productsSection
+                        // Matches Figma's 14pt gap between the sheet's drag handle and the
+                        // products section's title/"see all" row.
+                        .padding(.top, 14)
+                    challengesSection
+                        // Not in the provided Figma spec — approximate section gap, kept
+                        // consistent with the one below it.
+                        .padding(.top, DSConstant.xLarge.value)
+                    newsAndRecipesSection
+                        .padding(.top, DSConstant.xLarge.value)
+                        .padding(.bottom, DSConstant.mediumLarge.value)
+                }
             }
         )
         .background(LinearGradient.minitBackground.ignoresSafeArea())
@@ -237,8 +246,108 @@ struct HomeScreen: View {
                 id: 4,
                 image: .mockPasteryImage1,
                 label: HomeLocalizedString.string("home.products.category.mini", locale: locale)
+            ),
+            .init(
+                id: 6,
+                image: .mockPasteryImage5,
+                label: HomeLocalizedString.string("home.products.category.bread", locale: locale)
+            ),
+            .init(
+                id: 6,
+                image: .mockPasteryImage2,
+                label: HomeLocalizedString.string("home.products.category.bread", locale: locale),
+                showDiscount: true
+            ),
+            .init(
+                id: 7,
+                image: .mockPasteryImage3,
+                label: HomeLocalizedString.string("home.products.category.savoryScones", locale: locale)
+            ),
+            .init(
+                id: 8,
+                image: .mockPasteryImage4,
+                label: HomeLocalizedString.string("home.products.category.pizza", locale: locale),
+                showDiscount: true
+            ),
+            .init(
+                id: 9,
+                image: .mockPasteryImage1,
+                label: HomeLocalizedString.string("home.products.category.mini", locale: locale)
             )
         ]
+    }
+
+    /// Mock challenges for the sheet — copy comes from `home.challenges.*`; colors, icons,
+    /// and repeat/progress counts match the Home mock (see `DSChallengesCardList`).
+    private var challengesSection: some View {
+        DSChallengesCardList(
+            title: HomeLocalizedString.string("home.challenges.title", locale: locale),
+            items: challengeItems
+        )
+    }
+
+    private var challengeItems: [DSChallengesCardList.Item] {
+        [
+            .init(
+                id: 0,
+                backgroundColor: DSColor.Background.orange,
+                icon: .qrScanLine,
+                badgeText: pointsLabel(for: 45),
+                title: HomeLocalizedString.string("home.challenges.item.loyaltyCard.title", locale: locale),
+                repeatCount: 4,
+                progress: 1
+            ),
+            .init(
+                id: 1,
+                backgroundColor: DSColor.Background.green,
+                icon: .croissant,
+                badgeText: pointsLabel(for: 45),
+                title: HomeLocalizedString.string("home.challenges.item.bakery.title", locale: locale)
+            ),
+            .init(
+                id: 2,
+                backgroundColor: DSColor.Background.pink,
+                icon: .coffeeCup,
+                badgeText: pointsLabel(for: 25),
+                title: HomeLocalizedString.string("home.challenges.item.coffee.title", locale: locale)
+            ),
+            .init(
+                id: 3,
+                backgroundColor: DSColor.Background.brown,
+                icon: .croissant,
+                badgeText: pointsLabel(for: 45),
+                title: HomeLocalizedString.string("home.challenges.item.bakeryTypes.title", locale: locale),
+                repeatCount: 4,
+                progress: 1
+            )
+        ]
+    }
+
+    /// Mock recipe cards for the sheet — copy comes from `home.newsAndRecipes.*`, titles are
+    /// Slovak recipe names kept as-is across locales (see `DSMediaCardList`).
+    private var newsAndRecipesSection: some View {
+        DSMediaCardList(
+            title: HomeLocalizedString.string("home.newsAndRecipes.title", locale: locale),
+            items: [
+                .init(
+                    id: 0,
+                    image: .mockRecipe1,
+                    title: HomeLocalizedString.string("home.newsAndRecipes.item.gulas.title", locale: locale)
+                ),
+                .init(
+                    id: 1,
+                    image: .mockRecipe2,
+                    title: HomeLocalizedString.string("home.newsAndRecipes.item.pinsa.title", locale: locale)
+                )
+            ]
+        )
+    }
+
+    /// Shares `home.notifications.pointsFormat` with `NotificationsScreen`'s point rows,
+    /// rather than a second "+N pts" string for the challenge badges.
+    private func pointsLabel(for points: Int) -> String {
+        let format = HomeLocalizedString.string("home.notifications.pointsFormat", locale: locale)
+        return String(format: format, points)
     }
 
     private var dailyOfferBadge: String {
