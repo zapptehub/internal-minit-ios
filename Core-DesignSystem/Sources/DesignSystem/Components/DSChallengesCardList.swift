@@ -52,7 +52,6 @@ public struct DSChallengesCardList: View {
     let items: [Item]
 
     @State private var showsUnderConstructionAlert = false
-    @Environment(\.locale) private var locale
 
     private static let cardSize = CGSize(width: 200, height: 140)
     private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
@@ -65,8 +64,6 @@ public struct DSChallengesCardList: View {
     /// matching Figma.
     private static let iconRingStartRotationDegrees: Double = 45
     private static let badgeIconSize: CGFloat = 16
-    private static let seeAllButtonDiameter: CGFloat = 24
-    private static let seeAllChevronSize: CGFloat = 14
     private static let itemSpacing: CGFloat = DSConstant.medium.value
 
     public init(title: String, items: [Item]) {
@@ -83,31 +80,9 @@ public struct DSChallengesCardList: View {
     }
 
     private var header: some View {
-        HStack {
-            Text(title)
-                .typography(.headingMediumBold)
-                .foregroundColor(DSColor.Text.heading)
-            Spacer(minLength: 0)
-            seeAllButton
-        }
-        .padding(.horizontal, DSConstant.mediumLarge.value)
-    }
-
-    /// Decorative-only besides the tap target — like `DSCircleItemList`'s `seeAllButton`,
-    /// there's no real "see all" destination yet, just the shared under-construction alert.
-    private var seeAllButton: some View {
-        Button {
+        DSCollectionHeader(title: title) {
             showsUnderConstructionAlert = true
-        } label: {
-            Circle()
-                .fill(DSColor.Background.Layer.level1)
-                .frame(width: Self.seeAllButtonDiameter, height: Self.seeAllButtonDiameter)
-                .overlay {
-                    DSIconView(icon: .chevronRight, size: Self.seeAllChevronSize, color: DSColor.Icon.primary)
-                }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(DesignSystemLocalizedString.string("common.a11y.seeAll", locale: locale))
     }
 
     private var itemRow: some View {

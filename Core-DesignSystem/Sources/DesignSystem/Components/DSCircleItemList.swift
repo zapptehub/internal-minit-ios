@@ -30,7 +30,6 @@ public struct DSCircleItemList: View {
     let items: [Item]
 
     @State private var showsUnderConstructionAlert = false
-    @Environment(\.locale) private var locale
 
     private static let circleDiameter: CGFloat = 56
     private static let imageSize = CGSize(width: 49, height: 49)
@@ -42,8 +41,6 @@ public struct DSCircleItemList: View {
     /// How far the badge extends above the grey circle — used as top inset on the row
     /// so the outward-hanging badge isn't clipped by the horizontal scroll view.
     private static let badgeVisualRadius: CGFloat = (badgeDiameter / 2) + badgeBorderWidth + badgeOutsideExtra
-    private static let seeAllButtonDiameter: CGFloat = 24
-    private static let seeAllChevronSize: CGFloat = 14
     private static let itemSpacing: CGFloat = DSConstant.large.value
 
     public init(title: String, items: [Item]) {
@@ -60,31 +57,9 @@ public struct DSCircleItemList: View {
     }
 
     private var header: some View {
-        HStack {
-            Text(title)
-                .typography(.headingMediumBold)
-                .foregroundColor(DSColor.Text.heading)
-            Spacer(minLength: 0)
-            seeAllButton
-        }
-        .padding(.horizontal, DSConstant.mediumLarge.value)
-    }
-
-    /// Decorative-only besides the tap target — like `DSBannerCarousel`'s `arrowButton`,
-    /// there's no real "see all" destination yet, just the shared under-construction alert.
-    private var seeAllButton: some View {
-        Button {
+        DSCollectionHeader(title: title) {
             showsUnderConstructionAlert = true
-        } label: {
-            Circle()
-                .fill(DSColor.Background.Layer.level1)
-                .frame(width: Self.seeAllButtonDiameter, height: Self.seeAllButtonDiameter)
-                .overlay {
-                    DSIconView(icon: .chevronRight, size: Self.seeAllChevronSize, color: DSColor.Icon.primary)
-                }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(DesignSystemLocalizedString.string("common.a11y.seeAll", locale: locale))
     }
 
     private var itemRow: some View {
