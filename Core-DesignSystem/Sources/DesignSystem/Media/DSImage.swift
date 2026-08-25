@@ -64,17 +64,32 @@ public struct DSImageView: View {
     let image: DSImage
     let size: CGSize
     public var contentMode: ContentMode
+    /// Which part of the scaled image stays visible once `.fill` overflow gets clipped
+    /// to `size`. Defaults to `.center` (equal crop on every overflowing edge). For
+    /// photos whose subject sits away from the center (e.g. a headshot near the top),
+    /// pass `.top`/`.bottom`/etc. so the crop favors the subject instead of splitting
+    /// the difference. No-op for `.fit`, which never overflows its frame.
+    public var alignment: Alignment
 
-    public init(image: DSImage, size: CGSize, contentMode: ContentMode = .fit) {
+    public init(
+        image: DSImage,
+        size: CGSize,
+        contentMode: ContentMode = .fit,
+        alignment: Alignment = .center
+    ) {
         self.image = image
         self.size = size
         self.contentMode = contentMode
+        self.alignment = alignment
     }
 
     public var body: some View {
-        image.image
-            .resizable()
-            .aspectRatio(contentMode: contentMode)
+        Color.clear
+            .overlay(alignment: alignment) {
+                image.image
+                    .resizable()
+                    .aspectRatio(contentMode: contentMode)
+            }
             .frame(width: size.width, height: size.height)
             // No-op for `.fit` (which never overflows its frame); required for `.fill`
             // so an asset whose native aspect ratio doesn't match `size` (e.g. a crop
