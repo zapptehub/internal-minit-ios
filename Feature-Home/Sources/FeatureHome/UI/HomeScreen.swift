@@ -203,7 +203,9 @@ struct HomeScreen: View {
                     badgeText: dailyOfferBadge,
                     title: dailyOfferTitle(textColor: DSColor.Text.inverse)
                 )
-            ]
+            ],
+            // Opens on the brown (2nd) banner rather than the 1st, per design.
+            initialIndex: 1
         )
     }
 

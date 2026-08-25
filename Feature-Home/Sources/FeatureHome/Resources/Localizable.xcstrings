@@ -551,6 +551,28 @@
         }
       }
     },
+    "home.notifications.dailyOfferBanner.title.suffix": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Off on every coffee"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " kedvezmény minden kávéra"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " zľava na každú kávu"
+          }
+        }
+      }
+    },
     "home.products.title": {
       "localizations": {
         "en": {

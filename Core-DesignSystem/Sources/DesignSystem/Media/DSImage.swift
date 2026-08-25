@@ -7,8 +7,13 @@ public enum DSImage {
     case minitLogo
     case startHero
     /// Decorative line-art illustration on the onboarding loyalty-card preview
-    /// (rank-badge card, name/language → loyalty-decision screens).
+    /// (rank-badge card, name/language → loyalty-decision screens). No longer used by
+    /// `LoyaltyCard` itself (replaced by `minitCardPerson`) — kept so the PO can swap
+    /// back to this look quickly without re-adding it.
     case minitCashPerson
+    /// Full-color illustration of a person holding a Minit Bistro bakery bag. Currently
+    /// `LoyaltyCard`'s illustration, replacing `minitCashPerson`.
+    case minitCardPerson
     /// Placeholder avatar for the Home header profile button.
     case mockUserProfile
     /// Placeholder QR artwork for the full-screen "My loyalty card" detail view.
@@ -42,6 +47,7 @@ public enum DSImage {
         case .minitLogo: return Image("Image/MinitLogo", bundle: .module)
         case .startHero: return Image("Image/StartHero", bundle: .module)
         case .minitCashPerson: return Image("Image/minitCashPersonImage", bundle: .module)
+        case .minitCardPerson: return Image("Image/minitCardPersonImage", bundle: .module)
         case .mockUserProfile: return Image("Image/mockUserProfile", bundle: .module)
         case .mockQrCode: return Image("Image/mockQrCode", bundle: .module)
         case .mockBannerDailyOffer: return Image("Image/mockBannerDailyOffer", bundle: .module)
@@ -103,6 +109,7 @@ public struct DSImageView: View {
     VStack {
         DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
         DSImageView(image: .minitCashPerson, size: CGSize(width: 120, height: 120))
+        DSImageView(image: .minitCardPerson, size: CGSize(width: 120, height: 148))
         HStack {
             DSImageView(image: .mockRecipe1, size: CGSize(width: 120, height: 120), contentMode: .fill)
             DSImageView(image: .mockRecipe2, size: CGSize(width: 120, height: 120), contentMode: .fill)

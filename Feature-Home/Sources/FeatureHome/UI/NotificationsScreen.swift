@@ -29,6 +29,11 @@ struct NotificationsScreen: View {
                 backButton
                 title
                 dailyOfferBanner
+                    // The outer VStack's uniform `smallMedium` (6pt) spacing already
+                    // applies here; this tops each up to a 16pt gap — above the banner
+                    // (from the title) and below it (to the "Today" section) — without
+                    // touching any other gap.
+                    .padding(.vertical, 16 - DSConstant.smallMedium.value)
                 section(title: HomeLocalizedString.string("home.notifications.section.today", locale: locale), items: todayItems)
                 dashedDivider
                 section(title: HomeLocalizedString.string("home.notifications.section.allHistory", locale: locale), items: historyItems)
@@ -51,20 +56,40 @@ struct NotificationsScreen: View {
         )
     }
 
+    /// Figma spec: "Sharp Grotesk SmBold 20" @ 30px/600 weight — a one-off size rather
+    /// than the shared `.headingLargeSemibold` (40pt, same family/weight but used for
+    /// hero/marketing headlines in onboarding/login), which read too large here. Falls
+    /// back to the system font like every other `FontType` case until the real Sharp
+    /// Grotesk files are added to the project.
     private var title: some View {
         Text(HomeLocalizedString.string("home.notifications.title", locale: locale))
-            .typography(.headingLargeSemibold)
+            .font(.system(size: 30, weight: .semibold))
             .foregroundColor(DSColor.Text.heading)
     }
 
-    /// Full-width mock art; not interactive until the real banner component replaces it.
+    /// Single-item `DSBannerCarousel` — same live component `HomeScreen` uses for its
+    /// Daily Offer banners, just with one item instead of three (no page indicator or
+    /// auto-advance shows up when `items.count == 1`). Replaces the old baked-in
+    /// `mockBannerDailyOffer` art now that the real banner exists.
     private var dailyOfferBanner: some View {
-        DSImage.mockBannerDailyOffer.image
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: DSConstant.cardCornerRadius.value, style: .continuous))
-            .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale))
+        DSBannerCarousel(items: [
+            .init(
+                id: 0,
+                backgroundColor: DSColor.Background.brown,
+                image: .mockPasteryImage1,
+                badgeText: HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale),
+                title: dailyOfferTitle
+            )
+        ])
+        .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale))
+    }
+
+    /// "15%" always renders in the shared brand-orange highlight color, matching
+    /// `HomeScreen.dailyOfferTitle`'s "Buy 1 get 2" idiom for its own quantities.
+    private var dailyOfferTitle: Text {
+        Text("15%").foregroundColor(DSColor.Text.accent)
+        + Text(HomeLocalizedString.string("home.notifications.dailyOfferBanner.title.suffix", locale: locale))
+            .foregroundColor(DSColor.Text.inverse)
     }
 
     private func section(title: String, items: [NotificationRowData]) -> some View {

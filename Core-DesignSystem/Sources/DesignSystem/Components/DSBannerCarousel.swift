@@ -77,28 +77,18 @@ public struct DSBannerCarousel: View {
     /// `isPressed` before advancing `progress` further.
     private static let tickInterval: Double = 1.0 / 30.0
 
-    public init(items: [Item], autoAdvanceInterval: Double? = nil) {
+    public init(items: [Item], autoAdvanceInterval: Double? = nil, initialIndex: Int = 0) {
         self.items = items
         self.autoAdvanceInterval = autoAdvanceInterval
-        _scrolledItemID = State(initialValue: items.first?.id)
+        let startIndex = items.indices.contains(initialIndex) ? initialIndex : 0
+        _scrolledItemID = State(initialValue: items.isEmpty ? nil : items[startIndex].id)
         _progress = State(initialValue: autoAdvanceInterval == nil ? 1 : 0)
     }
 
     public var body: some View {
         VStack(spacing: DSConstant.small.value) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: Self.itemSpacing) {
-                    ForEach(items) { item in
-                        banner(item)
-                            .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: Self.itemSpacing)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $scrolledItemID)
-            .safeAreaPadding(.horizontal, DSConstant.mediumLarge.value)
-            .frame(height: Self.bannerHeight)
+            scrollView
+                .frame(height: Self.bannerHeight)
 
             if items.count > 1 {
                 pageIndicator
@@ -107,6 +97,32 @@ public struct DSBannerCarousel: View {
         .featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
         .task(id: scrolledItemID) {
             await runAutoAdvanceCountdown()
+        }
+    }
+
+    /// Only reserves horizontal safe-area padding for the "peeking neighbor" look when
+    /// there's more than one banner to peek at. A single banner (e.g. Notifications'
+    /// Daily Offer) fills whatever width its container gives it instead — relying on
+    /// the container's own padding rather than stacking a second layer of inset on
+    /// top of it.
+    @ViewBuilder
+    private var scrollView: some View {
+        let content = ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: Self.itemSpacing) {
+                ForEach(items) { item in
+                    banner(item)
+                        .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: Self.itemSpacing)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $scrolledItemID)
+
+        if items.count > 1 {
+            content.safeAreaPadding(.horizontal, DSConstant.mediumLarge.value)
+        } else {
+            content
         }
     }
 
@@ -130,10 +146,12 @@ public struct DSBannerCarousel: View {
             }
 
             HStack(alignment: .center, spacing: DSConstant.small.value) {
-                VStack(alignment: .leading, spacing: 2) {
+                // `.uiSmallSemibold` (not `.uiRegular`) — a thin regular caption read too
+                // faint against the bold title below it; same 13pt size, just heavier.
+                VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
                     if let badgeText = item.badgeText {
                         Text(badgeText)
-                            .typography(.uiRegular)
+                            .typography(.uiSmallSemibold)
                             .foregroundColor(Self.badgeTextColor)
                     }
                     if let title = item.title {

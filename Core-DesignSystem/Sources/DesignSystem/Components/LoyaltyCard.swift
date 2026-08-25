@@ -36,10 +36,11 @@ public struct LoyaltyCard: View {
     private static let rankAccent = Color(red: 0.788, green: 0.067, blue: 0.341)
     private static let rankTrack = Color(red: 0.969, green: 0.827, blue: 0.878)
 
-    /// Figma display size for `minitCashPersonImage`. Drawn first in a `ZStack` so the
+    /// Display size for `minitCardPersonImage`. Drawn first in a `ZStack` so the
     /// header / points / chip sit on top of it — matching Figma where the illustration
-    /// tucks partially under the loyalty-card button.
-    private static let illustrationSize = CGSize(width: 205, height: 130)
+    /// tucks partially under the loyalty-card button. Portrait box (vs. the old
+    /// `minitCashPerson` landscape one) to match this asset's ~381:474 native aspect.
+    private static let illustrationSize = CGSize(width: 127, height: 158)
 
     public init(
         rankTitle: String,
@@ -60,16 +61,16 @@ public struct LoyaltyCard: View {
     }
 
     public var body: some View {
-        // `.topTrailing` + matching top padding aligns the illustration's top edge
-        // with the header row (instead of centering across the whole card, which sat
-        // too low) while keeping it flush against the trailing edge — its bottom
-        // portion still tucks behind the chip lower down, matching Figma.
+        // `.topTrailing` + top/trailing padding pins the illustration to the header
+        // row's vertical band and insets it 28pt from the card's right edge — its
+        // bottom portion still tucks behind the chip lower down, matching Figma.
         ZStack(alignment: .topTrailing) {
-            // `.fill` — the source asset's native aspect ratio (197:169) is narrower
-            // than the 226x147 display box, so `.fit` (the default) was letterboxing
-            // it and leaving visible transparent margins on both sides.
-            DSImageView(image: .minitCashPerson, size: Self.illustrationSize, contentMode: .fill)
-                .padding(.top, DSConstant.mediumLarge.value)
+            // `illustrationSize` already matches this asset's native aspect ratio, so
+            // `.fit` shows the whole illustration without cropping. Near-zero top
+            // padding — the person's head sits almost flush with the card's top edge.
+            DSImageView(image: .minitCardPerson, size: Self.illustrationSize, contentMode: .fit)
+                .padding(.top, DSConstant.xSmall.value)
+                .padding(.trailing, 28)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
 
