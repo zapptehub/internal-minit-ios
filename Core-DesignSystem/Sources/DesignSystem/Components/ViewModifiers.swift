@@ -5,10 +5,6 @@ public extension View {
         padding(.horizontal, DSConstant.large.value)
     }
 
-    func defaultCornerRadius() -> some View {
-        cornerRadius(DSConstant.large.value)
-    }
-
     /// Soft, mostly-downward shadow shared by card-style surfaces floating on the
     /// onboarding gradient (`DSStatusCard`, `LoyaltyCard`) — subtle since it often
     /// sits directly on a colored background rather than plain white.

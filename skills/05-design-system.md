@@ -89,7 +89,6 @@ public enum DSConstant: Int {
 
 // Convenience modifiers
 .defaultSidePadding()           // .padding(.horizontal, 24)
-.defaultCornerRadius()          // .cornerRadius(24)
 
 // ❌ Wrong
 .padding(16)
@@ -132,45 +131,13 @@ Check these components in `Core-DesignSystem/Components/` before building anythi
 
 | Component | Use for |
 |-----------|---------|
-| `DSCard` | List items, option cards, info cards, coverage cards |
 | `DSButton` | All interactive buttons (primary, secondary, text style) |
-| `DSTagView` | Status badges (warning, error, info) |
 | `DSIconView` | All icons with consistent sizing and color |
 | `DSWarningMessage` | Inline warning/info banners |
-| `DSCardBottomExtra` | Expandable card footer (e.g. verification prompt) |
 | `DSSpacer` | Vertical spacers with design-token heights |
 | `DSInputField` | Text entry — `.text`, `.password`, `.date`, `.unit(suffix:)`, `.textarea(maxLength:)`, `.number` variants, all with floating label + Default/Focus/Filled/Error/Success/Disabled states |
 | `DSCheckbox` | Single boolean option, tappable row (box + label) |
 | `DSRadioGroup` | Mutually-exclusive option list (box + label per row); never use the internal `DSRadio` row directly |
-
-### `DSCard` usage
-
-```swift
-// Simple navigation card
-DSCard(
-    title: "Show insurance letter",
-    leftIcon: .info,
-    rightIcon: .externalLink,
-    action: { viewModel.openInsuranceLetter() }
-)
-
-// Card with status tag
-DSCard(
-    title: "Workshop name",
-    tag: DSCardTag(text: "Preferred", icon: .warningTriangle, tagType: .warning),
-    details: ["Kaross- och glasverkstad", "Stockholm"],
-    rightIcon: .next,
-    action: { viewModel.selectWorkshop(id) }
-)
-
-// Card with bottom expansion
-DSCard(title: "Email", details: ["user@example.com"], rightIcon: .pencil) {
-    DSCardBottomExtra {
-        Text("Not verified").typography(.paragraphLargeRegular)
-        DSButton(title: "Verify", type: .primary, heightStyle: .compact, widthStyle: .compact) { }
-    }
-}
-```
 
 ### `DSButton` usage
 
@@ -284,7 +251,7 @@ struct SupportItemCard: View {
     @EnvironmentObject var viewModel: SupportViewModel   // don't do this
 
     var body: some View {
-        DSCard(title: item.title, action: { viewModel.handleTap(item) })
+        DSButton(title: item.title) { viewModel.handleTap(item) }
     }
 }
 ```
