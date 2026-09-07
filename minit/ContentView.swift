@@ -19,7 +19,6 @@ import FeatureTabRoot
 /// SwiftUI; two `.sheet(isPresented:)` on one view can silently fail to present the second
 /// sheet when triggered from the first sheet's own dismissal. See
 /// `plans/password_changed_second_sheet_9f2e404f.plan.md`.
-/// test
 private enum AuthSheet: Identifiable {
     case login
     case passwordChanged
