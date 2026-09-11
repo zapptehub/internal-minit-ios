@@ -57,15 +57,13 @@ public enum DSColor {
         /// First challenge-card slot.
         public static let orange = Color("Background/Orange", bundle: .module)
         public enum Control {
-            /// Checked `DSCheckbox` / selected `DSRadio` fill. Unchecked/unselected controls
-            /// stay unfilled (stroke-only against the surrounding layer background), so there
-            /// is no corresponding `.default` fill token.
+            /// Retained for the prior selected-control artwork. `DSCheckbox` and `DSRadio`
+            /// use `Background.Icon.success` so their fill and border share the approved
+            /// `#2E9E66` success-icon color.
             public static let selected = Color("Background/Control/Selected", bundle: .module)
         }
         public enum Icon {
-            /// Filled circle behind a success glyph (e.g. `PasswordChangedScreen`'s checkmark).
-            /// Distinct, hardcoded sage-green — no dedicated Figma token to copy this round,
-            /// see `plans/ios-auth-flow-multi-step.md`.
+            /// `#2E9E66` filled background behind a success glyph and selected control.
             public static let success = Color("Background/Icon/Success", bundle: .module)
             /// Filled circle behind `DSProgressView`'s spinner glyph (`#EDEDED`). Distinct,
             /// hardcoded neutral gray — no dedicated Figma token to copy this round, same

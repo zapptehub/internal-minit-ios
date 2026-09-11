@@ -4,9 +4,8 @@ import SwiftUI
 //
 // Shared styling primitives for `DSCheckbox` and `DSRadio`/`DSRadioGroup`. Both controls
 // share the exact same state-color logic and metrics — only the shape (rounded square vs.
-// circle) and inner indicator (checkmark vs. dot) differ — so it's centralized here rather
-// than duplicated, mirroring how `DSInputFieldStyle.swift` centralizes `DSInputField`'s
-// shared styling.
+// circle) differs — so it's centralized here rather than duplicated, mirroring how
+// `DSInputFieldStyle.swift` centralizes `DSInputField`'s shared styling.
 
 /// Fixed layout constants for `DSCheckbox`/`DSRadio`. All still screenshot-inferred
 /// placeholders — see the "Figma parameters still needed" section of
@@ -21,10 +20,8 @@ enum DSSelectionControlMetrics {
     static let borderWidth: CGFloat = 2
     /// Gap between the control and its trailing label. Assumption, not inspected.
     static let labelSpacing: CGFloat = DSConstant.small.value
-    /// Inner checkmark glyph size inside a checked `DSCheckbox`.
+    /// Inner checkmark glyph size inside a selected control.
     static let checkmarkSize: CGFloat = 12
-    /// Inner solid dot diameter inside a selected `DSRadio`.
-    static let radioDotSize: CGFloat = 8
     /// Vertical gap between stacked options inside a `DSRadioGroup`.
     static let optionSpacing: CGFloat = DSConstant.medium.value
 }
@@ -43,32 +40,29 @@ struct DSSelectionControlColors {
     /// `nil` means "unfilled" (stroke-only against the surrounding layer background) —
     /// there is no `Background.Control.default` token to fall back to.
     let fillColor: Color?
-    /// Color of the inner checkmark/dot. Only rendered when `fillColor != nil`.
+    /// Color of the inner checkmark. Only rendered when `fillColor != nil`.
     let indicatorColor: Color
     let labelColor: Color
 
     init(isEnabled: Bool, isSelected: Bool, hasError: Bool) {
         labelColor = isEnabled ? DSColor.Text.primary : DSColor.Text.disabled
-        // White checkmark/dot regardless of state — it only ever sits on the solid
-        // `Background.Control.selected` green fill.
-        indicatorColor = DSColor.Text.inverse
 
         guard isEnabled else {
             borderColor = DSColor.Border.disabled
-            // Disabled+selected isn't shown in the screenshot; keep the same selected fill
-            // rather than inventing a separate dimmed token, since disabling already reads
-            // clearly via the faded border/label.
-            fillColor = isSelected ? DSColor.Background.Control.selected : nil
+            fillColor = isSelected ? borderColor : nil
+            indicatorColor = isSelected ? DSColor.Text.secondary : DSColor.Text.inverse
             return
         }
+
+        indicatorColor = DSColor.Text.inverse
 
         if hasError {
             // Screenshot only shows Error as unchecked/unselected — no checked+error combo.
             borderColor = DSColor.Border.error
             fillColor = nil
         } else if isSelected {
-            borderColor = DSColor.Border.success
-            fillColor = DSColor.Background.Control.selected
+            borderColor = DSColor.Background.Icon.success
+            fillColor = borderColor
         } else {
             borderColor = DSColor.Border.default
             fillColor = nil

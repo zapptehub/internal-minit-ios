@@ -77,9 +77,11 @@ struct DSRadio: View {
                         .strokeBorder(colors.borderColor, lineWidth: DSSelectionControlMetrics.borderWidth)
 
                     if colors.fillColor != nil {
-                        Circle()
-                            .fill(colors.indicatorColor)
-                            .frame(width: DSSelectionControlMetrics.radioDotSize, height: DSSelectionControlMetrics.radioDotSize)
+                        DSIconView(
+                            icon: .checkmark,
+                            size: DSSelectionControlMetrics.checkmarkSize,
+                            color: colors.indicatorColor
+                        )
                     }
                 }
                 .frame(width: DSSelectionControlMetrics.controlSize, height: DSSelectionControlMetrics.controlSize)
