@@ -62,7 +62,7 @@ struct WelcomeBackScreen: View {
         .authFlowStepContent()
     }
 
-    /// Plain text link — not `DSButton(.textStyle)` because that renders a 52pt-tall pill
+    /// Plain text link — not `DSButton(.textStyle)` because that renders a 56pt-tall pill
     /// touch target with horizontal inset, which misaligns the label vs. Figma's tight,
     /// right-flush link sitting just below the password field.
     private var forgotPasswordLink: some View {

@@ -18,7 +18,7 @@ struct LoginScreen: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DSConstant.large.value) {
             AuthFlowNavigationBar()
-                .defaultSidePadding()
+                .padding(.horizontal, AuthFlowStepLayout.horizontalInset)
 
             NavigationStack(path: $viewModel.path) {
                 EmailEntryScreen(viewModel: viewModel, analytics: analytics)

@@ -22,6 +22,6 @@ struct AuthFlowNavigationBar: View {
         Spacer()
     }
     .padding(.top, AuthFlowNavigationBar.topPadding)
-    .defaultSidePadding()
+    .padding(.horizontal, AuthFlowStepLayout.horizontalInset)
     .background(DSColor.Background.Layer.level0)
 }

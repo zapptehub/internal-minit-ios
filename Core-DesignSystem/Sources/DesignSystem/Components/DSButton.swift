@@ -35,7 +35,7 @@ public enum DSButtonHeightStyle {
 
     var value: CGFloat {
         switch self {
-        case .regular: return 52
+        case .regular: return 56
         case .compact: return 36
         case .small: return 32
         case .large: return 48
