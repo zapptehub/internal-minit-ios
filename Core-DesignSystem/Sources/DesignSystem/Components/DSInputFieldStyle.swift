@@ -29,39 +29,39 @@ enum DSInputFieldMetrics {
     /// literal px value hasn't been read yet (Dev Mode shows the token name, not its
     /// resolved value). Bumped from `DSConstant.small` (8) to `.medium` (12) per feedback
     /// that 8pt looked too small; still pending exact confirmation from the token itself.
-    static let cornerRadius: CGFloat = DSConstant.medium.value
+    static let cornerRadius = DSRadius.control
     /// Confirmed via direct feedback: border width is a constant 2pt across every state
     /// (Default/Focus/Error/Success/Disabled) — it does not thin out to 1pt at rest. Kept
     /// as a single named constant rather than per-state values now that they're all equal.
-    static let borderWidth: CGFloat = 2
+    static let borderWidth = DSBorderWidth.standard
     /// Confirmed via Dev Mode inspector ("Padding Left/Right: 16px").
-    static let horizontalPadding: CGFloat = DSConstant.mediumLarge.value
+    static let horizontalPadding = DSMetric.Spacing.mediumLarge
     /// NOTE: currently 16pt (`.mediumLarge`), matching `horizontalPadding` — this drifted
     /// from the originally-confirmed "Padding Top/Bottom: 12px" Dev Mode reading at some
     /// point; flagged for the next Figma pass rather than silently reverted, since it may
     /// have been an intentional visual tweak.
-    static let verticalPadding: CGFloat = DSConstant.mediumLarge.value
+    static let verticalPadding = DSMetric.Spacing.mediumLarge
     /// Confirmed via Dev Mode inspector ("Height: Fixed 48px") — was 52pt, corrected.
-    static let fieldHeight: CGFloat = 48
+    static let fieldHeight = DSComponentMetric.Input.fieldHeight
     /// Confirmed via Dev Mode inspector ("Gap: 8px") — spacing between the value text and
     /// a trailing accessory (eye/calendar/suffix/counter). Not yet consumed until Phase 3
     /// implements those variants.
-    static let trailingAccessorySpacing: CGFloat = DSConstant.small.value
-    static let labelHorizontalInset: CGFloat = DSConstant.small.value
+    static let trailingAccessorySpacing = DSMetric.Spacing.small
+    static let labelHorizontalInset = DSMetric.Spacing.small
     /// Horizontal offset of the floating label from the container's leading edge —
     /// aligns the label's text with the content's leading padding.
     static let labelOffsetX: CGFloat = horizontalPadding - labelHorizontalInset
     /// Vertical offset that lifts the label up so it straddles the top border line.
-    static let labelOffsetY: CGFloat = -DSConstant.small.value
+    static let labelOffsetY = -DSMetric.Spacing.small
     /// Bumped from `.xSmall` (4pt) — at 4pt the description read as glued to the field's
     /// bottom edge. Still a placeholder pending exact Figma confirmation.
-    static let descriptionSpacing: CGFloat = DSConstant.small.value
+    static let descriptionSpacing = DSMetric.Spacing.small
     /// Placeholder — not yet confirmed via Figma. Screenshot suggests a multi-line box
     /// tall enough for a few lines of text plus the bottom-right character counter.
-    static let textareaHeight: CGFloat = 120
+    static let textareaHeight = DSComponentMetric.Input.textareaHeight
     /// Placeholder — not yet confirmed via Figma. Screenshot suggests a small fixed circle
     /// for the `.number` variant.
-    static let numberCircleDiameter: CGFloat = 44
+    static let numberCircleDiameter = DSComponentMetric.Input.numberCircleDiameter
 }
 
 /// Resolves the four state-dependent colors (border, label, value, description) plus border

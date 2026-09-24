@@ -7,10 +7,11 @@ public extension LinearGradient {
     /// peach fade that reaches solid white by ~75% (so lower chrome can sit on
     /// clean white, not cream).
     static var minitBackground: LinearGradient {
-        let top = Color(red: 1.0, green: 0.51, blue: 0.0) // #FF8300 — hotter than brand primary
-        let mid = DSColor.Background.Button.primary // #FF9A31
-        let peach = Color(red: 1.0, green: 0.78, blue: 0.56) // #FFC78F
-        let cream = Color(red: 1.0, green: 0.945, blue: 0.88) // #FFF1E0
+        let top = DSPlatformColorExtension.backgroundGradientTop.color
+        let mid = DSColor.Background.Button.primary
+        let peach = DSPlatformColorExtension.backgroundGradientPeach.color
+        let cream = DSPlatformColorExtension.backgroundGradientCream.color
+        let page = DSColor.Background.Layer.level0
         return LinearGradient(
             stops: [
                 .init(color: top, location: 0),
@@ -18,8 +19,8 @@ public extension LinearGradient {
                 .init(color: mid, location: 0.28),
                 .init(color: peach, location: 0.48),
                 .init(color: cream, location: 0.65),
-                .init(color: .white, location: 0.78),
-                .init(color: .white, location: 1)
+                .init(color: page, location: 0.78),
+                .init(color: page, location: 1)
             ],
             startPoint: .top,
             endPoint: .bottom

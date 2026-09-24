@@ -53,9 +53,9 @@ struct DSSelectableRow: View {
     let isEnabled: Bool
     let onTap: () -> Void
 
-    private static let indicatorSize: CGFloat = 20
-    private static let checkmarkSize: CGFloat = 12
-    private static let height: CGFloat = 56
+    private static let indicatorSize = DSComponentMetric.SelectionControl.controlSize
+    private static let checkmarkSize = DSComponentMetric.SelectionControl.checkmarkSize
+    private static let height = DSComponentMetric.SelectableRow.height
     /// Unselected row fill — flat black scrim at 6% opacity over whatever's behind it
     /// (gradient background or otherwise).
     private static let unselectedFill = Color.black.opacity(0.06)
@@ -82,7 +82,10 @@ struct DSSelectableRow: View {
                             }
                     } else {
                         Circle()
-                            .strokeBorder(DSColor.Text.heading.opacity(0.15), lineWidth: 1.5)
+                            .strokeBorder(
+                                DSColor.Text.heading.opacity(0.15),
+                                lineWidth: DSBorderWidth.selectableIndicator
+                            )
                     }
                 }
                 .frame(width: Self.indicatorSize, height: Self.indicatorSize)

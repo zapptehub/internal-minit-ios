@@ -18,8 +18,8 @@ public struct DSStatusCard: View {
 
     let state: State
 
-    private static let iconDiameter: CGFloat = 48
-    private static let glyphSize: CGFloat = 24
+    private static let iconDiameter = DSComponentMetric.Progress.diameter
+    private static let glyphSize = DSComponentMetric.Progress.iconSize
 
     public init(state: State) {
         self.state = state

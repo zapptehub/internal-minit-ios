@@ -35,11 +35,11 @@ public enum DSButtonHeightStyle {
 
     var value: CGFloat {
         switch self {
-        case .regular: return 56
-        case .compact: return 36
-        case .small: return 32
-        case .large: return 48
-        case .xLarge: return 64
+        case .regular: return DSComponentMetric.Button.regularHeight
+        case .compact: return DSComponentMetric.Button.compactHeight
+        case .small: return DSComponentMetric.Button.smallHeight
+        case .large: return DSComponentMetric.Button.largeHeight
+        case .xLarge: return DSComponentMetric.Button.xLargeHeight
         }
     }
 }
@@ -121,7 +121,12 @@ public struct DSButton: View {
                 .background(backgroundView)
                 .overlay(borderOverlay(Circle()))
                 .clipShape(Circle())
-                .shadow(color: shadowColor, radius: Self.shadowRadius, x: 0, y: Self.shadowYOffset)
+                .shadow(
+                    color: shadowColor,
+                    radius: DSShadow.loyaltyButton.radius,
+                    x: DSShadow.loyaltyButton.x,
+                    y: DSShadow.loyaltyButton.y
+                )
             } else {
                 HStack(spacing: DSConstant.small.value) {
                     if isLoading {
@@ -140,7 +145,12 @@ public struct DSButton: View {
                 .background(backgroundView)
                 .overlay(borderOverlay(Capsule()))
                 .clipShape(Capsule())
-                .shadow(color: shadowColor, radius: Self.shadowRadius, x: 0, y: Self.shadowYOffset)
+                .shadow(
+                    color: shadowColor,
+                    radius: DSShadow.loyaltyButton.radius,
+                    x: DSShadow.loyaltyButton.x,
+                    y: DSShadow.loyaltyButton.y
+                )
             }
         }
         .disabled(!isEnabled)
@@ -217,14 +227,14 @@ public struct DSButton: View {
     @ViewBuilder
     private func borderOverlay<S: Shape>(_ shape: S) -> some View {
         if isLoyaltyCard {
-            shape.stroke(Self.loyaltyCardBorder, lineWidth: 1)
+            shape.stroke(Self.loyaltyCardBorder, lineWidth: DSBorderWidth.hairline)
         } else if isGlass {
-            shape.stroke(Self.glassBorder, lineWidth: 1)
+            shape.stroke(Self.glassBorder, lineWidth: DSBorderWidth.hairline)
         }
     }
 
     private var shadowColor: Color {
-        isLoyaltyCard ? Self.loyaltyCardShadow : .clear
+        isLoyaltyCard ? DSShadow.loyaltyButton.color : .clear
     }
 
     private var isLoyaltyCard: Bool {
@@ -239,12 +249,9 @@ public struct DSButton: View {
 
     // MARK: - `.loyaltyCard` constants
 
-    private static let loyaltyCardGradientTop = Color(red: 0.949, green: 0.949, blue: 0.949) // #F2F2F2
-    private static let loyaltyCardGradientBottom = Color.white // #FFFFFF
-    private static let loyaltyCardBorder = Color(red: 0.875, green: 0.875, blue: 0.875) // #DFDFDF
-    private static let loyaltyCardShadow = Color.black.opacity(0.08)
-    private static let shadowRadius: CGFloat = 2
-    private static let shadowYOffset: CGFloat = 1
+    private static let loyaltyCardGradientTop = DSColor.Background.Layer.level1
+    private static let loyaltyCardGradientBottom = DSColor.Background.Layer.level0
+    private static let loyaltyCardBorder = DSPlatformColorExtension.loyaltyButtonBorder.color
 
     // MARK: - `.glass` constants
 

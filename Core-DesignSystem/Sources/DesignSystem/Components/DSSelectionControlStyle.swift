@@ -12,18 +12,18 @@ import SwiftUI
 /// `plans/ios-ds-form-components.md`; none of these have been Dev-Mode-confirmed yet.
 enum DSSelectionControlMetrics {
     /// Placeholder — screenshot suggests roughly 20–24pt square/circle.
-    static let controlSize: CGFloat = 20
+    static let controlSize = DSComponentMetric.SelectionControl.controlSize
     /// Placeholder — small rounded corners on the checkbox square.
-    static let checkboxCornerRadius: CGFloat = 4
+    static let checkboxCornerRadius = DSRadius.extraSmall
     /// Assumed to match `DSInputFieldMetrics.borderWidth` for visual consistency across
     /// every DS form control; not separately confirmed for checkbox/radio specifically.
-    static let borderWidth: CGFloat = 2
+    static let borderWidth = DSBorderWidth.standard
     /// Gap between the control and its trailing label. Assumption, not inspected.
-    static let labelSpacing: CGFloat = DSConstant.small.value
+    static let labelSpacing = DSMetric.Spacing.small
     /// Inner checkmark glyph size inside a selected control.
-    static let checkmarkSize: CGFloat = 12
+    static let checkmarkSize = DSComponentMetric.SelectionControl.checkmarkSize
     /// Vertical gap between stacked options inside a `DSRadioGroup`.
-    static let optionSpacing: CGFloat = DSConstant.medium.value
+    static let optionSpacing = DSMetric.Spacing.medium
 }
 
 /// Resolves the state-dependent colors for `DSCheckbox`/`DSRadio`, given `isEnabled`,

@@ -31,10 +31,8 @@ public struct LoyaltyCard: View {
     private static let badgeDiameter: CGFloat = 40
     private static let badgeIconSize: CGFloat = 18
     private static let badgeRingWidth: CGFloat = 2.5
-    /// Matches `minitArmorIcon`'s own gradient dark stop (`#C91157`) so the ring's solid
-    /// arc reads as the same brand pink as the glyph it surrounds.
-    private static let rankAccent = Color(red: 0.788, green: 0.067, blue: 0.341)
-    private static let rankTrack = Color(red: 0.969, green: 0.827, blue: 0.878)
+    private static let rankAccent = DSSemanticColor.Brand.secondary.color
+    private static let rankTrack = DSSemanticColor.Brand.secondarySubtle.color
 
     /// Display size for `minitCardPersonImage`. Drawn first in a `ZStack` so the
     /// header / points / chip sit on top of it — matching Figma where the illustration

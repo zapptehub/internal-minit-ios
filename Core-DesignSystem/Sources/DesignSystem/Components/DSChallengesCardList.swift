@@ -54,16 +54,16 @@ public struct DSChallengesCardList: View {
     @State private var showsUnderConstructionAlert = false
 
     private static let cardSize = CGSize(width: 200, height: 140)
-    private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
-    private static let iconCircleDiameter: CGFloat = 40
-    private static let iconSize: CGFloat = 20
+    private static let cornerRadius = DSRadius.card
+    private static let iconCircleDiameter = DSMetric.Spacing.xxLarge
+    private static let iconSize = DSMetric.Size.iconMedium
     private static let iconRingLineWidth: CGFloat = 4
     /// Angular gap between dashes when the ring is split by `Item.repeatCount`.
     private static let iconRingSegmentGapDegrees: Double = 24
     /// Rotates the first dash off of straight-up (12 o'clock) to roughly 2 o'clock,
     /// matching Figma.
     private static let iconRingStartRotationDegrees: Double = 45
-    private static let badgeIconSize: CGFloat = 16
+    private static let badgeIconSize = DSMetric.Size.iconSmall
     private static let itemSpacing: CGFloat = DSConstant.medium.value
 
     public init(title: String, items: [Item]) {
@@ -124,7 +124,7 @@ public struct DSChallengesCardList: View {
                         startPoint: .top,
                         endPoint: .bottom
                     ),
-                    lineWidth: 2
+                    lineWidth: DSBorderWidth.standard
                 )
         }
         .contentShape(Rectangle())
@@ -198,7 +198,7 @@ public struct DSChallengesCardList: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 1
+                            lineWidth: DSBorderWidth.hairline
                         )
                 }
         }

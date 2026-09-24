@@ -93,8 +93,8 @@ public struct DSPinnedHeaderSheet<Header: View, Sheet: View>: View {
             alignment: .top
         )
         .background(DSColor.Background.Layer.level0)
-        .clipShape(RoundedRectangle(cornerRadius: DSConstant.cardCornerRadius.value, style: .continuous))
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: -2)
+        .clipShape(RoundedRectangle(cornerRadius: DSRadius.card, style: .continuous))
+        .dsShadow(DSShadow.pinnedSheet)
         .overlay(
             // Tracks the sheet's live vertical position in global coordinates as it
             // scrolls — the pinned header uses this to compute its counter-offset.
@@ -115,8 +115,11 @@ public struct DSPinnedHeaderSheet<Header: View, Sheet: View>: View {
             // iOS's own grabber color (`UIColor.label` at 30% opacity) — matches Figma's
             // "#3C3C434D" spec exactly, no dedicated DSColor token for this one-off.
             .fill(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.3))
-            .frame(width: 36, height: 5)
-            .padding(.top, 5)
+            .frame(
+                width: DSComponentMetric.PinnedSheet.handleWidth,
+                height: DSComponentMetric.PinnedSheet.handleHeight
+            )
+            .padding(.top, DSComponentMetric.PinnedSheet.handleTopPadding)
             .accessibilityHidden(true)
     }
 }

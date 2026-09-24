@@ -20,10 +20,12 @@ public struct DSProgressView: View {
 
     /// Full rotation duration — deliberately slow/calm, not a fast "busy" spin.
     private static let rotationDuration: Double = 1.6
+    public static let defaultDiameter = DSComponentMetric.Progress.diameter
+    public static let defaultIconSize = DSComponentMetric.Progress.iconSize
 
     public init(
-        diameter: CGFloat = 48,
-        iconSize: CGFloat = 24,
+        diameter: CGFloat = DSProgressView.defaultDiameter,
+        iconSize: CGFloat = DSProgressView.defaultIconSize,
         backgroundColor: Color = DSColor.Background.Icon.loading,
         iconColor: Color = DSColor.Icon.primary
     ) {
