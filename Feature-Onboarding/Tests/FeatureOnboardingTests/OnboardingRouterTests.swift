@@ -176,4 +176,153 @@ final class OnboardingRouterTests: XCTestCase {
             _ = router.canGoBack(from: step) // exercises every case; crashes on missing switch coverage
         }
     }
+
+    // MARK: Exhaustive rejection (added beyond the original iOS samples)
+
+    func testNameConfirmedRejectedFromEveryStepExceptName() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.name],
+            transition: .nameConfirmed
+        )
+    }
+
+    func testLanguageConfirmedRejectedFromEveryStepExceptLanguage() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.language],
+            transition: .languageConfirmed
+        )
+    }
+
+    func testLoyaltyDecisionConfirmedRejectedFromEveryStepExceptLoyaltyDecisionForBothBranches() {
+        XCTAssertFalse(OnboardingLoyaltyBranch.allCases.isEmpty, "loyalty branches must be non-empty")
+        for branch in OnboardingLoyaltyBranch.allCases {
+            assertRejectedFromEveryStepExcept(
+                validSources: [.loyaltyDecision],
+                transition: .loyaltyDecisionConfirmed(branch)
+            )
+        }
+    }
+
+    func testCameraPermissionGrantedRejectedFromEveryStepExceptScannerPermission() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.scannerPermission],
+            transition: .cameraPermissionGranted
+        )
+    }
+
+    func testManualCardEntryChosenRejectedFromEveryStepExceptScannerPermissionAndScanning() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.scannerPermission, .scanning],
+            transition: .manualCardEntryChosen
+        )
+    }
+
+    func testCodeSubmittedForClaimRejectedFromEveryStepExceptScanningAndManualCardEntry() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.scanning, .manualCardEntry],
+            transition: .codeSubmittedForClaim
+        )
+    }
+
+    func testCreateCardFailureDismissedRejectedFromEveryStepExceptCreatingCard() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.creatingCard],
+            transition: .createCardFailureDismissed
+        )
+    }
+
+    func testClaimCardFailureDismissedRejectedFromEveryStepExceptProcessingScanForEveryKindAndSource() {
+        // OnboardingClaimFailureKind is Equatable, not CaseIterable — list cases explicitly.
+        let kinds: [OnboardingClaimFailureKind] = [.alreadyClaimedByOtherUser, .generic]
+        // OnboardingClaimSource is Equatable, not CaseIterable. nil is no recorded attempt.
+        let sources: [OnboardingClaimSource?] = [.scanner, .manualEntry, nil]
+        XCTAssertFalse(kinds.isEmpty, "claim failure kinds must be non-empty")
+        XCTAssertFalse(sources.isEmpty, "claim sources including nil must be non-empty")
+        for kind in kinds {
+            for source in sources {
+                assertRejectedFromEveryStepExcept(
+                    validSources: [.processingScan],
+                    transition: .claimCardFailureDismissed(kind, source: source)
+                )
+            }
+        }
+    }
+
+    func testUnresumableProcessingScanFallbackRejectedFromEveryStepExceptProcessingScan() {
+        assertRejectedFromEveryStepExcept(
+            validSources: [.processingScan],
+            transition: .unresumableProcessingScanFallback
+        )
+    }
+
+    func testBackIsRejectedExactlyFromNameCreatingCardAndProcessingScan() {
+        let rejected: Set<OnboardingStep> = [.name, .creatingCard, .processingScan]
+        let accepted = OnboardingStep.allCases.filter { !rejected.contains($0) }
+        XCTAssertFalse(rejected.isEmpty, "back-rejected steps must be non-empty")
+        XCTAssertFalse(accepted.isEmpty, "back-accepted steps must be non-empty")
+        for step in OnboardingStep.allCases {
+            let destination = router.nextStep(from: step, on: .back)
+            XCTAssertEqual(
+                destination == nil,
+                rejected.contains(step),
+                "back from \(step) returned \(String(describing: destination)); " +
+                    "expected nil exactly for name, creatingCard, processingScan"
+            )
+        }
+    }
+
+    func testCanGoBackMatchesBackDestinationForEveryStep() {
+        let noBack: Set<OnboardingStep> = [.name, .creatingCard, .processingScan]
+        let withBack = OnboardingStep.allCases.filter { !noBack.contains($0) }
+        XCTAssertFalse(noBack.isEmpty, "steps without back must be non-empty")
+        XCTAssertFalse(withBack.isEmpty, "steps with back must be non-empty")
+        for step in OnboardingStep.allCases {
+            let destination = router.nextStep(from: step, on: .back)
+            let canGoBack = router.canGoBack(from: step)
+            XCTAssertEqual(
+                canGoBack,
+                destination != nil,
+                "canGoBack(\(step))=\(canGoBack) should match a non-null back destination " +
+                    "(destination=\(String(describing: destination)))"
+            )
+            XCTAssertEqual(
+                canGoBack,
+                !noBack.contains(step),
+                "canGoBack(\(step))=\(canGoBack) should be false exactly for " +
+                    "name, creatingCard, processingScan"
+            )
+        }
+    }
+
+    /// `validSources` is the matrix's legal source set for `transition`. Every other
+    /// `OnboardingStep.allCases` value must be rejected. Both sets are asserted
+    /// non-empty so a renamed step cannot turn the loop into a no-op.
+    private func assertRejectedFromEveryStepExcept(
+        validSources: Set<OnboardingStep>,
+        transition: OnboardingRouter.Transition,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let rejected = OnboardingStep.allCases.filter { !validSources.contains($0) }
+        XCTAssertFalse(
+            validSources.isEmpty,
+            "valid sources for \(transition) must be non-empty",
+            file: file,
+            line: line
+        )
+        XCTAssertFalse(
+            rejected.isEmpty,
+            "rejected sources for \(transition) must be non-empty",
+            file: file,
+            line: line
+        )
+        for step in rejected {
+            XCTAssertNil(
+                router.nextStep(from: step, on: transition),
+                "\(transition) from \(step) should be rejected",
+                file: file,
+                line: line
+            )
+        }
+    }
 }

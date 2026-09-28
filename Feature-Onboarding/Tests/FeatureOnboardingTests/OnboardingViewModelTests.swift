@@ -228,8 +228,13 @@ final class OnboardingViewModelTests: XCTestCase {
 
     func testCreateCardFailureShowsAlertAndRetryReissuesIdempotently() async {
         let loyaltyRepo = FakeLoyaltyCardRepository()
-        loyaltyRepo.createCardErrorToThrow = SampleError.boom
-        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo)
+        loyaltyRepo.createCardErrorToThrow = NSError(
+            domain: "test",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "card 4111111111111111 user uid-9"]
+        )
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo, analytics: analytics)
         advanceToLoyaltyDecision(vm)
 
         vm.selectBranch(.newCustomer)
@@ -238,6 +243,7 @@ final class OnboardingViewModelTests: XCTestCase {
 
         XCTAssertEqual(vm.activeAlert, .createCardFailed)
         XCTAssertNil(vm.linkedCard)
+        XCTAssertEqual(analytics.trackCreateCardFailedReason, "unknown")
 
         loyaltyRepo.createCardErrorToThrow = nil
         vm.retryCreateCard()
@@ -351,12 +357,14 @@ final class OnboardingViewModelTests: XCTestCase {
     func testAlreadyClaimedFailureDismissReturnsToScanning() async {
         let loyaltyRepo = FakeLoyaltyCardRepository()
         loyaltyRepo.claimCardErrorToThrow = LoyaltyCardError.alreadyClaimed
-        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo)
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo, analytics: analytics)
         advanceToScanning(vm)
         vm.didScanCode("MINIT-TAKEN")
         await settle()
 
         XCTAssertEqual(vm.activeAlert, .claimCardFailed(kind: .alreadyClaimedByOtherUser))
+        XCTAssertEqual(analytics.trackClaimCardFailedReason, "alreadyClaimed")
 
         vm.dismissClaimFailure()
 
@@ -383,17 +391,37 @@ final class OnboardingViewModelTests: XCTestCase {
     func testGenericClaimFailureDismissReturnsToLoyaltyDecision() async {
         let loyaltyRepo = FakeLoyaltyCardRepository()
         loyaltyRepo.claimCardErrorToThrow = LoyaltyCardError.notFound
-        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo)
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo, analytics: analytics)
         advanceToScanning(vm)
         vm.didScanCode("UNKNOWN")
         await settle()
 
         XCTAssertEqual(vm.activeAlert, .claimCardFailed(kind: .generic))
+        XCTAssertEqual(analytics.trackClaimCardFailedReason, "notFound")
 
         vm.dismissClaimFailure()
 
         XCTAssertEqual(vm.step, .loyaltyDecision)
         XCTAssertNil(vm.selectedBranch)
+    }
+
+    func testClaimFailureReasonDropsRawErrorText() async {
+        let loyaltyRepo = FakeLoyaltyCardRepository()
+        loyaltyRepo.claimCardErrorToThrow = NSError(
+            domain: NSURLErrorDomain,
+            code: URLError.timedOut.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: "timed out for card 4111111111111111 user uid-9"]
+        )
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo, analytics: analytics)
+        advanceToScanning(vm)
+
+        vm.didScanCode("MINIT-TAKEN")
+        await settle()
+
+        XCTAssertEqual(analytics.trackClaimCardFailedReason, "unknown")
+        XCTAssertEqual(analytics.trackClaimCardFailedSource, "scanner")
     }
 
     func testRetryClaimCardReissuesSameCodeIdempotently() async {
@@ -530,6 +558,113 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertNil(vm.activeAlert)
         XCTAssertNotNil(vm.linkedCard)
         XCTAssertEqual(vm.step, .creatingCard)
+    }
+
+    func testTwoImmediateRetryBootstrapTapsFetchOnceAndCompleteOnce() async {
+        let loyaltyRepo = FakeLoyaltyCardRepository()
+        loyaltyRepo.fetchLinkedCardErrorToThrow = SampleError.boom
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(loyaltyCardRepository: loyaltyRepo, analytics: analytics)
+
+        await vm.bootstrap()
+        XCTAssertEqual(vm.activeAlert, .bootstrapFetchFailed)
+        XCTAssertEqual(loyaltyRepo.fetchLinkedCardCallCount, 1)
+
+        loyaltyRepo.fetchLinkedCardErrorToThrow = nil
+        loyaltyRepo.linkedCard = LoyaltyCardData(code: "MINIT-EXISTING", ownerUserId: "user-1", points: 40)
+        vm.retryBootstrap()
+        vm.retryBootstrap()
+        await settle()
+
+        XCTAssertEqual(analytics.trackRetryTappedCount, 1)
+        XCTAssertEqual(analytics.trackRetryTappedStep, "bootstrap")
+        XCTAssertEqual(loyaltyRepo.fetchLinkedCardCallCount, 2)
+        XCTAssertEqual(analytics.trackOnboardingCompletedCount, 1)
+        XCTAssertNil(vm.activeAlert)
+        XCTAssertNotNil(vm.linkedCard)
+        XCTAssertEqual(vm.step, .creatingCard)
+        XCTAssertFalse(vm.isBootstrapping)
+    }
+
+    func testContinueFromNameTrimsNextLineFromBothEndsOfTheName() async {
+        await assertSavedName("\u{0085}Iveta\u{0085}", equals: "Iveta")
+    }
+
+    func testContinueFromNameTrimsInfoSeparatorsFromBothEndsOfTheName() async {
+        for scalar in [Unicode.Scalar(0x001C)!, Unicode.Scalar(0x001D)!, Unicode.Scalar(0x001E)!, Unicode.Scalar(0x001F)!] {
+            let wrapped = String(scalar) + "Iveta" + String(scalar)
+            await assertSavedName(wrapped, equals: "Iveta")
+        }
+    }
+
+    func testSubmitManualCardCodeTrimsNextLineAndDoesNotClaimABlankCode() async {
+        await assertManualCode("\u{0085}", claimedAs: nil)
+        await assertManualCode("\u{0085}MINIT-NL\u{0085}", claimedAs: "MINIT-NL")
+    }
+
+    func testSubmitManualCardCodeTrimsInfoSeparatorsAndDoesNotClaimABlankCode() async {
+        for scalar in [Unicode.Scalar(0x001C)!, Unicode.Scalar(0x001D)!, Unicode.Scalar(0x001E)!, Unicode.Scalar(0x001F)!] {
+            await assertManualCode(String(scalar), claimedAs: nil)
+            await assertManualCode(String(scalar) + "MINIT" + String(scalar), claimedAs: "MINIT")
+        }
+    }
+
+    func testNameAndManualCardCodeKeepInteriorCharacters() async {
+        for scalar in [Unicode.Scalar(0x0085)!, Unicode.Scalar(0x001C)!, Unicode.Scalar(0x007F)!, Unicode.Scalar(0x0090)!] {
+            let name = "Ive" + String(scalar) + "ta"
+            await assertSavedName(name, equals: name)
+            let code = "MI" + String(scalar) + "NIT"
+            await assertManualCode(code, claimedAs: code)
+        }
+    }
+
+    func testNameAndManualCardCodeTrimDeleteAndC1Control() async {
+        for scalar in [Unicode.Scalar(0x007F)!, Unicode.Scalar(0x0090)!] {
+            await assertSavedName(String(scalar) + "Iveta" + String(scalar), equals: "Iveta")
+            await assertBlankName(String(scalar))
+            await assertManualCode(String(scalar) + "MINIT" + String(scalar), claimedAs: "MINIT")
+            await assertManualCode(String(scalar), claimedAs: nil)
+        }
+    }
+
+    private func assertSavedName(_ raw: String, equals saved: String) async {
+        let profile = FakeProfileRepository()
+        let vm = makeViewModel(profileRepository: profile)
+        vm.name = raw
+        XCTAssertTrue(vm.canContinueFromName)
+        vm.continueFromName()
+        await settle()
+        XCTAssertEqual(profile.updatedName, saved)
+        XCTAssertEqual(vm.name, saved)
+        XCTAssertEqual(vm.step, .language)
+    }
+
+    private func assertBlankName(_ raw: String) async {
+        let profile = FakeProfileRepository()
+        let analytics = MockOnboardingAnalyticsTracking()
+        let vm = makeViewModel(profileRepository: profile, analytics: analytics)
+        vm.name = raw
+        XCTAssertFalse(vm.canContinueFromName)
+        vm.continueFromName()
+        await settle()
+        XCTAssertNil(profile.updatedName)
+        XCTAssertEqual(vm.name, raw)
+        XCTAssertEqual(vm.step, .name)
+        XCTAssertTrue(analytics.trackNameValidationFailedCalled)
+    }
+
+    private func assertManualCode(_ raw: String, claimedAs expected: String?) async {
+        let loyalty = FakeLoyaltyCardRepository()
+        let vm = makeViewModel(loyaltyCardRepository: loyalty)
+        advanceToManualCardEntry(vm)
+        vm.submitManualCardCode(raw)
+        await settle()
+        if let expected {
+            XCTAssertEqual(loyalty.claimedCodes, [expected])
+        } else {
+            XCTAssertTrue(loyalty.claimedCodes.isEmpty)
+            XCTAssertEqual(vm.step, .manualCardEntry)
+        }
     }
 
     func testBootstrapResumesPersistedStepAndLanguage() async {
@@ -692,6 +827,7 @@ private final class FakeLoyaltyCardRepository: LoyaltyCardRepository {
     var claimCardErrorToThrow: Error?
     var fetchLinkedCardErrorToThrow: Error?
     private(set) var createCardCallCount = 0
+    private(set) var fetchLinkedCardCallCount = 0
     private(set) var claimedCodes: [String] = []
 
     func createCard(userId: String) async throws -> LoyaltyCardData {
@@ -711,6 +847,7 @@ private final class FakeLoyaltyCardRepository: LoyaltyCardRepository {
     }
 
     func fetchLinkedCard(userId: String) async throws -> LoyaltyCardData? {
+        fetchLinkedCardCallCount += 1
         if let fetchLinkedCardErrorToThrow { throw fetchLinkedCardErrorToThrow }
         return linkedCard
     }

@@ -21,12 +21,20 @@ final class LoyaltyCardModelsTests: XCTestCase {
         XCTAssertEqual(LoyaltyCardError.alreadyClaimed, .alreadyClaimed)
         XCTAssertEqual(LoyaltyCardError.alreadyLinked, .alreadyLinked)
         XCTAssertEqual(
-            LoyaltyCardError.underlying("x"),
-            LoyaltyCardError.underlying("x")
+            LoyaltyCardError.underlying(.unknown),
+            LoyaltyCardError.underlying(.unknown)
+        )
+        XCTAssertEqual(
+            LoyaltyCardError.underlying(.database(domain: "com.firebase", code: 1)),
+            LoyaltyCardError.underlying(.database(domain: "com.firebase", code: 1))
         )
         XCTAssertNotEqual(
-            LoyaltyCardError.underlying("x"),
-            LoyaltyCardError.underlying("y")
+            LoyaltyCardError.underlying(.unknown),
+            LoyaltyCardError.underlying(.decoding)
+        )
+        XCTAssertNotEqual(
+            LoyaltyCardError.underlying(.database(domain: "com.firebase", code: 1)),
+            LoyaltyCardError.underlying(.database(domain: "com.firebase", code: 2))
         )
     }
 }

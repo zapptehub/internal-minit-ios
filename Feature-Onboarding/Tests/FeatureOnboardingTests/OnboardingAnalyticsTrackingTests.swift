@@ -22,11 +22,11 @@ final class OnboardingAnalyticsTrackingTests: XCTestCase {
     func testMock_recordsCreateAndClaimFailures() {
         let mock = MockOnboardingAnalyticsTracking()
 
-        mock.trackCreateCardFailed(reason: "network")
+        mock.trackCreateCardFailed(reason: "server")
         mock.trackClaimCardFailed(reason: "alreadyClaimed", source: "scanner")
 
         XCTAssertTrue(mock.trackCreateCardFailedCalled)
-        XCTAssertEqual(mock.trackCreateCardFailedReason, "network")
+        XCTAssertEqual(mock.trackCreateCardFailedReason, "server")
         XCTAssertTrue(mock.trackClaimCardFailedCalled)
         XCTAssertEqual(mock.trackClaimCardFailedReason, "alreadyClaimed")
         XCTAssertEqual(mock.trackClaimCardFailedSource, "scanner")

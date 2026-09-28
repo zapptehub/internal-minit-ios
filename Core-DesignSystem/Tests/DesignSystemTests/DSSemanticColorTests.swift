@@ -101,6 +101,11 @@ final class DSSemanticColorTests: XCTestCase {
             DSPlatformColorExtension.loyaltyButtonBorder.sourceID,
             "platform:legacy:loyalty-button-border"
         )
+        XCTAssertEqual(DSPlatformColorExtension.loyaltyRankSubtitle.rgb, 0xA3A3A3)
+        XCTAssertEqual(
+            DSPlatformColorExtension.loyaltyRankSubtitle.sourceID,
+            "platform:figma:loyalty-rank-subtitle"
+        )
         XCTAssertEqual(DSPlatformColorExtension.backgroundGradientTop.rgb, 0xFF8300)
         XCTAssertEqual(DSPlatformColorExtension.backgroundGradientPeach.rgb, 0xFFC78F)
         XCTAssertEqual(DSPlatformColorExtension.backgroundGradientCream.rgb, 0xFFF1E0)
