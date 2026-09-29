@@ -33,10 +33,12 @@ public final class MockOnboardingAnalyticsTracking: OnboardingAnalyticsTracking 
     public var trackManualEntryChosenCalled = false
     public var trackQRCodeScannedCalled = false
     public var trackRetryTappedCalled = false
+    public var trackRetryTappedCount = 0
     public var trackRetryTappedStep: String?
     public var trackOnboardingResumedCalled = false
     public var trackOnboardingResumedStep: String?
     public var trackOnboardingCompletedCalled = false
+    public var trackOnboardingCompletedCount = 0
     public var trackEnterMinitTappedCalled = false
 
     public init() {}
@@ -138,6 +140,7 @@ public final class MockOnboardingAnalyticsTracking: OnboardingAnalyticsTracking 
 
     public func trackRetryTapped(step: String, file: String = #fileID) {
         trackRetryTappedCalled = true
+        trackRetryTappedCount += 1
         trackRetryTappedStep = step
     }
 
@@ -148,6 +151,7 @@ public final class MockOnboardingAnalyticsTracking: OnboardingAnalyticsTracking 
 
     public func trackOnboardingCompleted(file: String = #fileID) {
         trackOnboardingCompletedCalled = true
+        trackOnboardingCompletedCount += 1
     }
 
     public func trackEnterMinitTapped(file: String = #fileID) {
