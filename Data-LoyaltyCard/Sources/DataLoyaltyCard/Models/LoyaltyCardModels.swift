@@ -59,6 +59,34 @@ public enum LoyaltyCardError: Error, Equatable, Sendable {
     case alreadyClaimed
     /// The current user already has a different linked card.
     case alreadyLinked
-    /// Catch-all for transport / rules / unexpected backend failures.
-    case underlying(String)
+    /// Transport, rules, decoding, or an unexpected backend failure.
+    ///
+    /// The associated value keeps the typed source and drops
+    /// `localizedDescription`. That string follows the device language and can
+    /// include database paths, user ids, card codes, and server bodies.
+    case underlying(Underlying)
+
+    /// Typed source for ``underlying(_:)``.
+    ///
+    /// Firebase Realtime Database exposes only a few stable `NSError` codes.
+    /// `com.firebase` / `1` is `permission_denied` and `com.firebase` / `2` is
+    /// `unavailable` (`FUtilities.errorCodes`). Disconnect, offline, generic
+    /// `failed`, and `maxretry` share code `9999`. A failed `getData()` with an
+    /// empty cache is `com.firebase.core` / `1` for every status, including
+    /// permission denied. There is no timeout code on this path.
+    public enum Underlying: Equatable, Sendable {
+        /// `NSError` domain used by Firebase Realtime Database (`kFErrorDomain`).
+        public static let firebaseDatabaseDomain = "com.firebase"
+        /// `permission_denied`.
+        public static let firebasePermissionDeniedCode = 1
+        /// `unavailable`.
+        public static let firebaseUnavailableCode = 2
+
+        /// The stored record could not be decoded or was not the expected shape.
+        case decoding
+        /// Firebase `NSError` reduced to domain and code. The localized message is omitted.
+        case database(domain: String, code: Int)
+        /// No SDK error to classify, such as a transaction that did not commit.
+        case unknown
+    }
 }

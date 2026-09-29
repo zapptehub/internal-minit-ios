@@ -15,7 +15,7 @@ extension OnboardingViewModel {
         // Mirror `didScanCode`'s step guard so a stale call site cannot jump into
         // `processingScan` + claim from an unrelated screen.
         guard step == .manualCardEntry, !isLoading else { return }
-        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = code.onboardingTrimmed
         guard !trimmed.isEmpty else { return }
         errorMessage = nil
         guard advance(via: .codeSubmittedForClaim) else { return }
@@ -38,7 +38,7 @@ extension OnboardingViewModel {
                 isLoading = false
                 let kind = Self.claimFailureKind(for: error)
                 analytics.trackClaimCardFailed(
-                    reason: Self.analyticsReason(for: error),
+                    reason: OnboardingAnalyticsReason.code(for: error),
                     source: source.rawValue,
                     file: #fileID
                 )

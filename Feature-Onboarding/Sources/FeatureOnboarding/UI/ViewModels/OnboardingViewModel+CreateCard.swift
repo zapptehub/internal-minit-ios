@@ -16,7 +16,7 @@ extension OnboardingViewModel {
                 complete(with: card)
             } catch {
                 isLoading = false
-                analytics.trackCreateCardFailed(reason: Self.analyticsReason(for: error), file: #fileID)
+                analytics.trackCreateCardFailed(reason: OnboardingAnalyticsReason.code(for: error), file: #fileID)
                 activeAlert = .createCardFailed
             }
         }

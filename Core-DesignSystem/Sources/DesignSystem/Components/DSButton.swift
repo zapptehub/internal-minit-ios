@@ -128,9 +128,24 @@ public struct DSButton: View {
                     y: DSShadow.loyaltyButton.y
                 )
             } else {
-                HStack(spacing: DSConstant.small.value) {
+                HStack(spacing: isLoyaltyCard ? LoyaltyCardMetrics.chipIconGap : DSConstant.small.value) {
                     if isLoading {
                         ProgressView().tint(labelColor)
+                    } else if isLoyaltyCard {
+                        // `.loyaltyCard` uses `paragraphBold`. Other types keep `uiLargeBold`
+                        // and the intrinsic icon.
+                        if let icon {
+                            DSIconView(
+                                icon: icon,
+                                size: LoyaltyCardMetrics.chipIconSize,
+                                renderingMode: .original
+                            )
+                        }
+                        Text(title)
+                            .typography(LoyaltyCardMetrics.chipLabelStyle)
+                            .foregroundColor(labelColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     } else {
                         icon?.image
                             .foregroundColor(labelColor)

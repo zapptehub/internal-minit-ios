@@ -13,6 +13,12 @@ internal enum DSPlatformColorExtension {
         rgb: 0xDFDFDF,
         sourceID: "platform:legacy:loyalty-button-border"
     )
+    /// Figma loyalty-card rank subtitle `#A3A3A3`. No Mode 1 primitive matches
+    /// (nearest greys are `#B3B3B3` and `#999999`).
+    static let loyaltyRankSubtitle = DSColorToken(
+        rgb: 0xA3A3A3,
+        sourceID: "platform:figma:loyalty-rank-subtitle"
+    )
     static let backgroundGradientTop = DSColorToken(
         rgb: 0xFF8300,
         sourceID: "platform:legacy:background-gradient-top"

@@ -4,12 +4,12 @@ import Foundation
 /// beyond "done, move on"; see `OnboardingRouter` for where `.language` comes from.
 extension OnboardingViewModel {
     public var canContinueFromName: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !name.onboardingTrimmed.isEmpty
     }
 
     public func continueFromName() {
         guard !isLoading else { return }
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = name.onboardingTrimmed
         guard !trimmed.isEmpty else {
             analytics.trackNameValidationFailed(file: #fileID)
             return

@@ -34,12 +34,13 @@ struct OnboardingScaffold<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
                 Text(subtitle)
-                    .typography(.paragraphRegular)
-                    .foregroundColor(DSColor.Text.heading)
+                    .typography(.bodyMediumSmall)
+                    .foregroundColor(OnboardingScaffoldHeader.color)
 
                 headlineText
             }
-            .padding(.top, DSConstant.large.value)
+            .padding(.top, DSConstant.mediumLarge.value)
+            .background(OnboardingFrameReader(id: OnboardingFrameID.header))
 
             content()
                 .padding(.top, DSConstant.large.value)
@@ -53,6 +54,7 @@ struct OnboardingScaffold<Content: View>: View {
                 onPrimary: onPrimary,
                 onBack: onBack
             )
+            .background(OnboardingFrameReader(id: OnboardingFrameID.bottomBar))
             .padding(.bottom, DSConstant.medium.value)
         }
         .padding(.horizontal, DSConstant.large.value)
@@ -76,6 +78,12 @@ struct OnboardingScaffold<Content: View>: View {
             text.fixedSize(horizontal: false, vertical: true)
         }
     }
+}
+
+/// Figma binds this text to `text/headings` `#1A1A1A`.
+/// DS `Text.heading` is `#331A00`, so the subtitle uses `Text.primary`, which has the same hex.
+enum OnboardingScaffoldHeader {
+    static let color = DSColor.Text.primary
 }
 
 #Preview("OnboardingScaffold — name step") {

@@ -1,12 +1,18 @@
 import SwiftUI
 import DesignSystem
 
-/// `creatingCard` step (new-customer branch) — shared "finishing up" chrome: a centered
+/// `creatingCard` step (new-customer branch) — shared "finishing up" chrome: a
 /// `DSStatusCard` that shows loading until `createCard()` resolves, then success. No
 /// back affordance (matrix: can't step back once a create is in flight or done). The
-/// terminal button is unified to "Enter Minit" in both the loading (disabled) and
-/// success (enabled) states — the create-path mockup's "Continue" label is treated as
-/// an inconsistency per the Task 1.1 checklist.
+/// terminal button is "Continue" in both the loading (disabled) and success (enabled)
+/// states, matching Figma. Processing scan still shows Enter Minit.
+///
+/// Figma centres the card in the band between the headline block and the button,
+/// with 32pt gaps at both ends of that band and an extra 56pt bottom inset. Those
+/// 32pt gaps cancel, so the centre is `(headlineBottom + buttonTop - 56) / 2`.
+/// The scaffold content slot already starts 24pt (`DSConstant.large`) below the
+/// headline and ends at the button, so the card sits
+/// `CreateCardStatusMetrics.contentCenterLift` above the slot's own centre.
 ///
 /// Card-creation failure surfaces as a basic system alert (Retry / Dismiss) rather than
 /// a bespoke status-card variant, per the Task 1.1/1.2 decision.
@@ -16,32 +22,21 @@ struct CreateCardScreen: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        // The scaffold's own content slot is squeezed between the headline block and
-        // the bottom CTA bar, so centering *within it* isn't the same as centering on
-        // the whole screen (those two chrome regions aren't equal heights). Instead,
-        // leave the slot empty and position the card via `.overlay` + `GeometryReader`
-        // using the screen's actual measured size, so its center lands on the true
-        // screen center regardless of how tall the surrounding chrome is.
-        GeometryReader { screen in
-            OnboardingScaffold(
-                subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
-                headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
-                primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
-                isPrimaryEnabled: viewModel.linkedCard != nil,
-                showsBack: false,
-                onPrimary: {
-                    viewModel.tapEnterMinit()
-                }
-            ) {
-                Color.clear
+        OnboardingScaffold(
+            subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.continue", locale: locale),
+            isPrimaryEnabled: viewModel.linkedCard != nil,
+            showsBack: false,
+            onPrimary: {
+                viewModel.tapEnterMinit()
             }
-            .overlay {
-                // Matches `OnboardingScaffold`'s own horizontal inset so the card's
-                // margins line up with everything else on screen.
-                statusCard
-                    .padding(.horizontal, DSConstant.large.value)
-                    .position(x: screen.size.width / 2, y: screen.size.height / 2)
-            }
+        ) {
+            // The scaffold already insets 24pt on the sides, so the card fills the
+            // content width (354pt on a 402pt frame).
+            statusCard
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .offset(y: -CreateCardStatusMetrics.contentCenterLift)
         }
         .onAppear {
             analytics.trackCreatingCardScreenViewed(file: #fileID)
@@ -63,16 +58,19 @@ struct CreateCardScreen: View {
 
     @ViewBuilder
     private var statusCard: some View {
-        if viewModel.linkedCard != nil {
-            DSStatusCard(state: .success(
-                title: OnboardingLocalizedString.string("onboarding.finish.success.title", locale: locale)
-            ))
-        } else {
-            DSStatusCard(state: .loading(
-                title: OnboardingLocalizedString.string("onboarding.finish.creating.title", locale: locale),
-                subtitle: OnboardingLocalizedString.string("onboarding.finish.processing.subtitle", locale: locale)
-            ))
+        Group {
+            if viewModel.linkedCard != nil {
+                DSStatusCard(state: .success(
+                    title: OnboardingLocalizedString.string("onboarding.finish.success.title", locale: locale)
+                ))
+            } else {
+                DSStatusCard(state: .loading(
+                    title: OnboardingLocalizedString.string("onboarding.finish.creating.title", locale: locale),
+                    subtitle: OnboardingLocalizedString.string("onboarding.finish.processing.subtitle", locale: locale)
+                ))
+            }
         }
+        .background(OnboardingFrameReader(id: OnboardingFrameID.statusCard))
     }
 
     private var createFailedAlertPresented: Binding<Bool> {
@@ -83,6 +81,18 @@ struct CreateCardScreen: View {
                 // already clear `activeAlert` themselves.
             }
         )
+    }
+}
+
+/// Figma's extra 56pt bottom inset, expressed as a lift inside the scaffold slot.
+enum CreateCardStatusMetrics {
+    /// No spacing token is 56. `DSPrimitiveScale.step1400` is 56, but that step
+    /// is a control height, not a spacing role.
+    static let centeringBottomInset: CGFloat = 56
+
+    /// `(DSConstant.large + centeringBottomInset) / 2`. See `CreateCardScreen`.
+    static var contentCenterLift: CGFloat {
+        (DSConstant.large.value + centeringBottomInset) / 2
     }
 }
 

@@ -53,6 +53,7 @@ public protocol OnboardingAnalyticsTracking: Sendable {
     func trackRetryTapped(step: String, file: String)
     func trackOnboardingResumed(step: String, file: String)
     func trackOnboardingCompleted(file: String)
-    /// Fired when "Enter Minit" is tapped on the terminal success screen.
+    /// Fired when the terminal primary is tapped. Create Card's title is Continue;
+    /// processing scan's is Enter Minit. The event name is unchanged.
     func trackEnterMinitTapped(file: String)
 }

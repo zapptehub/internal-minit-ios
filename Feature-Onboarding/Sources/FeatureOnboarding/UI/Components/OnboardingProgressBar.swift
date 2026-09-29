@@ -7,14 +7,17 @@ struct OnboardingProgressBar: View {
     let progress: Double
     @Environment(\.locale) private var locale
 
-    private static let height: CGFloat = 4
+    /// Figma track height is 3 (2097:850 and the other onboarding frames).
+    /// Figma TOP fills the track with `rgba(255,255,255,0.25)`.
+    static let height: CGFloat = 3
+    static let trackOpacity: Double = 0.25
 
     var body: some View {
         GeometryReader { proxy in
             let clamped = min(max(progress, 0), 1)
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.35))
+                    .fill(Color.white.opacity(Self.trackOpacity))
                 Capsule()
                     .fill(Color.white)
                     .frame(width: max(Self.height, proxy.size.width * clamped))

@@ -8,7 +8,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
     public init() {}
 
     public func fetchLinkedCardId(userId: String) async throws -> String? {
-        let snapshot = try await userLoyaltyCardIdReference(userId: userId).getData()
+        let snapshot = try await readSnapshot(userLoyaltyCardIdReference(userId: userId))
         guard snapshot.exists(), let value = snapshot.value as? String, !value.isEmpty else {
             return nil
         }
@@ -26,20 +26,22 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
             return .success(withValue: currentData)
         }
         guard let linked = Self.nonEmptyString(from: result.value) else {
-            throw LoyaltyCardError.underlying("Failed to link loyalty card id for user \(userId).")
+            throw LoyaltyCardError.underlying(.decoding)
         }
         return linked
     }
 
     public func fetchCard(code: String) async throws -> LoyaltyCardDto? {
-        let snapshot = try await cardReference(code: code).getData()
+        let snapshot = try await readSnapshot(cardReference(code: code))
         guard snapshot.exists(), snapshot.value != nil else {
             return nil
         }
         do {
             return try snapshot.data(as: LoyaltyCardDto.self)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
-            throw LoyaltyCardError.underlying("Failed to decode loyalty card \(code): \(error.localizedDescription)")
+            throw LoyaltyCardError.underlying(.decoding)
         }
     }
 
@@ -62,7 +64,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
             }
 
             guard var dictionary = currentData.value as? [String: Any] else {
-                abortBox.reason = .underlying("Unexpected loyalty card payload for \(code).")
+                abortBox.reason = .underlying(.decoding)
                 return .abort()
             }
 
@@ -144,7 +146,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
             }
 
             guard var dictionary = currentData.value as? [String: Any] else {
-                abortBox.reason = .underlying("Unexpected loyalty card payload for \(code).")
+                abortBox.reason = .underlying(.decoding)
                 return .abort()
             }
 
@@ -182,7 +184,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
             return dto
         }
         guard let dictionary = snapshot.value as? [String: Any] else {
-            throw LoyaltyCardError.underlying("Missing loyalty card payload for \(fallbackCode).")
+            throw LoyaltyCardError.underlying(.decoding)
         }
         let code = dictionary["code"] as? String ?? fallbackCode
         let owner = Self.nonEmptyString(from: dictionary["ownerUserId"])
@@ -198,9 +200,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
         try await withCheckedThrowingContinuation { continuation in
             reference.runTransactionBlock(update, andCompletionBlock: { error, committed, snapshot in
                 if let error {
-                    continuation.resume(
-                        throwing: LoyaltyCardError.underlying(error.localizedDescription)
-                    )
+                    continuation.resume(throwing: Self.databaseFailure(error))
                     return
                 }
                 guard committed, let snapshot else {
@@ -209,15 +209,30 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
                     if let snapshot {
                         continuation.resume(returning: snapshot)
                     } else {
-                        continuation.resume(
-                            throwing: LoyaltyCardError.underlying("Loyalty card transaction did not commit.")
-                        )
+                        continuation.resume(throwing: LoyaltyCardError.underlying(.unknown))
                     }
                     return
                 }
                 continuation.resume(returning: snapshot)
             }, withLocalEvents: withLocalEvents)
         }
+    }
+
+    /// `getData()` throws the SDK `NSError` directly. Keep domain and code only.
+    private func readSnapshot(_ reference: DatabaseReference) async throws -> DataSnapshot {
+        do {
+            return try await reference.getData()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw Self.databaseFailure(error)
+        }
+    }
+
+    /// Transaction completion errors are `NSError`s. `localizedDescription` is not kept.
+    private static func databaseFailure(_ error: Error) -> LoyaltyCardError {
+        let nsError = error as NSError
+        return .underlying(.database(domain: nsError.domain, code: nsError.code))
     }
 
     private static func nonEmptyString(from value: Any?) -> String? {

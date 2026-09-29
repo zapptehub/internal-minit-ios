@@ -50,8 +50,8 @@ public final class OnboardingViewModel {
     public var errorMessage: String?
     public internal(set) var activeAlert: OnboardingAlert?
 
-    /// Set once `createCard`/`claimCard` confirms a linked card. The terminal screen's
-    /// "Enter Minit" button should only be enabled while this is non-nil.
+    /// Set once `createCard`/`claimCard` confirms a linked card. Create Card's Continue
+    /// and processing scan's Enter Minit are enabled only while this is non-nil.
     public private(set) var linkedCard: LoyaltyCardData?
 
     /// Top progress-bar fill. Finish steps (create/claim) stay near-complete while
@@ -200,6 +200,10 @@ public final class OnboardingViewModel {
 
     public func retryBootstrap() {
         guard !isBootstrapping else { return }
+        // Set before the unstructured Task, matching Android. bootstrap() sets
+        // the flag again and does not reject a call that already set it, so
+        // this run still starts. A second tap in the same turn sees the flag.
+        isBootstrapping = true
         activeAlert = nil
         errorMessage = nil
         analytics.trackRetryTapped(step: "bootstrap", file: #fileID)
@@ -245,28 +249,12 @@ public final class OnboardingViewModel {
         analytics.trackOnboardingCompleted(file: #fileID)
     }
 
-    /// "Enter Minit" on the terminal success screen — no-ops if completion hasn't
-    /// actually been confirmed yet (defensive; the button itself should be disabled).
+    /// Terminal primary on the success screen. Create Card's title is Continue;
+    /// processing scan's is Enter Minit. No-ops if completion hasn't actually been
+    /// confirmed yet (defensive; the button itself should be disabled).
     public func tapEnterMinit() {
         guard linkedCard != nil else { return }
         analytics.trackEnterMinitTapped(file: #fileID)
         onCompleted()
-    }
-
-    // MARK: Shared helpers
-
-    /// Debug/analytics-only categorization — never shown to the user, so it doesn't
-    /// need localization the way `activeAlert`'s cases do. Shared by the CreateCard
-    /// and Claim sections.
-    static func analyticsReason(for error: Error) -> String {
-        guard let loyaltyError = error as? LoyaltyCardError else {
-            return "unknown:\(error.localizedDescription)"
-        }
-        switch loyaltyError {
-        case .notFound: return "notFound"
-        case .alreadyClaimed: return "alreadyClaimed"
-        case .alreadyLinked: return "alreadyLinked"
-        case .underlying(let message): return "underlying:\(message)"
-        }
     }
 }

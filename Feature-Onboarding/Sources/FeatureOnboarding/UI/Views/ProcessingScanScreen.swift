@@ -18,8 +18,9 @@ struct ProcessingScanScreen: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        // Same screen-center positioning as `CreateCardScreen` — the scaffold's
-        // content slot isn't vertically centered on the full screen.
+        // Create Card centres its card in the scaffold slot (Figma). This step
+        // still centres on the step: the shared `DSStatusCard` chrome matches,
+        // the overlay position does not.
         GeometryReader { screen in
             OnboardingScaffold(
                 subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),

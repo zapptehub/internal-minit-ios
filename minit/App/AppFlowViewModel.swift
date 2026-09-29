@@ -97,8 +97,9 @@ final class AppFlowViewModel {
         Task { await resolvePostAuthDestination(userId: session.userId) }
     }
 
-    /// `FeatureOnboarding`'s `onCompleted` callback — fires only after "Enter Minit" is
-    /// tapped with a confirmed linked card (in-flow completion), never from bootstrap.
+    /// `FeatureOnboarding`'s `onCompleted` callback — fires only after the terminal
+    /// primary is tapped with a confirmed linked card (Create Card's Continue, or
+    /// processing scan's Enter Minit), never from bootstrap.
     func didCompleteOnboarding(userId: String) {
         restoredLocale = nil
         state = .authenticated(userId: userId)

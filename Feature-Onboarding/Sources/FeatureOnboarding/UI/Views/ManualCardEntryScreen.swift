@@ -53,7 +53,7 @@ struct ManualCardEntryScreen: View {
     }
 
     private var canContinue: Bool {
-        !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading
+        !code.onboardingTrimmed.isEmpty && !viewModel.isLoading
     }
 }
 
