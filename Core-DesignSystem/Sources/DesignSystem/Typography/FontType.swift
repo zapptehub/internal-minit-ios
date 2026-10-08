@@ -5,6 +5,10 @@ public enum FontType {
     case headingLargeBold
     /// Figma "Heading/H1" (Sharp Grotesk SmBold 20, 40pt, weight 600, line height 44, tracking −1).
     case headingLargeSemibold
+    /// Figma "Heading/H2" (Home greeting): Sharp Grotesk SmBold 20, 30pt, weight 600,
+    /// tracking 0, line height "normal" — a 38pt box at 30pt (Figma's normal line
+    /// includes the face's hhea line gap).
+    case headingH2
     case headingMediumBold
     case paragraphLargeRegular
     case paragraphRegular
@@ -29,6 +33,7 @@ public enum FontType {
         switch self {
         case .headingLargeBold: return DSFont.heading(size: 56)
         case .headingLargeSemibold: return DSFont.heading(size: 40)
+        case .headingH2: return DSFont.heading(size: 30)
         case .headingMediumBold: return DSFont.heading(size: 20)
         case .paragraphLargeRegular: return .system(size: 17, weight: .regular)
         case .paragraphRegular: return .system(size: 15, weight: .regular)
@@ -70,6 +75,8 @@ public enum FontType {
         switch self {
         case .headingLargeSemibold:
             return FigmaLineBox(lineHeight: 44, naturalLineHeight: 40)
+        case .headingH2:
+            return FigmaLineBox(lineHeight: 38, naturalLineHeight: 30)
         case .bodyMediumSmall:
             return FigmaLineBox(
                 lineHeight: 20,
@@ -134,6 +141,7 @@ private struct FigmaLineBoxModifier: ViewModifier {
     VStack(alignment: .leading, spacing: 12) {
         Text("headingLargeBold").typography(.headingLargeBold)
         Text("headingLargeSemibold").typography(.headingLargeSemibold)
+        Text("headingH2").typography(.headingH2)
         Text("headingMediumBold").typography(.headingMediumBold)
         Text("paragraphLargeRegular").typography(.paragraphLargeRegular)
         Text("paragraphRegular").typography(.paragraphRegular)

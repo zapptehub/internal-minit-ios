@@ -33,6 +33,24 @@ final class FontTypeLineMetricsTests: XCTestCase {
         XCTAssertEqual(wrapped.height, 88, accuracy: 0.75, "two-line heading \(wrapped.height)")
     }
 
+    /// Figma "Heading/H2" (Home greeting, node 6064:4622): 30pt Sharp Grotesk with a
+    /// "normal" line height whose box is 38pt; tracking 0.
+    func testHeadingH2LineBoxMatchesFigmaGreeting() {
+        let lineBox = FontType.headingH2.figmaLineBox
+        XCTAssertEqual(lineBox?.lineHeight, 38)
+        XCTAssertEqual(lineBox?.naturalLineHeight, 30)
+        XCTAssertEqual(lineBox?.lineSpacing, 8)
+        XCTAssertEqual(lineBox?.halfLeading, 4)
+        XCTAssertEqual(FontType.headingH2.tracking, 0)
+
+        let greeting = Self.measure(
+            Text("Dobré ráno Iveta")
+                .typography(.headingH2)
+                .fixedSize()
+        )
+        XCTAssertEqual(greeting.height, 38, accuracy: 0.75, "headingH2 \(greeting.height)")
+    }
+
     func testParagraphRegularTypographyDoesNotAddLineBoxPadding() {
         let styled = Self.measure(
             Text("Hello")
