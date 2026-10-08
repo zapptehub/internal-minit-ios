@@ -53,18 +53,60 @@ public struct DSChallengesCardList: View {
 
     @State private var showsUnderConstructionAlert = false
 
-    private static let cardSize = CGSize(width: 200, height: 140)
-    private static let cornerRadius = DSRadius.card
-    private static let iconCircleDiameter = DSMetric.Spacing.xxLarge
+    /// `Font.custom(_:size:)` scales with the body text style, so the extra
+    /// leading scales the same way: baseline-to-baseline stays 20/15 of the size.
+    @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSChallengesCardList.titleLineSpacing
+
+    /// Figma Challenge card (6143:1889) is 200 × 124; was 140.
+    static let cardSize = CGSize(width: 200, height: 124)
+    /// Figma Challenge card (6143:1889) corner radius 16 (not bound to a Figma variable);
+    /// was the shared `DSRadius.card` (20), which stays unchanged. Both the clip and the
+    /// border use it, with the same continuous corner style.
+    static let cornerRadius = DSPrimitiveScale.step400.value
+    static let iconCircleDiameter = DSMetric.Spacing.xxLarge
     private static let iconSize = DSMetric.Size.iconMedium
-    private static let iconRingLineWidth: CGFloat = 4
+    /// Figma Croissant frame (6154:1813) is 24; the line icons (QR, drinks) stay 20.
+    static let croissantIconSize = DSMetric.Size.iconLarge
+    /// Figma Progress track (6154:1800): 3pt stroke, white 24% (was 4pt at 15%).
+    static let iconRingLineWidth: CGFloat = 3
+    static let iconRingTrackOpacity: Double = 0.24
     /// Angular gap between dashes when the ring is split by `Item.repeatCount`.
     private static let iconRingSegmentGapDegrees: Double = 24
     /// Rotates the first dash off of straight-up (12 o'clock) to roughly 2 o'clock,
     /// matching Figma.
     private static let iconRingStartRotationDegrees: Double = 45
-    private static let badgeIconSize = DSMetric.Size.iconSmall
-    private static let itemSpacing: CGFloat = DSConstant.medium.value
+    static let badgeIconSize = DSMetric.Size.iconSmall
+    /// Figma PTS (6143:1895): 4pt horizontal, 2pt vertical padding, 4pt gap, 16pt coin,
+    /// "Body/Bold/label" text (system 12 bold, line height 20) → 24pt tall, 72pt for
+    /// "+45 pts". Was 4/8 horizontal, 4 vertical, 13pt semibold.
+    static let badgeHorizontalPadding = DSConstant.xSmall.value
+    static let badgeVerticalPadding = DSMetric.Spacing.xxSmall
+    static let badgeContentSpacing = DSConstant.xSmall.value
+    static let badgeTextStyle = FontType.bodyBoldLabel
+    /// Figma title (6143:1898): Sharp Grotesk SmBold 20, 15pt, line height 20,
+    /// tracking 0, trimmed to cap height and last baseline (was SF 17 semibold).
+    static let titleStyle = FontType.headingSmall
+    /// Point size of `titleStyle`. Sharp Grotesk's SwiftUI line box is the point size.
+    static let titlePointSize: CGFloat = 15
+    static let titleLineHeight: CGFloat = 20
+    /// `.lineSpacing` that turns the 15pt line box into Figma's 20pt line height.
+    static let titleLineSpacing: CGFloat = titleLineHeight - titlePointSize
+    /// The card's bottom padding; descenders of the last line paint into it.
+    static let titleFollowingGap = DSConstant.mediumLarge.value
+    /// Figma Content (6143:1888) gap between cards: 8 (was 12).
+    static let itemSpacing: CGFloat = DSConstant.small.value
+
+    /// Figma effect style "Small" on the Challenge card (6143:1889): two drop shadows in
+    /// `#3E3445`. Card-local; the shared `DSShadow` tokens are unchanged.
+    /// SwiftUI's shadow radius is half the Figma/CSS blur.
+    static let shadowColor = Color(red: 0x3E / 255, green: 0x34 / 255, blue: 0x45 / 255)
+    /// `color/shadow/opacity-4` (`#3E34450A`): x 0, y 2, blur 4, spread 0.
+    static let nearShadow = DSShadowToken(color: shadowColor.opacity(10.0 / 255), radius: 4 / 2, x: 0, y: 2)
+    /// `color/shadow/opacity-10` (`#3E34451A`): x 0, y 16, blur 32, spread −4.
+    static let farShadow = DSShadowToken(color: shadowColor.opacity(26.0 / 255), radius: 32 / 2, x: 0, y: 16)
+    /// SwiftUI shadows have no spread, so the far shadow is cast by the card shape
+    /// inset by 4 on every side (corner radius 16 − 4 = 12), which is what CSS spread −4 does.
+    static let farShadowSpread: CGFloat = -4
 
     public init(title: String, items: [Item]) {
         self.title = title
@@ -92,23 +134,29 @@ public struct DSChallengesCardList: View {
                     card(item)
                 }
             }
-            .padding(.horizontal, DSConstant.mediumLarge.value)
+            .padding(.horizontal, DSCollectionHeader.horizontalInset)
         }
+        // The far card shadow reaches ~44pt below the cards (y 16 − 4 + blur 32);
+        // the scroll view must not cut it off.
+        .scrollClipDisabled()
     }
 
     private func card(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
+            Self.topRow {
                 iconCircle(item.icon, repeatCount: item.repeatCount, progress: item.progress)
-                Spacer(minLength: 0)
-                badge(text: item.badgeText)
+            } trailing: {
+                Self.badge(text: item.badgeText)
             }
             Spacer(minLength: 0)
-            Text(item.title)
-                .typography(.uiLargeBold)
-                .foregroundColor(.white)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
+            SharpGroteskCapTrim(followingGap: Self.titleFollowingGap) {
+                Text(item.title)
+                    .typography(Self.titleStyle)
+                    .lineSpacing(titleLineSpacing)
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
         }
         .padding(DSConstant.mediumLarge.value)
         .frame(width: Self.cardSize.width, height: Self.cardSize.height, alignment: .topLeading)
@@ -127,12 +175,50 @@ public struct DSChallengesCardList: View {
                     lineWidth: DSBorderWidth.standard
                 )
         }
+        .background {
+            // Outside the clip, so the shadows are not cut by it.
+            Self.shadowCasters(color: item.backgroundColor)
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             showsUnderConstructionAlert = true
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// Opaque card-shaped layers behind the card that cast Figma's two shadows. They are
+    /// filled with the card's own color and hidden by it, so only the shadows show.
+    static func shadowCasters(color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius + farShadowSpread, style: .continuous)
+                .fill(color)
+                .padding(-farShadowSpread)
+                .dsShadow(farShadow)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(color)
+                .dsShadow(nearShadow)
+        }
+    }
+
+    static func iconSize(for icon: DSIcon) -> CGFloat {
+        icon == .croissant ? croissantIconSize : iconSize
+    }
+
+    /// Ring on the leading edge, "+N pts" pill on the trailing edge. The pill is centred
+    /// vertically on the 40pt ring, like Figma (6143:1889) and Android; it used to be
+    /// top-aligned, which put it about 8pt above the ring's centre.
+    static let topRowAlignment = VerticalAlignment.center
+
+    static func topRow<Leading: View, Trailing: View>(
+        @ViewBuilder leading: () -> Leading,
+        @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        HStack(alignment: topRowAlignment) {
+            leading()
+            Spacer(minLength: 0)
+            trailing()
+        }
     }
 
     /// Outlined ring, not a filled circle — matches Figma's thin white 15%-opacity stroke
@@ -144,7 +230,7 @@ public struct DSChallengesCardList: View {
         iconRing(repeatCount: repeatCount, progress: progress)
             .frame(width: Self.iconCircleDiameter, height: Self.iconCircleDiameter)
             .overlay {
-                DSIconView(icon: icon, size: Self.iconSize, color: .white)
+                DSIconView(icon: icon, size: Self.iconSize(for: icon), color: .white)
             }
             .accessibilityHidden(true)
     }
@@ -153,7 +239,7 @@ public struct DSChallengesCardList: View {
     private func iconRing(repeatCount: Int, progress: Int) -> some View {
         if repeatCount <= 1 {
             Circle()
-                .strokeBorder(Color.white.opacity(0.15), lineWidth: Self.iconRingLineWidth)
+                .strokeBorder(Color.white.opacity(Self.iconRingTrackOpacity), lineWidth: Self.iconRingLineWidth)
         } else {
             let segmentDegrees = 360.0 / Double(repeatCount)
             let gap = Self.iconRingSegmentGapDegrees
@@ -162,7 +248,7 @@ public struct DSChallengesCardList: View {
                     Circle()
                         .trim(from: 0, to: max(segmentDegrees - gap, 0) / 360)
                         .stroke(
-                            index < progress ? Color.white : Color.white.opacity(0.15),
+                            index < progress ? Color.white : Color.white.opacity(Self.iconRingTrackOpacity),
                             style: StrokeStyle(lineWidth: Self.iconRingLineWidth, lineCap: .round)
                         )
                         .rotationEffect(
@@ -177,16 +263,15 @@ public struct DSChallengesCardList: View {
     /// behind it, i.e. the card's own color) plus a bright hairline rim, rather than a flat
     /// dark chip. Reuses the "+N pts" icon (`DSIcon.minitPointCoin`) already used for
     /// notification rows.
-    private func badge(text: String) -> some View {
-        HStack(spacing: DSConstant.xSmall.value) {
+    static func badge(text: String) -> some View {
+        HStack(spacing: Self.badgeContentSpacing) {
             DSIconView(icon: .minitPointCoin, size: Self.badgeIconSize, renderingMode: .original)
             Text(text)
-                .typography(.uiSmallSemibold)
+                .typography(Self.badgeTextStyle)
                 .foregroundColor(.white)
         }
-        .padding(.leading, DSConstant.xSmall.value)
-        .padding(.trailing, DSConstant.small.value)
-        .padding(.vertical, DSConstant.xSmall.value)
+        .padding(.horizontal, Self.badgeHorizontalPadding)
+        .padding(.vertical, Self.badgeVerticalPadding)
         .background {
             Capsule()
                 .fill(.thinMaterial)

@@ -15,18 +15,31 @@ struct DSCollectionHeader: View {
 
     @Environment(\.locale) private var locale
 
-    private static let seeAllButtonDiameter: CGFloat = 24
+    static let seeAllButtonDiameter: CGFloat = 24
     private static let seeAllChevronSize: CGFloat = 14
+
+    /// Figma Home sections (Products 6154:1940, Challenges 6143:1976, News & Recipes
+    /// 6154:2057) inset their title row and their scrolling content 20pt from the screen
+    /// edges (was 16). The DS list components use this same value for their rows.
+    static let horizontalInset = DSPrimitiveScale.step500.value
+    /// Figma section title: Sharp Grotesk 18, trimmed to cap height and baseline (was
+    /// `headingMediumBold`, 20 untrimmed).
+    static let titleStyle = FontType.headingSection
+    /// Room under the trimmed title inside the 24pt row; descenders ("g" in
+    /// "Challenges") paint into it.
+    static let titleFollowingGap = DSConstant.xSmall.value
 
     var body: some View {
         HStack {
-            Text(title)
-                .typography(.headingMediumBold)
-                .foregroundColor(DSColor.Text.heading)
+            SharpGroteskCapTrim(followingGap: Self.titleFollowingGap) {
+                Text(title)
+                    .typography(Self.titleStyle)
+                    .foregroundColor(DSColor.Text.heading)
+            }
             Spacer(minLength: 0)
             seeAllButton
         }
-        .padding(.horizontal, DSConstant.mediumLarge.value)
+        .padding(.horizontal, Self.horizontalInset)
     }
 
     private var seeAllButton: some View {

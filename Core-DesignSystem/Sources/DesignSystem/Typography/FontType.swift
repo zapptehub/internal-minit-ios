@@ -10,11 +10,24 @@ public enum FontType {
     /// includes the face's hhea line gap).
     case headingH2
     case headingMediumBold
+    /// Figma Challenges card title (6143:1898): Sharp Grotesk SmBold 20, 15pt,
+    /// line height 20, tracking 0, text-box trim both (cap to alphabetic).
+    /// The line height and the trim are applied at the call site with
+    /// `.lineSpacing` and `SharpGroteskCapTrim`, like `DSStatusCard`'s title.
+    case headingSmall
+    /// Figma Home section title (Products 6154:1940, Challenges 6143:1976, News & Recipes
+    /// 6154:2057): Sharp Grotesk SmBold 20, 18pt, line height "normal", tracking 0,
+    /// text-box trim both (cap to alphabetic). The trim is `SharpGroteskCapTrim` at the
+    /// call site (`DSCollectionHeader`), so no Figma line box is applied here.
+    case headingSection
     case paragraphLargeRegular
     case paragraphRegular
     case paragraphBold
     /// Figma "Body/Medium/small": system 14 medium, line height 20, tracking 0.
     case bodyMediumSmall
+    /// Figma "Body/Bold/label" (Challenges "+N pts" pill): system 12 bold, line height 20,
+    /// tracking 0.
+    case bodyBoldLabel
     case uiLargeBold
     case uiLargeRegular
     case uiRegular
@@ -35,10 +48,13 @@ public enum FontType {
         case .headingLargeSemibold: return DSFont.heading(size: 40)
         case .headingH2: return DSFont.heading(size: 30)
         case .headingMediumBold: return DSFont.heading(size: 20)
+        case .headingSmall: return DSFont.heading(size: 15)
+        case .headingSection: return DSFont.heading(size: 18)
         case .paragraphLargeRegular: return .system(size: 17, weight: .regular)
         case .paragraphRegular: return .system(size: 15, weight: .regular)
         case .paragraphBold: return .system(size: 15, weight: .bold)
         case .bodyMediumSmall: return .system(size: 14, weight: .medium)
+        case .bodyBoldLabel: return .system(size: 12, weight: .bold)
         case .uiLargeBold: return .system(size: 17, weight: .semibold)
         case .uiLargeRegular: return .system(size: 17, weight: .regular)
         case .uiRegular: return .system(size: 13, weight: .regular)
@@ -81,6 +97,11 @@ public enum FontType {
             return FigmaLineBox(
                 lineHeight: 20,
                 naturalLineHeight: UIFont.systemFont(ofSize: 14, weight: .medium).lineHeight
+            )
+        case .bodyBoldLabel:
+            return FigmaLineBox(
+                lineHeight: 20,
+                naturalLineHeight: UIFont.systemFont(ofSize: 12, weight: .bold).lineHeight
             )
         default:
             return nil
@@ -143,10 +164,13 @@ private struct FigmaLineBoxModifier: ViewModifier {
         Text("headingLargeSemibold").typography(.headingLargeSemibold)
         Text("headingH2").typography(.headingH2)
         Text("headingMediumBold").typography(.headingMediumBold)
+        Text("headingSmall").typography(.headingSmall)
+        Text("headingSection").typography(.headingSection)
         Text("paragraphLargeRegular").typography(.paragraphLargeRegular)
         Text("paragraphRegular").typography(.paragraphRegular)
         Text("paragraphBold").typography(.paragraphBold)
         Text("bodyMediumSmall").typography(.bodyMediumSmall)
+        Text("bodyBoldLabel").typography(.bodyBoldLabel)
         Text("uiLargeBold").typography(.uiLargeBold)
         Text("uiLargeRegular").typography(.uiLargeRegular)
         Text("uiRegular").typography(.uiRegular)

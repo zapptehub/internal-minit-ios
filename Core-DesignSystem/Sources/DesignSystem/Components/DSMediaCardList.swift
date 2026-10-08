@@ -66,7 +66,7 @@ public struct DSMediaCardList: View {
                     card(item)
                 }
             }
-            .padding(.horizontal, DSConstant.mediumLarge.value)
+            .padding(.horizontal, DSCollectionHeader.horizontalInset)
         }
     }
 

@@ -31,16 +31,21 @@ public struct DSCircleItemList: View {
 
     @State private var showsUnderConstructionAlert = false
 
-    private static let circleDiameter: CGFloat = 56
+    static let circleDiameter: CGFloat = 56
     private static let imageSize = CGSize(width: 49, height: 49)
-    private static let badgeDiameter: CGFloat = 20
-    private static let badgeBorderWidth: CGFloat = 3
-    /// Extra nudge past the grey circle's corner so most of the badge hangs outside,
-    /// matching Figma. Combined with centering the badge on that corner.
-    private static let badgeOutsideExtra: CGFloat = 8
-    /// How far the badge extends above the grey circle — used as top inset on the row
-    /// so the outward-hanging badge isn't clipped by the horizontal scroll view.
-    private static let badgeVisualRadius: CGFloat = (badgeDiameter / 2) + badgeBorderWidth + badgeOutsideExtra
+    static let badgeDiameter: CGFloat = 20
+    static let badgeBorderWidth: CGFloat = 3
+    /// Figma (Products, node 6154:1940): the 20pt pink badge sits level with the
+    /// circle's top and hangs 9.5pt past its right edge. These offsets place the
+    /// badge *with* its 3pt white ring from the circle's top-trailing corner, so the
+    /// pink disc lands there: right 9.5 + 3, up 0 + 3.
+    static let badgeTrailingOffset: CGFloat = 9.5 + badgeBorderWidth
+    static let badgeTopOffset: CGFloat = badgeBorderWidth
+    /// Space above the circle row. Figma has 12pt from the 24pt title row to the
+    /// circles (header center to circle top 24, same as Challenges): the VStack's
+    /// `small` (8) spacing plus this 4. It is also more than `badgeTopOffset`, so the
+    /// badge's white ring isn't clipped by the horizontal scroll view.
+    static let rowTopInset: CGFloat = 4
     private static let itemSpacing: CGFloat = DSConstant.large.value
 
     public init(title: String, items: [Item]) {
@@ -69,8 +74,8 @@ public struct DSCircleItemList: View {
                     circleItem(item)
                 }
             }
-            .padding(.horizontal, DSConstant.mediumLarge.value)
-            .padding(.top, Self.badgeVisualRadius)
+            .padding(.horizontal, DSCollectionHeader.horizontalInset)
+            .padding(.top, Self.rowTopInset)
         }
     }
 
@@ -85,9 +90,7 @@ public struct DSCircleItemList: View {
                 .overlay(alignment: .topTrailing) {
                     if item.showDiscount {
                         discountBadge
-                            .alignmentGuide(.trailing) { $0[HorizontalAlignment.center] }
-                            .alignmentGuide(.top) { $0[VerticalAlignment.center] }
-                            .offset(x: Self.badgeOutsideExtra, y: -Self.badgeOutsideExtra)
+                            .offset(x: Self.badgeTrailingOffset, y: -Self.badgeTopOffset)
                     }
                 }
 
