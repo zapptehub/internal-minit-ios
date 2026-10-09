@@ -42,6 +42,9 @@ struct TabRootView: View {
                 .tag(AppTab.game)
         }
         .tint(DSColor.Background.Button.secondary)
+        // Popups from the tabs (Home's loyalty card) draw above the tab bar, centred on
+        // the full screen, with the scrim covering the tab bar like Android.
+        .dsPopupHost()
     }
 
     @ViewBuilder
