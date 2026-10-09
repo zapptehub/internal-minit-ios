@@ -28,17 +28,38 @@ public struct DSMediaCardList: View {
 
     @State private var showsUnderConstructionAlert = false
 
-    private static let cardSize = CGSize(width: 280, height: 230)
-    private static let imageHeight: CGFloat = 160
-    private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
+    /// Figma "Recept News" Article (6154:2043): 280 wide, and 4 + 160 + 16 + two title lines
+    /// (cap + 18) + 16 + 4 = 228 tall (was 230). The height is a minimum: at a large Dynamic
+    /// Type size the title grows and the card grows with it instead of clipping it.
+    static let cardSize = CGSize(width: 280, height: 228)
+    static let imageHeight: CGFloat = 160
+    /// Figma Article corner radius 16 (was the shared 20pt `DSRadius.card`, which stays 20
+    /// for every other card).
+    static let cornerRadius = DSPrimitiveScale.step400.value
     /// Gap between the card's own edge and the photo — the photo floats inset inside
     /// the card on all sides, it isn't clipped flush to the card's top corners.
-    private static let imageMargin: CGFloat = DSConstant.xSmall.value
-    /// Gap between the photo's bottom edge and the title below it — spaced differently
-    /// than `imageMargin`'s other 3 sides, per Figma.
-    private static let imageToTitleSpacing: CGFloat = 14
-    private static let imageCornerRadius: CGFloat = DSConstant.mediumLarge.value
-    private static let itemSpacing: CGFloat = DSConstant.medium.value
+    static let imageMargin: CGFloat = DSConstant.xSmall.value
+    /// Photo bottom to the title's cap height: Figma Content padding 16 (was 14 to the
+    /// untrimmed text box).
+    static let imageToTitleSpacing: CGFloat = DSPrimitiveScale.step400.value
+    /// Figma Image corner radius 12 (was 16).
+    static let imageCornerRadius: CGFloat = DSPrimitiveScale.step300.value
+    /// Card edge to the title: Article padding 4 + Content padding 16.
+    static let titleHorizontalPadding: CGFloat = DSConstant.xSmall.value + DSPrimitiveScale.step400.value
+    /// Title's last baseline to the card bottom: Content 16 + Article 4 (was 16 below the
+    /// untrimmed text box). Descenders of the last line paint into it.
+    static let titleFollowingGap: CGFloat = DSPrimitiveScale.step400.value + DSConstant.xSmall.value
+    /// Figma "Heading/H4": Sharp Grotesk SmBold 20, 14pt, line height 18, `#331A00`, trimmed
+    /// to cap height and last baseline (was SF 15 bold `paragraphBold`, untrimmed).
+    static let titleStyle = FontType.headingH4
+    static let titlePointSize: CGFloat = 14
+    static let titleLineHeight: CGFloat = 18
+    /// `.lineSpacing` that turns the 14pt line box into Figma's 18pt line height.
+    static let titleLineSpacing: CGFloat = titleLineHeight - titlePointSize
+    /// Figma Articles gap 8 (was 12).
+    static let itemSpacing: CGFloat = DSConstant.small.value
+    /// Figma section: 24pt title row, 12 to the cards.
+    static let headerSpacing: CGFloat = DSConstant.medium.value
 
     public init(title: String, items: [Item]) {
         self.title = title
@@ -46,7 +67,7 @@ public struct DSMediaCardList: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: DSConstant.medium.value) {
+        VStack(alignment: .leading, spacing: Self.headerSpacing) {
             header
             itemRow
         }
@@ -71,12 +92,32 @@ public struct DSMediaCardList: View {
     }
 
     private func card(_ item: Item) -> some View {
+        DSMediaCard(item: item)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showsUnderConstructionAlert = true
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// One News & Recipes card: inset photo on top, cap-trimmed Sharp Grotesk title below.
+/// Split out of `DSMediaCardList` so its layout can be measured in tests.
+struct DSMediaCard: View {
+    let item: DSMediaCardList.Item
+
+    /// `Font.custom(_:size:)` scales with the body text style, so the extra leading scales
+    /// the same way: baseline-to-baseline stays 18/14 of the size.
+    @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSMediaCardList.titleLineSpacing
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             DSImageView(
                 image: item.image,
                 size: CGSize(
-                    width: Self.cardSize.width - Self.imageMargin * 2,
-                    height: Self.imageHeight
+                    width: DSMediaCardList.cardSize.width - DSMediaCardList.imageMargin * 2,
+                    height: DSMediaCardList.imageHeight
                 ),
                 contentMode: .fill,
                 // Crops the top/bottom overflow rather than splitting it evenly, so
@@ -84,30 +125,29 @@ public struct DSMediaCardList: View {
                 // the crop instead of getting cut along with the bottom.
                 alignment: .top
             )
-            .clipShape(RoundedRectangle(cornerRadius: Self.imageCornerRadius, style: .continuous))
-            .padding(.top, Self.imageMargin)
-            .padding(.horizontal, Self.imageMargin)
-            .padding(.bottom, Self.imageToTitleSpacing)
+            .clipShape(RoundedRectangle(cornerRadius: DSMediaCardList.imageCornerRadius, style: .continuous))
+            .padding(.top, DSMediaCardList.imageMargin)
+            .padding(.horizontal, DSMediaCardList.imageMargin)
+            .padding(.bottom, DSMediaCardList.imageToTitleSpacing)
 
-            Text(item.title)
-                .typography(.paragraphBold)
-                .foregroundColor(DSColor.Text.heading)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, DSConstant.mediumLarge.value + DSConstant.xSmall.value)
-                .padding(.bottom, DSConstant.mediumLarge.value)
-
-            Spacer(minLength: 0)
+            SharpGroteskCapTrim(followingGap: DSMediaCardList.titleFollowingGap) {
+                Text(item.title)
+                    .typography(DSMediaCardList.titleStyle)
+                    .lineSpacing(titleLineSpacing)
+                    .foregroundColor(DSColor.Text.heading)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DSMediaCardList.titleHorizontalPadding)
+            .padding(.bottom, DSMediaCardList.titleFollowingGap)
         }
-        .frame(width: Self.cardSize.width, height: Self.cardSize.height, alignment: .top)
+        .frame(width: DSMediaCardList.cardSize.width, alignment: .topLeading)
+        // A minimum, not a fixed height: a two-line title at a large Dynamic Type size
+        // makes the card taller instead of being clipped.
+        .frame(minHeight: DSMediaCardList.cardSize.height, alignment: .top)
         .background(DSColor.Background.Layer.level1)
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showsUnderConstructionAlert = true
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        .clipShape(RoundedRectangle(cornerRadius: DSMediaCardList.cornerRadius, style: .continuous))
     }
 }
 

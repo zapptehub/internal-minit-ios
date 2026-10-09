@@ -20,6 +20,11 @@ public enum FontType {
     /// text-box trim both (cap to alphabetic). The trim is `SharpGroteskCapTrim` at the
     /// call site (`DSCollectionHeader`), so no Figma line box is applied here.
     case headingSection
+    /// Figma "Heading/H4" (News & Recipes card title 6154:2046): Sharp Grotesk SmBold 20,
+    /// 14pt, line height 18, tracking 0, text-box trim both (cap to alphabetic). The line
+    /// height and the trim are applied at the call site with `.lineSpacing` and
+    /// `SharpGroteskCapTrim` (`DSMediaCardList`), like `headingSmall`.
+    case headingH4
     case paragraphLargeRegular
     case paragraphRegular
     case paragraphBold
@@ -50,6 +55,7 @@ public enum FontType {
         case .headingMediumBold: return DSFont.heading(size: 20)
         case .headingSmall: return DSFont.heading(size: 15)
         case .headingSection: return DSFont.heading(size: 18)
+        case .headingH4: return DSFont.heading(size: 14)
         case .paragraphLargeRegular: return .system(size: 17, weight: .regular)
         case .paragraphRegular: return .system(size: 15, weight: .regular)
         case .paragraphBold: return .system(size: 15, weight: .bold)
@@ -166,6 +172,7 @@ private struct FigmaLineBoxModifier: ViewModifier {
         Text("headingMediumBold").typography(.headingMediumBold)
         Text("headingSmall").typography(.headingSmall)
         Text("headingSection").typography(.headingSection)
+        Text("headingH4").typography(.headingH4)
         Text("paragraphLargeRegular").typography(.paragraphLargeRegular)
         Text("paragraphRegular").typography(.paragraphRegular)
         Text("paragraphBold").typography(.paragraphBold)
