@@ -3,14 +3,14 @@ import SwiftUI
 
 /// Notifications list opened from Home's bell. All rows and the Daily Offer banner are
 /// hardcoded mocks until a real notifications feed and pressable banner land.
+///
+/// Layout follows Figma "AMP / Notifications" (node 4088:1319); the values live in
+/// `NotificationsScreenMetrics`.
 struct NotificationsScreen: View {
     let onBack: () -> Void
 
     @Environment(\.locale) private var locale
-
-    private static let rowIconCircleSize: CGFloat = 48
-    private static let rowIconSize: CGFloat = 24
-    private static let coinSize: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var sectionTitleLineBox = NotificationsScreenMetrics.sectionTitleLineBox
 
     private let todayItems: [NotificationRowData] = [
         .init(icon: .minitIcBaguette, titleKey: "home.notifications.row.firstScan", dateKey: "home.notifications.date.june12", points: 45),
@@ -23,56 +23,70 @@ struct NotificationsScreen: View {
         .init(icon: .minitIcBretzel, titleKey: "home.notifications.row.newProduct", dateKey: "home.notifications.date.june11", points: 45)
     ]
 
+    private typealias Metrics = NotificationsScreenMetrics
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DSConstant.smallMedium.value) {
+            VStack(alignment: .leading, spacing: 0) {
                 backButton
+                    .padding(.top, Metrics.headerTopSpacing - Metrics.backTapTargetInset)
+                    .padding(.leading, Metrics.horizontalInset - Metrics.backTapTargetInset)
                 title
-                dailyOfferBanner
-                    // The outer VStack's uniform `smallMedium` (6pt) spacing already
-                    // applies here; this tops each up to a 16pt gap — above the banner
-                    // (from the title) and below it (to the "Today" section) — without
-                    // touching any other gap.
-                    .padding(.vertical, 16 - DSConstant.smallMedium.value)
-                section(title: HomeLocalizedString.string("home.notifications.section.today", locale: locale), items: todayItems)
-                dashedDivider
-                section(title: HomeLocalizedString.string("home.notifications.section.allHistory", locale: locale), items: historyItems)
+                    .padding(.top, Metrics.backButtonToTitleSpacing - Metrics.backTapTargetInset)
+                    .padding(.horizontal, Metrics.horizontalInset)
+                VStack(alignment: .leading, spacing: Metrics.columnSpacing) {
+                    dailyOfferBanner
+                    section(title: HomeLocalizedString.string("home.notifications.section.today", locale: locale), items: todayItems)
+                    dashedDivider
+                    section(title: HomeLocalizedString.string("home.notifications.section.allHistory", locale: locale), items: historyItems)
+                }
+                .padding(.top, Metrics.titleToBannerSpacing)
+                .padding(.horizontal, Metrics.horizontalInset)
             }
-            .padding(.horizontal, DSConstant.mediumLarge.value)
-            .padding(.bottom, DSConstant.xxLarge.value)
+            // Figma keeps 104 between the last row's frame and the bottom of the screen, so
+            // the scroll content ignores the bottom safe area and pads by that amount itself.
+            .padding(.bottom, Metrics.bottomSpacing)
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(DSColor.Background.Layer.level0.ignoresSafeArea())
     }
 
+    /// Figma "BackOnly" header (4164:5459): a 40pt white circle with a 1pt
+    /// `border/primary` (#E6E6E6) outline and a 16pt arrow, centred in a 44pt tap area.
     private var backButton: some View {
-        DSButton(
-            title: "",
-            type: .social,
-            icon: .miniArrowLeft,
-            widthStyle: .icon,
-            accessibilityLabel: HomeLocalizedString.string("home.notifications.a11y.back", locale: locale),
-            action: onBack
-        )
+        Button(action: onBack) {
+            DSIconView(icon: .miniArrowLeft, size: Metrics.backIconSize, color: DSColor.Text.primary)
+                .frame(width: Metrics.backCircleSize, height: Metrics.backCircleSize)
+                .background(Circle().fill(DSColor.Background.Layer.level0))
+                .overlay(Circle().strokeBorder(DSColor.Border.default, lineWidth: Metrics.backBorderWidth))
+                .frame(width: Metrics.backTapTargetSize, height: Metrics.backTapTargetSize)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.back", locale: locale))
     }
 
-    /// Figma spec: "Sharp Grotesk SmBold 20" @ 30px — a one-off size rather than the
-    /// shared `.headingLargeSemibold` (40pt, same family but used for hero/marketing
-    /// headlines in onboarding/login), which read too large here.
+    /// Figma "Page Title" (6123:1790): Sharp Grotesk SmBold 20 at 30pt, `#331A00`.
+    /// `headingH2` is that face and size with the 38pt line box.
     private var title: some View {
         Text(HomeLocalizedString.string("home.notifications.title", locale: locale))
-            .font(DSFont.heading(size: 30))
+            .typography(.headingH2)
             .foregroundColor(DSColor.Text.heading)
+            .accessibilityAddTraits(.isHeader)
     }
 
     /// Single-item `DSBannerCarousel` — same live component `HomeScreen` uses for its
     /// Daily Offer banners, just with one item instead of three (no page indicator or
-    /// auto-advance shows up when `items.count == 1`). Replaces the old baked-in
-    /// `mockBannerDailyOffer` art now that the real banner exists.
+    /// auto-advance shows up when `items.count == 1`). The Figma "Small" drop shadow comes
+    /// from `DSBannerCarousel` itself, as on Home.
+    /// The banner's own id, after Home's daily offers 0, 1 and 2 (Android uses the same).
+    static let dailyOfferBannerID = 3
+
     private var dailyOfferBanner: some View {
         DSBannerCarousel(items: [
             .init(
-                id: 0,
+                id: Self.dailyOfferBannerID,
                 backgroundColor: DSColor.Background.brown,
                 image: .mockPasteryImage1,
                 badgeText: HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale),
@@ -90,56 +104,25 @@ struct NotificationsScreen: View {
             .foregroundColor(DSColor.Text.inverse)
     }
 
+    /// Figma "Recent Activity" (6078:4494): 18pt Sharp Grotesk title, 12 to the rows,
+    /// rows 20 apart.
     private func section(title: String, items: [NotificationRowData]) -> some View {
-        VStack(alignment: .leading, spacing: DSConstant.mediumLarge.value) {
+        VStack(alignment: .leading, spacing: Metrics.sectionTitleToRowsSpacing) {
             Text(title)
-                .typography(.headingMediumBold)
+                .typography(.headingSection)
                 .foregroundColor(DSColor.Text.heading)
+                .frame(minHeight: sectionTitleLineBox)
+                .accessibilityAddTraits(.isHeader)
 
-            VStack(spacing: DSConstant.mediumLarge.value) {
+            VStack(spacing: Metrics.rowSpacing) {
                 ForEach(items) { item in
-                    notificationRow(item)
+                    NotificationRow(
+                        item: item,
+                        pointsLabel: pointsLabel(for: item.points)
+                    )
                 }
             }
         }
-    }
-
-    private func notificationRow(_ item: NotificationRowData) -> some View {
-        HStack(spacing: DSConstant.medium.value) {
-            ZStack {
-                Circle()
-                    .fill(DSColor.Background.Button.disabled)
-                DSIconView(
-                    icon: item.icon,
-                    size: Self.rowIconSize,
-                    color: DSColor.Background.Button.accent
-                )
-            }
-            .frame(width: Self.rowIconCircleSize, height: Self.rowIconCircleSize)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(HomeLocalizedString.string(item.titleKey, locale: locale))
-                    .typography(.uiLargeBold)
-                    .foregroundColor(DSColor.Text.heading)
-                Text(HomeLocalizedString.string(item.dateKey, locale: locale))
-                    .typography(.uiRegular)
-                    .foregroundColor(DSColor.Text.secondary)
-            }
-
-            Spacer(minLength: DSConstant.small.value)
-
-            HStack(spacing: DSConstant.xSmall.value) {
-                DSIconView(
-                    icon: .minitPointCoin,
-                    size: Self.coinSize,
-                    renderingMode: .original
-                )
-                Text(pointsLabel(for: item.points))
-                    .typography(.uiLargeBold)
-                    .foregroundColor(DSColor.Text.heading)
-            }
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private func pointsLabel(for points: Int) -> String {
@@ -147,6 +130,7 @@ struct NotificationsScreen: View {
         return String(format: format, points)
     }
 
+    /// Figma line 4088:1695, 24 above and below (the column spacing).
     private var dashedDivider: some View {
         Rectangle()
             .stroke(
@@ -154,12 +138,97 @@ struct NotificationsScreen: View {
                 style: StrokeStyle(lineWidth: 1, dash: [4, 4])
             )
             .frame(height: 1)
-            .padding(.vertical, DSConstant.large.value)
             .accessibilityHidden(true)
     }
 }
 
-private struct NotificationRowData: Identifiable {
+/// Figma "AMP / Notifications" (4088:1319) values for `NotificationsScreen`.
+enum NotificationsScreenMetrics {
+    static let horizontalInset: CGFloat = 20
+    /// The 40pt back circle sits 10 below the safe area (Figma header top 72 under a 62
+    /// status bar).
+    static let headerTopSpacing: CGFloat = 10
+    static let backCircleSize: CGFloat = 40
+    static let backIconSize: CGFloat = 16
+    static let backBorderWidth: CGFloat = 1
+    static let backTapTargetSize: CGFloat = 44
+    static let backTapTargetInset: CGFloat = (backTapTargetSize - backCircleSize) / 2
+    /// Header bottom padding 8 + BODY top padding 16.
+    static let backButtonToTitleSpacing: CGFloat = 24
+    /// BODY gap.
+    static let titleToBannerSpacing: CGFloat = 16
+    /// "Scans" column gap: banner, Today, divider, All History.
+    static let columnSpacing: CGFloat = 24
+    /// Figma sets the 18pt section titles at Sharp Grotesk's "normal" line height (23pt);
+    /// `headingSection` itself has no line box (it is trimmed where Home uses it).
+    static let sectionTitleLineBox: CGFloat = 23
+    static let sectionTitleToRowsSpacing: CGFloat = 12
+    static let rowSpacing: CGFloat = 20
+    static let iconCircleSize: CGFloat = 40
+    static let iconSize: CGFloat = 24
+    static let iconToTextSpacing: CGFloat = 12
+    static let rowLineHeight: CGFloat = 20
+    static let rowTitlePointSize: CGFloat = 16
+    static let coinSize: CGFloat = 16
+    static let coinToPointsSpacing: CGFloat = 8
+    /// Figma frame bottom padding, measured from the bottom of the screen.
+    static let bottomSpacing: CGFloat = 104
+}
+
+/// One Figma "Content" row (6078:4499): 40pt grey circle with a 24pt orange icon, title
+/// (Body/Medium/md 16/20, `text/headings` #1A1A1A) over date (Body/Medium/label 12/20,
+/// `text/disabled` #B3B3B3), and the coin plus "+45 pts" (Body/Bold/label 12/20) 8 apart.
+struct NotificationRow: View {
+    let item: NotificationRowData
+    let pointsLabel: String
+
+    @Environment(\.locale) private var locale
+    @ScaledMetric(relativeTo: .body) private var lineHeight = NotificationsScreenMetrics.rowLineHeight
+
+    private typealias Metrics = NotificationsScreenMetrics
+
+    var body: some View {
+        HStack(spacing: Metrics.iconToTextSpacing) {
+            ZStack {
+                Circle()
+                    .fill(DSColor.Background.Button.disabled)
+                DSIconView(
+                    icon: item.icon,
+                    size: Metrics.iconSize,
+                    color: DSColor.Background.Button.accent
+                )
+            }
+            .frame(width: Metrics.iconCircleSize, height: Metrics.iconCircleSize)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(HomeLocalizedString.string(item.titleKey, locale: locale))
+                    .font(.system(size: Metrics.rowTitlePointSize, weight: .medium))
+                    .foregroundColor(DSColor.Text.primary)
+                    .frame(minHeight: lineHeight)
+                Text(HomeLocalizedString.string(item.dateKey, locale: locale))
+                    .typography(.uiCaptionMedium)
+                    .foregroundColor(DSColor.Text.disabled)
+                    .frame(minHeight: lineHeight)
+            }
+
+            Spacer(minLength: DSConstant.small.value)
+
+            HStack(spacing: Metrics.coinToPointsSpacing) {
+                DSIconView(
+                    icon: .minitPointCoin,
+                    size: Metrics.coinSize,
+                    renderingMode: .original
+                )
+                Text(pointsLabel)
+                    .typography(.bodyBoldLabel)
+                    .foregroundColor(DSColor.Text.primary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct NotificationRowData: Identifiable {
     let id = UUID()
     let icon: DSIcon
     let titleKey: String

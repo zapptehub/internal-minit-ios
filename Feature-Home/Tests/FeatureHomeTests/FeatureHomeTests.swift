@@ -1,4 +1,6 @@
 import DataProfile
+import SwiftUI
+import UIKit
 import XCTest
 @testable import FeatureHome
 
@@ -10,6 +12,111 @@ final class FeatureHomeTests: XCTestCase {
             profileRepository: StubProfileRepository(),
             onLogOut: {}
         )
+    }
+
+    /// Figma "AMP / Notifications" 4088:1319.
+    func testNotificationsBannerHasItsOwnID() {
+        // Home's daily offers are 0, 1 and 2; Android's fixture uses 3 too.
+        XCTAssertEqual(NotificationsScreen.dailyOfferBannerID, 3)
+    }
+
+    func testNotificationsMetricsMatchFigma() {
+        typealias M = NotificationsScreenMetrics
+        XCTAssertEqual(M.horizontalInset, 20)
+        XCTAssertEqual(M.headerTopSpacing, 10)
+        XCTAssertEqual(M.backCircleSize, 40)
+        XCTAssertEqual(M.backIconSize, 16)
+        XCTAssertEqual(M.backBorderWidth, 1)
+        XCTAssertGreaterThanOrEqual(M.backTapTargetSize, 44)
+        XCTAssertEqual(M.backTapTargetInset, 2)
+        XCTAssertEqual(M.backButtonToTitleSpacing, 8 + 16)
+        XCTAssertEqual(M.titleToBannerSpacing, 16)
+        XCTAssertEqual(M.columnSpacing, 24)
+        XCTAssertEqual(M.sectionTitleLineBox, 23)
+        XCTAssertEqual(M.sectionTitleToRowsSpacing, 12)
+        XCTAssertEqual(M.rowSpacing, 20)
+        XCTAssertEqual(M.iconCircleSize, 40)
+        XCTAssertEqual(M.iconSize, 24)
+        XCTAssertEqual(M.iconToTextSpacing, 12)
+        XCTAssertEqual(M.rowLineHeight, 20)
+        XCTAssertEqual(M.rowTitlePointSize, 16)
+        XCTAssertEqual(M.coinSize, 16)
+        XCTAssertEqual(M.coinToPointsSpacing, 8)
+        XCTAssertEqual(M.bottomSpacing, 104)
+    }
+
+    /// A row is the 40pt circle tall: two 20pt text lines beside it.
+    @MainActor
+    func testNotificationRowIsFortyTallAtTheDefaultSize() {
+        let row = NotificationRow(
+            item: NotificationRowData(
+                icon: .minitIcBaguette,
+                titleKey: "home.notifications.row.firstScan",
+                dateKey: "home.notifications.date.june12",
+                points: 45
+            ),
+            pointsLabel: "+45 pts"
+        )
+        .environment(\.locale, Locale(identifier: "en"))
+        .environment(\.dynamicTypeSize, .large)
+        let size = UIHostingController(rootView: row)
+            .sizeThatFits(in: CGSize(width: 362, height: CGFloat.greatestFiniteMagnitude))
+        XCTAssertEqual(size.height, 40, accuracy: 0.5)
+        XCTAssertEqual(size.width, 362, accuracy: 0.5)
+    }
+
+    /// The Daily Offer banner's Figma "Small" shadow comes from `DSBannerCarousel` and is
+    /// drawn once: grey 240 at 6pt and 248 at 20pt under the banner centre, as in Figma.
+    /// A second, screen-drawn copy would make it about twice as dark.
+    @MainActor
+    func testNotificationsBannerShadowIsDrawnOnce() throws {
+        let size = CGSize(width: 402, height: 874)
+        let host = UIHostingController(
+            rootView: NotificationsScreen(onBack: {})
+                .environment(\.locale, Locale(identifier: "en"))
+                .environment(\.dynamicTypeSize, .large)
+        )
+        host.safeAreaRegions = []
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.rootViewController = host
+        host.view.frame = window.bounds
+        host.view.backgroundColor = .white
+        window.makeKeyAndVisible()
+        host.view.setNeedsLayout()
+        host.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        let width = Int(size.width), height = Int(size.height)
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(
+                data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )!
+            // `drawHierarchy` draws nothing without a window scene; the layer tree renders,
+            // bottom row first in this bitmap (Core Graphics order).
+            host.view.layer.render(in: context)
+        }
+        window.isHidden = true
+        func grey(_ x: Int, _ y: Int) -> Double {
+            let i = ((height - 1 - y) * width + x) * 4
+            return (Double(bytes[i]) + Double(bytes[i + 1]) + Double(bytes[i + 2])) / 3
+        }
+        typealias M = NotificationsScreenMetrics
+        // Back button (inset tap area) → title (38pt line box) → banner, with no safe area.
+        let bannerTop = (M.headerTopSpacing - M.backTapTargetInset) + M.backTapTargetSize
+            + (M.backButtonToTitleSpacing - M.backTapTargetInset) + 38 + M.titleToBannerSpacing
+        let bannerBottom = Int(bannerTop) + 80
+        XCTAssertLessThan(grey(201, bannerBottom - 4), 60, "banner fill above its bottom edge")
+        // Relative to the white background (top-right corner, beside the back button):
+        // Figma is about 15 darker at +6 and 7 at +20. No shadow gives 0; a second copy
+        // would give about 29 and 14, past both ranges.
+        let background = grey(398, 2)
+        let below6 = background - grey(201, bannerBottom + 6)
+        let below20 = background - grey(201, bannerBottom + 20)
+        XCTAssertGreaterThan(background, 250, "white background")
+        XCTAssertTrue((8...22).contains(below6), "shadow 6pt below darkens \(below6), Figma 15")
+        XCTAssertTrue((3...11).contains(below20), "shadow 20pt below darkens \(below20), Figma 7")
     }
 
     /// Figma BODY 4023:2016: Products 14pt under the handle, sections 24pt apart.
@@ -34,6 +141,9 @@ final class FeatureHomeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(HomeHeaderMetrics.tapTargetSize, 44)
         XCTAssertEqual(HomeHeaderMetrics.headerRowTopPadding + HomeHeaderMetrics.tapTargetInset, 10)
         XCTAssertEqual(HomeHeaderMetrics.headerHorizontalPadding + HomeHeaderMetrics.tapTargetInset, 20)
+        // Greeting and loyalty card: Figma x 20, width 362 on 402, like the icons.
+        XCTAssertEqual(HomeHeaderMetrics.contentHorizontalInset, 20)
+        XCTAssertEqual(HomeHeaderMetrics.contentHorizontalInset, HomeHeaderMetrics.headerHorizontalInset)
         let iconBottom = HomeHeaderMetrics.headerRowTopPadding
             + HomeHeaderMetrics.tapTargetInset
             + HomeHeaderMetrics.iconSize

@@ -70,7 +70,7 @@ struct HomeScreen: View {
                 .padding(.top, HomeHeaderMetrics.greetingTopPadding)
             loyaltyCard
                 .padding(.top, HomeHeaderMetrics.loyaltyCardTopSpacing)
-                .padding(.horizontal, DSConstant.mediumLarge.value)
+                .padding(.horizontal, HomeHeaderMetrics.contentHorizontalInset)
             dailyOfferBanners
                 .padding(.top, DSConstant.small.value)
                 .padding(.bottom, DSConstant.mediumLarge.value)
@@ -105,7 +105,7 @@ struct HomeScreen: View {
         .typography(.headingH2)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, DSConstant.mediumLarge.value)
+        .padding(.horizontal, HomeHeaderMetrics.contentHorizontalInset)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(timeOfDayGreeting) \(userName)".trimmingCharacters(in: .whitespaces))
     }
@@ -431,6 +431,10 @@ enum HomeHeaderMetrics {
     static let headerRowTopPadding: CGFloat = headerTopSpacing - tapTargetInset
     static let headerHorizontalInset: CGFloat = 20
     static let headerHorizontalPadding: CGFloat = headerHorizontalInset - tapTargetInset
+    /// Figma HEAD (4088:985): the greeting ("Morning" 6070:4792) and the loyalty card
+    /// container (6099:1585) are x 20, width 362 on a 402 screen, the same 20 as the
+    /// icons and the Daily Offer banner. Was 16 (`DSConstant.mediumLarge`).
+    static let contentHorizontalInset: CGFloat = 20
     static let greetingTopSpacing: CGFloat = DSConstant.mediumLarge.value
     static let greetingTopPadding: CGFloat = greetingTopSpacing - tapTargetInset
     static let loyaltyCardTopSpacing: CGFloat = DSConstant.medium.value
