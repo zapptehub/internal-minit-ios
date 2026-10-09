@@ -27,14 +27,12 @@ struct HomeScreen: View {
                     productsSection
                         // Matches Figma's 14pt gap between the sheet's drag handle and the
                         // products section's title/"see all" row.
-                        .padding(.top, 14)
+                        .padding(.top, HomeSheetMetrics.productsTopSpacing)
                     challengesSection
-                        // Not in the provided Figma spec — approximate section gap, kept
-                        // consistent with the one below it.
-                        .padding(.top, DSConstant.xLarge.value)
+                        .padding(.top, HomeSheetMetrics.sectionSpacing)
                     newsAndRecipesSection
-                        .padding(.top, DSConstant.xLarge.value)
-                        .padding(.bottom, DSConstant.mediumLarge.value)
+                        .padding(.top, HomeSheetMetrics.sectionSpacing)
+                        .padding(.bottom, HomeSheetMetrics.bottomSpacing)
                 }
             }
         )
@@ -436,4 +434,12 @@ enum HomeHeaderMetrics {
     static let greetingTopSpacing: CGFloat = DSConstant.mediumLarge.value
     static let greetingTopPadding: CGFloat = greetingTopSpacing - tapTargetInset
     static let loyaltyCardTopSpacing: CGFloat = DSConstant.medium.value
+}
+
+/// Sheet spacing from Figma BODY (node 4023:2016): Products starts 14pt under the drag
+/// handle, and Products, Challenges and News & Recipes sit 24pt apart.
+enum HomeSheetMetrics {
+    static let productsTopSpacing: CGFloat = 14
+    static let sectionSpacing: CGFloat = DSConstant.large.value
+    static let bottomSpacing: CGFloat = DSConstant.mediumLarge.value
 }

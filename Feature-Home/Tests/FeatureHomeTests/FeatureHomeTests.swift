@@ -12,6 +12,21 @@ final class FeatureHomeTests: XCTestCase {
         )
     }
 
+    /// Figma BODY 4023:2016: Products 14pt under the handle, sections 24pt apart.
+    func testSheetSectionSpacingMatchesFigma() {
+        XCTAssertEqual(HomeSheetMetrics.productsTopSpacing, 14)
+        XCTAssertEqual(HomeSheetMetrics.sectionSpacing, 24)
+        XCTAssertEqual(HomeSheetMetrics.bottomSpacing, 16)
+    }
+
+    /// English category copy is "Scones" (was "Savory Scones"); other languages keep theirs.
+    func testSconesCategoryCopy() {
+        let key = "home.products.category.savoryScones"
+        XCTAssertEqual(HomeLocalizedString.string(key, locale: Locale(identifier: "en")), "Scones")
+        XCTAssertEqual(HomeLocalizedString.string(key, locale: Locale(identifier: "sk")), "Pagáče")
+        XCTAssertEqual(HomeLocalizedString.string(key, locale: Locale(identifier: "hu")), "Pogácsa")
+    }
+
     /// Figma 6093:5981: 40pt icons 10pt under the status bar and 20pt from the edges,
     /// greeting 16pt under the icons, loyalty card 12pt under the greeting.
     func testHeaderMetricsMatchFigmaDashboard() {
