@@ -96,17 +96,9 @@ public struct DSChallengesCardList: View {
     /// Figma Content (6143:1888) gap between cards: 8 (was 12).
     static let itemSpacing: CGFloat = DSConstant.small.value
 
-    /// Figma effect style "Small" on the Challenge card (6143:1889): two drop shadows in
-    /// `#3E3445`. Card-local; the shared `DSShadow` tokens are unchanged.
-    /// SwiftUI's shadow radius is half the Figma/CSS blur.
-    static let shadowColor = Color(red: 0x3E / 255, green: 0x34 / 255, blue: 0x45 / 255)
-    /// `color/shadow/opacity-4` (`#3E34450A`): x 0, y 2, blur 4, spread 0.
-    static let nearShadow = DSShadowToken(color: shadowColor.opacity(10.0 / 255), radius: 4 / 2, x: 0, y: 2)
-    /// `color/shadow/opacity-10` (`#3E34451A`): x 0, y 16, blur 32, spread −4.
-    static let farShadow = DSShadowToken(color: shadowColor.opacity(26.0 / 255), radius: 32 / 2, x: 0, y: 16)
-    /// SwiftUI shadows have no spread, so the far shadow is cast by the card shape
-    /// inset by 4 on every side (corner radius 16 − 4 = 12), which is what CSS spread −4 does.
-    static let farShadowSpread: CGFloat = -4
+    /// Figma effect style "Small" on the Challenge card (6143:1889): the shared
+    /// `DSShadow.small` token, also on the Daily Offer banners.
+    static let shadow = DSShadow.small
 
     public init(title: String, items: [Item]) {
         self.title = title
@@ -191,13 +183,13 @@ public struct DSChallengesCardList: View {
     /// filled with the card's own color and hidden by it, so only the shadows show.
     static func shadowCasters(color: Color) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: cornerRadius + farShadowSpread, style: .continuous)
+            RoundedRectangle(cornerRadius: cornerRadius - shadow.farCasterInset, style: .continuous)
                 .fill(color)
-                .padding(-farShadowSpread)
-                .dsShadow(farShadow)
+                .padding(shadow.farCasterInset)
+                .dsShadow(shadow.far)
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(color)
-                .dsShadow(nearShadow)
+                .dsShadow(shadow.near)
         }
     }
 

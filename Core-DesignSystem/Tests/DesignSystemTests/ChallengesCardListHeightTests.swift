@@ -30,22 +30,39 @@ final class ChallengesCardListHeightTests: XCTestCase {
     /// Figma "Small" effect: #3E3445 at 0x0A, (0, 2) blur 4; #3E3445 at 0x1A, (0, 16) blur 32
     /// spread −4. SwiftUI radius = blur / 2.
     func testShadowMatchesFigmaSmallEffect() {
-        XCTAssertEqual(Self.rgba(DSChallengesCardList.shadowColor), [0x3E, 0x34, 0x45, 255])
-        XCTAssertEqual(Self.rgba(DSChallengesCardList.nearShadow.color), [0x3E, 0x34, 0x45, 0x0A])
-        XCTAssertEqual(DSChallengesCardList.nearShadow.radius, 2)
-        XCTAssertEqual(DSChallengesCardList.nearShadow.x, 0)
-        XCTAssertEqual(DSChallengesCardList.nearShadow.y, 2)
-        XCTAssertEqual(Self.rgba(DSChallengesCardList.farShadow.color), [0x3E, 0x34, 0x45, 0x1A])
-        XCTAssertEqual(DSChallengesCardList.farShadow.radius, 16)
-        XCTAssertEqual(DSChallengesCardList.farShadow.x, 0)
-        XCTAssertEqual(DSChallengesCardList.farShadow.y, 16)
-        XCTAssertEqual(DSChallengesCardList.farShadowSpread, -4)
+        let small = DSShadow.small
+        XCTAssertEqual(Self.rgba(DSShadow.smallColor), [0x3E, 0x34, 0x45, 255])
+        XCTAssertEqual(Self.rgba(small.near.color), [0x3E, 0x34, 0x45, 0x0A])
+        XCTAssertEqual(small.near.radius, 2)
+        XCTAssertEqual(small.near.x, 0)
+        XCTAssertEqual(small.near.y, 2)
+        XCTAssertEqual(Self.rgba(small.far.color), [0x3E, 0x34, 0x45, 0x1A])
+        XCTAssertEqual(small.far.radius, 16)
+        XCTAssertEqual(small.far.x, 0)
+        XCTAssertEqual(small.far.y, 16)
+        // Figma spread −4 → the far caster is inset 4 on every side.
+        XCTAssertEqual(small.farCasterInset, 4)
+        // The Challenge cards use the shared token.
+        Self.assertSameShadow(DSChallengesCardList.shadow, small)
         // Shared token unchanged.
         XCTAssertEqual(DSShadow.card.radius, DSRadius.media)
         XCTAssertEqual(DSShadow.card.y, DSMetric.Spacing.small)
     }
 
-    private static func rgba(_ color: Color) -> [Int] {
+    static func assertSameShadow(
+        _ actual: DSLayeredShadowToken,
+        _ expected: DSLayeredShadowToken,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for (a, e) in [(actual.near, expected.near), (actual.far, expected.far)] {
+            XCTAssertEqual(rgba(a.color), rgba(e.color), file: file, line: line)
+            XCTAssertEqual([a.radius, a.x, a.y], [e.radius, e.x, e.y], file: file, line: line)
+        }
+        XCTAssertEqual(actual.farCasterInset, expected.farCasterInset, file: file, line: line)
+    }
+
+    static func rgba(_ color: Color) -> [Int] {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
         return [r, g, b, a].map { Int(($0 * 255).rounded()) }

@@ -58,6 +58,18 @@ internal struct DSShadowToken {
     let y: CGFloat
 }
 
+/// A Figma effect style made of two drop shadows, drawn under the component's own shape:
+/// `far` first, then `near` on top. SwiftUI's shadow radius is half the Figma/CSS blur.
+/// SwiftUI shadows have no spread, so the far shadow is cast by the shape inset by
+/// `farCasterInset` on every side (corner radius reduced by the same amount), which is
+/// what a negative CSS spread does.
+internal struct DSLayeredShadowToken {
+    let near: DSShadowToken
+    let far: DSShadowToken
+    /// How far the far shadow's caster is inset from the shape: the Figma spread, negated.
+    let farCasterInset: CGFloat
+}
+
 /// Shadow roles remain iOS-specific because the design export has no shadow tokens.
 internal enum DSShadow {
     static let card = DSShadowToken(
@@ -77,6 +89,17 @@ internal enum DSShadow {
         radius: DSPrimitiveScale.step50.value,
         x: 0,
         y: 1
+    )
+    /// `#3E3445`, the color of both Figma "Small" shadows.
+    static let smallColor = Color(red: 0x3E / 255, green: 0x34 / 255, blue: 0x45 / 255)
+    /// Figma effect style "Small": the Challenge cards (6143:1889) and every Daily Offer
+    /// banner (Home 6065:4747, Notifications 6123:1697).
+    /// - near, `color/shadow/opacity-4` (`#3E34450A`): x 0, y 2, blur 4, spread 0.
+    /// - far, `color/shadow/opacity-10` (`#3E34451A`): x 0, y 16, blur 32, spread −4.
+    static let small = DSLayeredShadowToken(
+        near: DSShadowToken(color: smallColor.opacity(10.0 / 255), radius: 4 / 2, x: 0, y: 2),
+        far: DSShadowToken(color: smallColor.opacity(26.0 / 255), radius: 32 / 2, x: 0, y: 16),
+        farCasterInset: 4
     )
 }
 

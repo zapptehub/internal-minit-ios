@@ -58,7 +58,12 @@ public struct DSBannerCarousel: View {
     @State private var isPressed = false
 
     private static let bannerHeight: CGFloat = 80
-    private static let itemSpacing: CGFloat = DSConstant.small.value
+    static let itemSpacing: CGFloat = DSConstant.small.value
+    /// Figma Home "Offers" (6065:4746): the active banner sits 20 from each screen edge
+    /// (x 20, width 362 on a 402 screen) with 8 (`itemSpacing`) to its neighbours, so they
+    /// peek 12 in. Was 16 (`DSConstant.mediumLarge`). A single banner (Notifications) has
+    /// no inset and takes its container's own 20 padding.
+    static let multiPageHorizontalInset: CGFloat = DSPrimitiveScale.step500.value
     private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
     private static let indicatorHeight: CGFloat = 3
     private static let indicatorActiveWidth: CGFloat = 24
@@ -76,6 +81,10 @@ public struct DSBannerCarousel: View {
     /// from 0→1) are what make pausing/resuming mid-flight possible — each step just checks
     /// `isPressed` before advancing `progress` further.
     private static let tickInterval: Double = 1.0 / 30.0
+
+    /// Figma effect style "Small" on every Daily Offer banner (Home 6065:4747, Notifications
+    /// 6123:1697): the shared `DSShadow.small` token, also on the Challenge cards.
+    static let shadow = DSShadow.small
 
     public init(items: [Item], autoAdvanceInterval: Double? = nil, initialIndex: Int = 0) {
         self.items = items
@@ -118,12 +127,30 @@ public struct DSBannerCarousel: View {
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledItemID)
+        // The banner shadows reach 28 to the sides and 40 below the 80pt row; without
+        // this the scroll view would cut them off at its frame. Layout is unchanged.
+        .scrollClipDisabled()
 
         if items.count > 1 {
-            content.safeAreaPadding(.horizontal, DSConstant.mediumLarge.value)
+            content.safeAreaPadding(.horizontal, Self.multiPageHorizontalInset)
         } else {
             content
         }
+    }
+
+    /// Opaque banner-shaped layers behind the banner that cast Figma's two shadows. They
+    /// are filled with the banner's own color and hidden by it, so only the shadows show.
+    static func shadowCasters(color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius - shadow.farCasterInset, style: .continuous)
+                .fill(color)
+                .padding(shadow.farCasterInset)
+                .dsShadow(shadow.far)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(color)
+                .dsShadow(shadow.near)
+        }
+        .accessibilityHidden(true)
     }
 
     /// Plain `.onTapGesture` (not a `Button`) alongside `.onLongPressGesture` purely to
@@ -170,6 +197,10 @@ public struct DSBannerCarousel: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(item.backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+        .background {
+            // Outside the clip, so the shadows are not cut by it.
+            Self.shadowCasters(color: item.backgroundColor)
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             showsUnderConstructionAlert = true
