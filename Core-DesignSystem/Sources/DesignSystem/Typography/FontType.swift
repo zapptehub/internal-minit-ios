@@ -10,6 +10,10 @@ public enum FontType {
     /// includes the face's hhea line gap).
     case headingH2
     case headingMediumBold
+    /// Figma loyalty card popup title (6078:5066): Sharp Grotesk SmBold 20, 32pt,
+    /// tracking −1, line height "normal", text-box trim both (cap to alphabetic). The
+    /// trim is `SharpGroteskCapTrim` at the call site (`LoyaltyCardDetailView`).
+    case headingPopupTitle
     /// Figma Challenges card title (6143:1898): Sharp Grotesk SmBold 20, 15pt,
     /// line height 20, tracking 0, text-box trim both (cap to alphabetic).
     /// The line height and the trim are applied at the call site with
@@ -33,6 +37,9 @@ public enum FontType {
     /// Figma "Body/Bold/label" (Challenges "+N pts" pill): system 12 bold, line height 20,
     /// tracking 0.
     case bodyBoldLabel
+    /// Figma "Body/Bold/md": system 16 bold, line height 20, tracking 0 (loyalty card
+    /// popup button label 6078:5103).
+    case bodyBoldMedium
     case uiLargeBold
     case uiLargeRegular
     case uiRegular
@@ -53,6 +60,7 @@ public enum FontType {
         case .headingLargeSemibold: return DSFont.heading(size: 40)
         case .headingH2: return DSFont.heading(size: 30)
         case .headingMediumBold: return DSFont.heading(size: 20)
+        case .headingPopupTitle: return DSFont.heading(size: 32)
         case .headingSmall: return DSFont.heading(size: 15)
         case .headingSection: return DSFont.heading(size: 18)
         case .headingH4: return DSFont.heading(size: 14)
@@ -61,6 +69,7 @@ public enum FontType {
         case .paragraphBold: return .system(size: 15, weight: .bold)
         case .bodyMediumSmall: return .system(size: 14, weight: .medium)
         case .bodyBoldLabel: return .system(size: 12, weight: .bold)
+        case .bodyBoldMedium: return .system(size: 16, weight: .bold)
         case .uiLargeBold: return .system(size: 17, weight: .semibold)
         case .uiLargeRegular: return .system(size: 17, weight: .regular)
         case .uiRegular: return .system(size: 13, weight: .regular)
@@ -76,6 +85,7 @@ public enum FontType {
         switch self {
         case .headingLargeBold: return -1.68
         case .headingLargeSemibold: return -1
+        case .headingPopupTitle: return -1
         default: return 0
         }
     }
@@ -103,6 +113,11 @@ public enum FontType {
             return FigmaLineBox(
                 lineHeight: 20,
                 naturalLineHeight: UIFont.systemFont(ofSize: 14, weight: .medium).lineHeight
+            )
+        case .bodyBoldMedium:
+            return FigmaLineBox(
+                lineHeight: 20,
+                naturalLineHeight: UIFont.systemFont(ofSize: 16, weight: .bold).lineHeight
             )
         case .bodyBoldLabel:
             return FigmaLineBox(

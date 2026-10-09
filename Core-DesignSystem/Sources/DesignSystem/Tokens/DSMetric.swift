@@ -92,14 +92,25 @@ internal enum DSShadow {
     )
     /// `#3E3445`, the color of both Figma "Small" shadows.
     static let smallColor = Color(red: 0x3E / 255, green: 0x34 / 255, blue: 0x45 / 255)
+    /// Near layer shared by the Figma effect styles "Small" and "Extra Large":
+    /// `color/shadow/opacity-4` (`#3E34450A`), x 0, y 2, blur 4, spread 0.
+    static let layeredNear = DSShadowToken(color: smallColor.opacity(10.0 / 255), radius: 4 / 2, x: 0, y: 2)
     /// Figma effect style "Small": the Challenge cards (6143:1889) and every Daily Offer
     /// banner (Home 6065:4747, Notifications 6123:1697).
     /// - near, `color/shadow/opacity-4` (`#3E34450A`): x 0, y 2, blur 4, spread 0.
     /// - far, `color/shadow/opacity-10` (`#3E34451A`): x 0, y 16, blur 32, spread −4.
     static let small = DSLayeredShadowToken(
-        near: DSShadowToken(color: smallColor.opacity(10.0 / 255), radius: 4 / 2, x: 0, y: 2),
+        near: layeredNear,
         far: DSShadowToken(color: smallColor.opacity(26.0 / 255), radius: 32 / 2, x: 0, y: 16),
         farCasterInset: 4
+    )
+    /// Figma effect style "Extra Large": the loyalty card popup (6078:4896).
+    /// - near, `color/shadow/opacity-4` (`#3E34450A`): x 0, y 2, blur 4, spread 0.
+    /// - far, `color/shadow/opacity-18` (`#3E34452E`): x 0, y 56, blur 112, spread −20.
+    static let extraLarge = DSLayeredShadowToken(
+        near: layeredNear,
+        far: DSShadowToken(color: smallColor.opacity(46.0 / 255), radius: 112 / 2, x: 0, y: 56),
+        farCasterInset: 20
     )
 }
 

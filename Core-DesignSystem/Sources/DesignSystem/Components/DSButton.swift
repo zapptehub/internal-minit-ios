@@ -64,6 +64,10 @@ public struct DSButton: View {
     let widthStyle: DSButtonWidthStyle
     /// VoiceOver label override — required for icon-only buttons where `title` is empty.
     let accessibilityLabelText: String?
+    /// Label style override for one call site (e.g. the loyalty card popup's Figma
+    /// Body/Bold/md). `nil` keeps the shared default (`uiLargeBold`, `uiRegular` for
+    /// `.small`, or the `.textStyle` typography).
+    let labelStyle: FontType?
     let action: () -> Void
 
     public init(
@@ -76,6 +80,7 @@ public struct DSButton: View {
         heightStyle: DSButtonHeightStyle = .regular,
         widthStyle: DSButtonWidthStyle = .expanded,
         accessibilityLabel: String? = nil,
+        labelStyle: FontType? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -87,6 +92,7 @@ public struct DSButton: View {
         self.heightStyle = heightStyle
         self.widthStyle = widthStyle
         self.accessibilityLabelText = accessibilityLabel
+        self.labelStyle = labelStyle
         self.action = action
     }
 
@@ -180,7 +186,8 @@ public struct DSButton: View {
         return Text(title)
     }
 
-    private var labelFont: FontType {
+    var labelFont: FontType {
+        if let labelStyle { return labelStyle }
         if case .textStyle(_, let t) = type { return t }
         return heightStyle == .small ? .uiRegular : .uiLargeBold
     }
