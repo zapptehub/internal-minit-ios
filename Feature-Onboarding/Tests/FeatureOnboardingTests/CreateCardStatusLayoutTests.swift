@@ -44,11 +44,6 @@ final class CreateCardStatusLayoutTests: XCTestCase {
         guard let header, let bar, let card else { return }
 
         let expected = (header.maxY + bar.minY - CreateCardStatusMetrics.centeringBottomInset) / 2
-        print(
-            "CREATECARD_FIGMA ios position card=\(card) headerBottom=\(header.maxY) " +
-            "buttonTop=\(bar.minY) center=\(card.midY) expected=\(expected) " +
-            "stepCenter=\(window.bounds.midY)"
-        )
 
         XCTAssertEqual(card.width, 354, accuracy: 1, "card width \(card.width)")
         XCTAssertEqual(bar.height, 56, accuracy: 2, "button height \(bar.height)")

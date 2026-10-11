@@ -17,11 +17,6 @@ final class OnboardingHeaderInkTests: XCTestCase {
         let image = try XCTUnwrap(renderer.uiImage)
         let pixels = try InkPixels(image)
         let measured = try pixels.measureProcessingChrome()
-        print(
-            "ONB_TYPO ios bar=\(measured.barHeight) gap1=\(measured.progressToHeaderInk) " +
-            "gap2=\(measured.headerBaselineToHeadlineInk) gap3=\(measured.titleBaselineToSubtitleCap) " +
-            "baselineToBaseline=\(measured.titleBaselineToSubtitleBaseline)"
-        )
         let url = URL(fileURLWithPath: "/tmp/onb-typo-ios-processing.png")
         try? image.pngData()?.write(to: url)
 
