@@ -7,7 +7,8 @@ import SwiftUI
 ///
 /// Tapping the chevron or any item shows the shared under-construction alert, same
 /// placeholder pattern `DSBannerCarousel` uses — there's no real "see all"/item-tap
-/// destination wired up yet.
+/// destination wired up yet. Pass `onItemTap` and `onSeeAllTap` together when the
+/// caller presents that alert itself; leaving both `nil` keeps the alert here.
 public struct DSCircleItemList: View {
     /// One circle slot: an image, its label, and whether to show the small pink "%"
     /// discount badge. Not `Hashable` — nothing here requires it (`ForEach` only needs
@@ -28,6 +29,10 @@ public struct DSCircleItemList: View {
 
     let title: String
     let items: [Item]
+    /// When set, an item tap calls this instead of the built-in alert.
+    let onItemTap: (() -> Void)?
+    /// When set, the see-all chevron calls this instead of the built-in alert.
+    let onSeeAllTap: (() -> Void)?
 
     @State private var showsUnderConstructionAlert = false
 
@@ -48,22 +53,47 @@ public struct DSCircleItemList: View {
     static let rowTopInset: CGFloat = 4
     private static let itemSpacing: CGFloat = DSConstant.large.value
 
-    public init(title: String, items: [Item]) {
+    public init(
+        title: String,
+        items: [Item],
+        onItemTap: (() -> Void)? = nil,
+        onSeeAllTap: (() -> Void)? = nil
+    ) {
         self.title = title
         self.items = items
+        self.onItemTap = onItemTap
+        self.onSeeAllTap = onSeeAllTap
     }
 
     public var body: some View {
+        list
+    }
+
+    @ViewBuilder
+    private var list: some View {
+        // Both callbacks together mean the caller owns the alert. One or none
+        // still needs the built-in alert for whichever tap was not replaced.
+        if onItemTap == nil || onSeeAllTap == nil {
+            listColumn.featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
+        } else {
+            listColumn
+        }
+    }
+
+    private var listColumn: some View {
         VStack(alignment: .leading, spacing: DSConstant.small.value) {
             header
             itemRow
         }
-        .featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
     }
 
     private var header: some View {
         DSCollectionHeader(title: title) {
-            showsUnderConstructionAlert = true
+            if let onSeeAllTap {
+                onSeeAllTap()
+            } else {
+                showsUnderConstructionAlert = true
+            }
         }
     }
 
@@ -103,7 +133,11 @@ public struct DSCircleItemList: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            showsUnderConstructionAlert = true
+            if let onItemTap {
+                onItemTap()
+            } else {
+                showsUnderConstructionAlert = true
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)

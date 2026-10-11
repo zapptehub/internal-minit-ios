@@ -24,7 +24,6 @@ final class ChallengesCardFigmaAlignmentTests: XCTestCase {
     /// at 12pt, so the text is ~47 and the pill ~75 wide.
     func testPillIsFigmaSized() {
         let size = Self.measure(DSChallengesCardList.badge(text: "+45 pts"))
-        print("PILL_SIZE ios \(size)")
         XCTAssertEqual(size.height, 24, accuracy: 0.5)
         XCTAssertEqual(size.width, 72, accuracy: 4)
     }
@@ -63,7 +62,6 @@ final class ChallengesCardFigmaAlignmentTests: XCTestCase {
                 Text("Challenges").typography(DSCollectionHeader.titleStyle)
             }
         )
-        print("SECTION_TITLE ios box=\(title) cap=\(font.capHeight)")
         // Figma's trimmed title box is 13 tall (cap height of 18pt Sharp Grotesk).
         XCTAssertEqual(title.height, font.capHeight, accuracy: 0.5)
         XCTAssertGreaterThanOrEqual(DSCollectionHeader.titleFollowingGap, -font.descender)

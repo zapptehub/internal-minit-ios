@@ -33,7 +33,6 @@ final class ChallengesCardPillAlignmentTests: XCTestCase {
         let pillRows = try XCTUnwrap(blue)
         let ringCentre = CGFloat(ringRows.lowerBound + ringRows.upperBound) / 2
         let pillCentre = CGFloat(pillRows.lowerBound + pillRows.upperBound) / 2
-        print("PILL_ALIGN ios ring=\(ringRows) pill=\(pillRows) offset=\(pillCentre - ringCentre)")
         XCTAssertEqual(CGFloat(ringRows.count), ring, accuracy: 1)
         XCTAssertEqual(CGFloat(pillRows.count), pillHeight, accuracy: 1)
         XCTAssertEqual(pillCentre, ringCentre, accuracy: 0.5)

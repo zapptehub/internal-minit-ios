@@ -22,11 +22,6 @@ final class StatusCardSpacingTests: XCTestCase {
         )
         let loadingLines = Self.lineCount(of: "Creating loyalty card...", width: 290)
         let successLines = Self.lineCount(of: "Loyalty card was added successfully", width: 290)
-        print(
-            "CREATECARD_FIGMA ios card loading=\(loading.width)x\(loading.height) " +
-            "success=\(success.width)x\(success.height) " +
-            "lines=\(loadingLines)/\(successLines)"
-        )
 
         XCTAssertEqual(loading.width, 354, accuracy: 1)
         XCTAssertEqual(success.width, 354, accuracy: 1)
@@ -60,7 +55,6 @@ final class StatusCardSpacingTests: XCTestCase {
                     .frame(width: 290)
             }
         )
-        print("CREATECARD_FIGMA ios titleBox one=\(oneLine.height) two=\(twoLines.height)")
         XCTAssertLessThan(oneLine.height, 22, "one line should stay near the cap height, was \(oneLine.height)")
         XCTAssertEqual(oneLine.height, 14.34, accuracy: 0.5, "one-line box \(oneLine.height)")
         XCTAssertGreaterThan(

@@ -24,10 +24,6 @@ final class FontTypeLineMetricsTests: XCTestCase {
                 .typography(.headingLargeSemibold)
                 .fixedSize()
         )
-        print(
-            "ONB_TYPO ios lineBox body=\(body.height) heading=\(heading.height) " +
-            "wrapped=\(wrapped.height)"
-        )
         XCTAssertEqual(body.height, 20, accuracy: 0.75, "body \(body.height)")
         XCTAssertEqual(heading.height, 44, accuracy: 0.75, "heading \(heading.height)")
         XCTAssertEqual(wrapped.height, 88, accuracy: 0.75, "two-line heading \(wrapped.height)")

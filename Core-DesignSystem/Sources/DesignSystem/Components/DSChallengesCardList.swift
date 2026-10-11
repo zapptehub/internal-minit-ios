@@ -8,7 +8,8 @@ import SwiftUI
 ///
 /// Tapping the chevron or any card shows the shared under-construction alert, same
 /// placeholder pattern `DSCircleItemList`/`DSBannerCarousel` use — there's no real
-/// "see all"/card-tap destination wired up yet.
+/// "see all"/card-tap destination wired up yet. Pass `onItemTap` and `onSeeAllTap`
+/// together when the caller presents that alert itself; leaving both `nil` keeps it here.
 public struct DSChallengesCardList: View {
     /// One card slot: background color, a leading icon, a trailing points-style badge, and
     /// a title. Not `Hashable` — nothing here requires it (`ForEach` only needs
@@ -50,14 +51,17 @@ public struct DSChallengesCardList: View {
 
     let title: String
     let items: [Item]
+    /// When set, a card tap calls this instead of the built-in alert.
+    let onItemTap: (() -> Void)?
+    /// When set, the see-all chevron calls this instead of the built-in alert.
+    let onSeeAllTap: (() -> Void)?
 
     @State private var showsUnderConstructionAlert = false
 
-    /// `Font.custom(_:size:)` scales with the body text style, so the extra
-    /// leading scales the same way: baseline-to-baseline stays 20/15 of the size.
-    @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSChallengesCardList.titleLineSpacing
-
-    /// Figma Challenge card (6143:1889) is 200 × 124; was 140.
+    /// Figma Challenge card (6143:1889) is 200 wide and 124 tall. The height is a
+    /// minimum: at a large Dynamic Type size the title grows, and every card in
+    /// the row grows to the tallest one, instead of clipping the title. At the
+    /// default size the card stays 124.
     static let cardSize = CGSize(width: 200, height: 124)
     /// Figma Challenge card (6143:1889) corner radius 16 (not bound to a Figma variable);
     /// was the shared `DSRadius.card` (20), which stays unchanged. Both the clip and the
@@ -100,30 +104,55 @@ public struct DSChallengesCardList: View {
     /// `DSShadow.small` token, also on the Daily Offer banners.
     static let shadow = DSShadow.small
 
-    public init(title: String, items: [Item]) {
+    public init(
+        title: String,
+        items: [Item],
+        onItemTap: (() -> Void)? = nil,
+        onSeeAllTap: (() -> Void)? = nil
+    ) {
         self.title = title
         self.items = items
+        self.onItemTap = onItemTap
+        self.onSeeAllTap = onSeeAllTap
     }
 
     public var body: some View {
+        list
+    }
+
+    @ViewBuilder
+    private var list: some View {
+        if onItemTap == nil || onSeeAllTap == nil {
+            listColumn.featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
+        } else {
+            listColumn
+        }
+    }
+
+    private var listColumn: some View {
         VStack(alignment: .leading, spacing: DSConstant.medium.value) {
             header
             itemRow
         }
-        .featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
     }
 
     private var header: some View {
         DSCollectionHeader(title: title) {
-            showsUnderConstructionAlert = true
+            if let onSeeAllTap {
+                onSeeAllTap()
+            } else {
+                showsUnderConstructionAlert = true
+            }
         }
     }
 
     private var itemRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: Self.itemSpacing) {
-                ForEach(items) { item in
-                    card(item)
+            DSChallengesCardRow(items: items) {
+                if let onItemTap {
+                    onItemTap()
+                } else {
+                    showsUnderConstructionAlert = true
                 }
             }
             .padding(.horizontal, DSCollectionHeader.horizontalInset)
@@ -131,52 +160,6 @@ public struct DSChallengesCardList: View {
         // The far card shadow reaches ~44pt below the cards (y 16 − 4 + blur 32);
         // the scroll view must not cut it off.
         .scrollClipDisabled()
-    }
-
-    private func card(_ item: Item) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Self.topRow {
-                iconCircle(item.icon, repeatCount: item.repeatCount, progress: item.progress)
-            } trailing: {
-                Self.badge(text: item.badgeText)
-            }
-            Spacer(minLength: 0)
-            SharpGroteskCapTrim(followingGap: Self.titleFollowingGap) {
-                Text(item.title)
-                    .typography(Self.titleStyle)
-                    .lineSpacing(titleLineSpacing)
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-            }
-        }
-        .padding(DSConstant.mediumLarge.value)
-        .frame(width: Self.cardSize.width, height: Self.cardSize.height, alignment: .topLeading)
-        .background(item.backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        .overlay {
-            // Subtle top-to-bottom light-to-dark hairline, matching Figma's
-            // "#FFFFFF3D" → "#0000001F" gradient border layered over the card.
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.239), Color.black.opacity(0.122)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: DSBorderWidth.standard
-                )
-        }
-        .background {
-            // Outside the clip, so the shadows are not cut by it.
-            Self.shadowCasters(color: item.backgroundColor)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showsUnderConstructionAlert = true
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 
     /// Opaque card-shaped layers behind the card that cast Figma's two shadows. They are
@@ -218,7 +201,7 @@ public struct DSChallengesCardList: View {
     /// Split into `repeatCount` even dashes (with a gap between each) when it's a
     /// repeat-count challenge, so the number of times done vs. left is countable — with
     /// `progress` of those dashes drawn solid white to mark them as already done.
-    private func iconCircle(_ icon: DSIcon, repeatCount: Int, progress: Int) -> some View {
+    fileprivate static func iconCircle(_ icon: DSIcon, repeatCount: Int, progress: Int) -> some View {
         iconRing(repeatCount: repeatCount, progress: progress)
             .frame(width: Self.iconCircleDiameter, height: Self.iconCircleDiameter)
             .overlay {
@@ -228,7 +211,7 @@ public struct DSChallengesCardList: View {
     }
 
     @ViewBuilder
-    private func iconRing(repeatCount: Int, progress: Int) -> some View {
+    fileprivate static func iconRing(repeatCount: Int, progress: Int) -> some View {
         if repeatCount <= 1 {
             Circle()
                 .strokeBorder(Color.white.opacity(Self.iconRingTrackOpacity), lineWidth: Self.iconRingLineWidth)
@@ -281,6 +264,144 @@ public struct DSChallengesCardList: View {
         }
         .clipShape(Capsule())
         .accessibilityHidden(true)
+    }
+}
+
+/// One challenge card. The Figma height is a minimum, so a larger Dynamic Type
+/// size grows the card instead of clipping the two-line title. A row proposes
+/// the tallest card's height and this view fills it; an unspecified or
+/// unbounded proposal (`sizeThatFits` passes `.greatestFiniteMagnitude`) reports
+/// the card's own height, at least 124.
+struct DSChallengesCard: View {
+    let item: DSChallengesCardList.Item
+
+    /// `Font.custom(_:size:)` scales with the body text style, so the extra
+    /// leading scales the same way: baseline-to-baseline stays 20/15 of the size.
+    @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSChallengesCardList.titleLineSpacing
+
+    var body: some View {
+        MinimumHeightLayout(minHeight: DSChallengesCardList.cardSize.height) {
+            VStack(alignment: .leading, spacing: 0) {
+                DSChallengesCardList.topRow {
+                    DSChallengesCardList.iconCircle(
+                        item.icon,
+                        repeatCount: item.repeatCount,
+                        progress: item.progress
+                    )
+                } trailing: {
+                    DSChallengesCardList.badge(text: item.badgeText)
+                }
+                Spacer(minLength: 0)
+                SharpGroteskCapTrim(followingGap: DSChallengesCardList.titleFollowingGap) {
+                    Text(item.title)
+                        .typography(DSChallengesCardList.titleStyle)
+                        .lineSpacing(titleLineSpacing)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(DSConstant.mediumLarge.value)
+            .frame(width: DSChallengesCardList.cardSize.width, alignment: .topLeading)
+        }
+        .background(item.backgroundColor)
+        .clipShape(RoundedRectangle(cornerRadius: DSChallengesCardList.cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: DSChallengesCardList.cornerRadius, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.239), Color.black.opacity(0.122)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: DSBorderWidth.standard
+                )
+        }
+        .background {
+            DSChallengesCardList.shadowCasters(color: item.backgroundColor)
+        }
+    }
+}
+
+/// Cards in one horizontal row, all as tall as the tallest card.
+struct DSChallengesCardRow: View {
+    let items: [DSChallengesCardList.Item]
+    var onItemTap: () -> Void = {}
+
+    var body: some View {
+        EqualHeightHStack(spacing: DSChallengesCardList.itemSpacing) {
+            ForEach(items) { item in
+                DSChallengesCard(item: item)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onItemTap)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+            }
+        }
+    }
+}
+
+/// Measures each card at its own height (at least the Figma minimum) and then
+/// proposes that shared height so the shorter cards stretch.
+private struct EqualHeightHStack: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = idealSizes(subviews)
+        let width = sizes.map(\.width).reduce(0, +) + spacing * CGFloat(max(subviews.count - 1, 0))
+        let height = sizes.map(\.height).max() ?? 0
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = idealSizes(subviews)
+        let height = sizes.map(\.height).max() ?? 0
+        var x = bounds.minX
+        for (subview, size) in zip(subviews, sizes) {
+            subview.place(
+                at: CGPoint(x: x, y: bounds.minY),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: size.width, height: height)
+            )
+            x += size.width + spacing
+        }
+    }
+
+    private func idealSizes(_ subviews: Subviews) -> [CGSize] {
+        subviews.map { $0.sizeThatFits(.unspecified) }
+    }
+}
+
+/// Reports at least `minHeight`. A finite proposal at least that tall — the
+/// height the row gives every card — is accepted so the card fills it. An
+/// unspecified proposal, or `.greatestFiniteMagnitude` from `sizeThatFits`,
+/// reports the card's own height instead of growing to the offered space.
+private struct MinimumHeightLayout: Layout {
+    var minHeight: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let ideal = child.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil))
+        let floor = max(ideal.height, minHeight)
+        let height: CGFloat
+        if let proposed = proposal.height,
+           proposed.isFinite,
+           proposed < .greatestFiniteMagnitude / 2,
+           proposed >= floor {
+            height = proposed
+        } else {
+            height = floor
+        }
+        return CGSize(width: ideal.width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard let child = subviews.first else { return }
+        child.place(
+            at: bounds.origin,
+            anchor: .topLeading,
+            proposal: ProposedViewSize(width: bounds.width, height: bounds.height)
+        )
     }
 }
 

@@ -38,10 +38,6 @@ final class CircleItemListSpacingTests: XCTestCase {
         let headerBottomToCircleTop = list.height - header.height - DSCircleItemList.circleDiameter -
             DSConstant.small.value - label.height
         let headerCenterToCircleTop = header.height / 2 + headerBottomToCircleTop
-        print(
-            "CIRCLES_FIGMA ios list=\(list.height) header=\(header.height) label=\(label.height) " +
-            "headerBottomToCircle=\(headerBottomToCircleTop) centerToCircle=\(headerCenterToCircleTop)"
-        )
         XCTAssertEqual(headerBottomToCircleTop, 12, accuracy: 0.5)
         XCTAssertEqual(headerCenterToCircleTop, 24, accuracy: 0.75)
     }

@@ -8,7 +8,8 @@ import SwiftUI
 ///
 /// Each item fills with `backgroundColor`; optional `image` / `badgeText` / `title` layer
 /// content on top when provided. Tapping any banner shows the shared under-construction
-/// alert until real banner destinations exist.
+/// alert until real banner destinations exist. Pass `onBannerTap` when the caller
+/// presents that alert itself; `nil` keeps the alert here.
 public struct DSBannerCarousel: View {
     /// Banner slot: required fill color, plus optional artwork and copy.
     ///
@@ -40,6 +41,8 @@ public struct DSBannerCarousel: View {
     }
 
     let items: [Item]
+    /// When set, a banner tap calls this instead of the built-in under-construction alert.
+    let onBannerTap: (() -> Void)?
     /// Seconds the active banner stays on screen before auto-advancing to the next one
     /// (looping back to the first after the last). `nil` disables auto-advance — banners
     /// only change via manual swipe, and the active page indicator renders fully filled
@@ -86,8 +89,14 @@ public struct DSBannerCarousel: View {
     /// 6123:1697): the shared `DSShadow.small` token, also on the Challenge cards.
     static let shadow = DSShadow.small
 
-    public init(items: [Item], autoAdvanceInterval: Double? = nil, initialIndex: Int = 0) {
+    public init(
+        items: [Item],
+        autoAdvanceInterval: Double? = nil,
+        initialIndex: Int = 0,
+        onBannerTap: (() -> Void)? = nil
+    ) {
         self.items = items
+        self.onBannerTap = onBannerTap
         self.autoAdvanceInterval = autoAdvanceInterval
         let startIndex = items.indices.contains(initialIndex) ? initialIndex : 0
         _scrolledItemID = State(initialValue: items.isEmpty ? nil : items[startIndex].id)
@@ -95,6 +104,22 @@ public struct DSBannerCarousel: View {
     }
 
     public var body: some View {
+        bannerStack
+            .task(id: scrolledItemID) {
+                await runAutoAdvanceCountdown()
+            }
+    }
+
+    @ViewBuilder
+    private var bannerStack: some View {
+        if onBannerTap == nil {
+            bannerColumn.featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
+        } else {
+            bannerColumn
+        }
+    }
+
+    private var bannerColumn: some View {
         VStack(spacing: DSConstant.small.value) {
             scrollView
                 .frame(height: Self.bannerHeight)
@@ -102,10 +127,6 @@ public struct DSBannerCarousel: View {
             if items.count > 1 {
                 pageIndicator
             }
-        }
-        .featureUnderConstructionAlert(isPresented: $showsUnderConstructionAlert)
-        .task(id: scrolledItemID) {
-            await runAutoAdvanceCountdown()
         }
     }
 
@@ -127,7 +148,7 @@ public struct DSBannerCarousel: View {
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledItemID)
-        // The banner shadows reach 28 to the sides and 40 below the 80pt row; without
+        // The banner shadows reach 28 to the sides and 44 below the 80pt row; without
         // this the scroll view would cut them off at its frame. Layout is unchanged.
         .scrollClipDisabled()
 
@@ -203,7 +224,11 @@ public struct DSBannerCarousel: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            showsUnderConstructionAlert = true
+            if let onBannerTap {
+                onBannerTap()
+            } else {
+                showsUnderConstructionAlert = true
+            }
         }
         .onLongPressGesture(
             minimumDuration: 0.15,
@@ -328,7 +353,7 @@ public struct DSBannerCarousel: View {
 
     return DSBannerCarousel(
         items: [
-            // Light fill — warm tan text instead of the other two's white.
+            // Light fill — title is white (`Text.inverse`), same as the other two.
             .init(
                 id: 0,
                 backgroundColor: DSColor.Background.pink,
