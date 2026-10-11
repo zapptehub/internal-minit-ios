@@ -8,6 +8,11 @@ import SwiftUI
 /// `NotificationsScreenMetrics`.
 struct NotificationsScreen: View {
     let onBack: () -> Void
+    /// Daily-offer banner tap. `nil` keeps `DSBannerCarousel`'s own alert, which
+    /// is what the layout tests render. Home passes a closure and presents the
+    /// alert from `showsUnderConstructionAlert` so it stays above this cover.
+    var onDailyOfferTap: (() -> Void)? = nil
+    var showsUnderConstructionAlert: Binding<Bool> = .constant(false)
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .body) private var sectionTitleLineBox = NotificationsScreenMetrics.sectionTitleLineBox
@@ -83,16 +88,28 @@ struct NotificationsScreen: View {
     /// The banner's own id, after Home's daily offers 0, 1 and 2 (Android uses the same).
     static let dailyOfferBannerID = 3
 
+    @ViewBuilder
     private var dailyOfferBanner: some View {
-        DSBannerCarousel(items: [
-            .init(
-                id: Self.dailyOfferBannerID,
-                backgroundColor: DSColor.Background.brown,
-                image: .mockPasteryImage1,
-                badgeText: HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale),
-                title: dailyOfferTitle
-            )
-        ])
+        if onDailyOfferTap == nil {
+            dailyOfferCarousel
+        } else {
+            dailyOfferCarousel.featureUnderConstructionAlert(isPresented: showsUnderConstructionAlert)
+        }
+    }
+
+    private var dailyOfferCarousel: some View {
+        DSBannerCarousel(
+            items: [
+                .init(
+                    id: Self.dailyOfferBannerID,
+                    backgroundColor: DSColor.Background.brown,
+                    image: .mockPasteryImage1,
+                    badgeText: HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale),
+                    title: dailyOfferTitle
+                )
+            ],
+            onBannerTap: onDailyOfferTap
+        )
         .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale))
     }
 

@@ -2,22 +2,31 @@ import DataProfile
 import DesignSystem
 import SwiftUI
 
-/// Home tab chrome. Owns Log Out confirmation so loading/alert state resets whenever
-/// the authenticated root remounts after a re-login.
+/// Home tab chrome. Interaction state lives in `HomeScreenModel`, which is
+/// recreated when the authenticated root remounts this screen after a re-login,
+/// so loading and alert flags still reset.
 struct HomeScreen: View {
-    let userId: String
-    let profileRepository: ProfileRepository
-    let onLogOut: () -> Void
-
-    @State private var userName = ""
-    @State private var showsLogOutConfirmation = false
-    @State private var showsLoyaltyCardDetail = false
-    @State private var showsNotifications = false
-    @State private var isLoggingOut = false
+    private let onLogOut: () -> Void
+    @StateObject private var model: HomeScreenModel
 
     @Environment(\.locale) private var locale
 
     private static let bellIconSize: CGFloat = 16
+
+    init(
+        userId: String,
+        profileRepository: ProfileRepository,
+        onLogOut: @escaping () -> Void
+    ) {
+        self.onLogOut = onLogOut
+        _model = StateObject(
+            wrappedValue: HomeScreenModel(
+                userId: userId,
+                profileRepository: profileRepository,
+                onLogOut: onLogOut
+            )
+        )
+    }
 
     var body: some View {
         DSPinnedHeaderSheet(
@@ -37,27 +46,95 @@ struct HomeScreen: View {
             }
         )
         .background(LinearGradient.minitBackground.ignoresSafeArea())
-        .task { await loadUserName() }
-        .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: $showsLogOutConfirmation) {
-            Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {}
+        .task { await model.loadUserName() }
+        .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: logOutConfirmationPresented) {
+            Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {
+                model.dismissLogOutConfirmation()
+            }
             Button(HomeLocalizedString.string("home.logOut.title", locale: locale), role: .destructive) {
-                isLoggingOut = true
-                onLogOut()
+                model.onLogOut = onLogOut
+                model.confirmLogOut()
             }
         } message: {
             Text(HomeLocalizedString.string("home.logOut.message", locale: locale))
         }
-        .dsPopup(isPresented: $showsLoyaltyCardDetail) {
+        .featureUnderConstructionAlert(isPresented: homeUnderConstructionAlertPresented)
+        .dsPopup(isPresented: loyaltyCardDetailPresented) {
             LoyaltyCardDetailView {
-                showsLoyaltyCardDetail = false
+                model.closeLoyaltyCardDetail()
             }
         }
-        .fullScreenCover(isPresented: $showsNotifications) {
-            NotificationsScreen {
-                showsNotifications = false
-            }
+        .fullScreenCover(isPresented: notificationsPresented) {
+            NotificationsScreen(
+                onBack: { model.closeNotifications() },
+                onDailyOfferTap: { model.showUnderConstruction(.notificationsDailyOffer) },
+                showsUnderConstructionAlert: notificationsUnderConstructionAlertPresented
+            )
         }
-        .disabled(isLoggingOut)
+        .disabled(model.isLoggingOut)
+    }
+
+    private var logOutConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: { model.showsLogOutConfirmation },
+            set: { isPresented in
+                if isPresented {
+                    model.profileTapped()
+                } else {
+                    model.hideLogOutConfirmation()
+                }
+            }
+        )
+    }
+
+    private var loyaltyCardDetailPresented: Binding<Bool> {
+        Binding(
+            get: { model.showsLoyaltyCardDetail },
+            set: { isPresented in
+                if isPresented {
+                    model.openLoyaltyCardDetail()
+                } else {
+                    model.closeLoyaltyCardDetail()
+                }
+            }
+        )
+    }
+
+    private var notificationsPresented: Binding<Bool> {
+        Binding(
+            get: { model.showsNotifications },
+            set: { isPresented in
+                if isPresented {
+                    model.openNotifications()
+                } else {
+                    model.closeNotifications()
+                }
+            }
+        )
+    }
+
+    /// Placeholder alert on Home. While the notifications cover is up, that
+    /// cover presents the same flag so the alert stays above the cover.
+    private var homeUnderConstructionAlertPresented: Binding<Bool> {
+        Binding(
+            get: { model.showsUnderConstructionAlert && !model.showsNotifications },
+            set: { isPresented in
+                if !isPresented {
+                    model.dismissUnderConstruction()
+                }
+            }
+        )
+    }
+
+    private var notificationsUnderConstructionAlertPresented: Binding<Bool> {
+        Binding(
+            get: { model.showsUnderConstructionAlert },
+            set: { isPresented in
+                if !isPresented {
+                    model.dismissUnderConstruction()
+                }
+            }
+        )
     }
 
     /// Everything above the scrolling sheet: profile/bell bar, greeting, loyalty card, and
@@ -99,7 +176,7 @@ struct HomeScreen: View {
         return (
             Text("\(timeOfDayGreeting) ")
                 .foregroundColor(DSColor.Text.inverse)
-            + Text(userName)
+            + Text(model.userName)
                 .foregroundColor(DSColor.Text.heading)
         )
         .typography(.headingH2)
@@ -107,7 +184,7 @@ struct HomeScreen: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, HomeHeaderMetrics.contentHorizontalInset)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(timeOfDayGreeting) \(userName)".trimmingCharacters(in: .whitespaces))
+        .accessibilityLabel("\(timeOfDayGreeting) \(model.userName)".trimmingCharacters(in: .whitespaces))
     }
 
     /// Hardcoded Home mock values until live rank/points wiring lands.
@@ -119,13 +196,13 @@ struct HomeScreen: View {
             chipLabel: HomeLocalizedString.string("home.loyaltyCard.chipLabel", locale: locale),
             showsShadow: false
         ) {
-            showsLoyaltyCardDetail = true
+            model.openLoyaltyCardDetail()
         }
     }
 
     private var profileButton: some View {
         Button {
-            showsLogOutConfirmation = true
+            model.profileTapped()
         } label: {
             DSImageView(
                 image: .mockUserProfile,
@@ -144,7 +221,7 @@ struct HomeScreen: View {
     private var bellButton: some View {
         if #available(iOS 26, *) {
             Button {
-                showsNotifications = true
+                model.openNotifications()
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -160,7 +237,7 @@ struct HomeScreen: View {
             .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         } else {
             Button {
-                showsNotifications = true
+                model.openNotifications()
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -183,11 +260,10 @@ struct HomeScreen: View {
     /// varying `backgroundColor` — each still just shows the shared under-construction
     /// alert on tap until real per-banner destinations exist (see `DSBannerCarousel`).
     /// (`DSBannerCarousel`'s "Daily Offer" badge is a fixed warm tan regardless of
-    /// `backgroundColor`; only `title`'s base color varies here.)
+    /// `backgroundColor`. Every banner title uses white, `Text.inverse`.)
     ///
-    /// The pink banner is a light fill, so its title uses a warm tan
-    /// (`dailyOfferOnLightTextColor`) instead of the white (`Text.inverse`) the other two
-    /// darker banners use.
+    /// The pink banner is a light fill; its title is still white (`Text.inverse`), the same
+    /// as the brown and green banners.
     private var dailyOfferBanners: some View {
         DSBannerCarousel(
             items: [
@@ -214,7 +290,8 @@ struct HomeScreen: View {
                 )
             ],
             // Opens on the brown (2nd) banner rather than the 1st, per design.
-            initialIndex: 1
+            initialIndex: 1,
+            onBannerTap: { model.showUnderConstruction(.dailyOfferBanner) }
         )
     }
 
@@ -225,7 +302,9 @@ struct HomeScreen: View {
     private var productsSection: some View {
         DSCircleItemList(
             title: HomeLocalizedString.string("home.products.title", locale: locale),
-            items: productCategories
+            items: productCategories,
+            onItemTap: { model.showUnderConstruction(.product) },
+            onSeeAllTap: { model.showUnderConstruction(.productsSeeAll) }
         )
     }
 
@@ -293,7 +372,9 @@ struct HomeScreen: View {
     private var challengesSection: some View {
         DSChallengesCardList(
             title: HomeLocalizedString.string("home.challenges.title", locale: locale),
-            items: challengeItems
+            items: challengeItems,
+            onItemTap: { model.showUnderConstruction(.challenge) },
+            onSeeAllTap: { model.showUnderConstruction(.challengesSeeAll) }
         )
     }
 
@@ -350,7 +431,9 @@ struct HomeScreen: View {
                     image: .mockRecipe2,
                     title: HomeLocalizedString.string("home.newsAndRecipes.item.pinsa.title", locale: locale)
                 )
-            ]
+            ],
+            onItemTap: { model.showUnderConstruction(.newsAndRecipe) },
+            onSeeAllTap: { model.showUnderConstruction(.newsAndRecipesSeeAll) }
         )
     }
 
@@ -377,15 +460,6 @@ struct HomeScreen: View {
         + Text("2").foregroundColor(DSColor.Text.accent)
         + Text(HomeLocalizedString.string("home.dailyOfferBanner.title.croissants", locale: locale))
             .foregroundColor(textColor)
-    }
-
-    private func loadUserName() async {
-        do {
-            let profile = try await profileRepository.fetchProfile(userId: userId)
-            userName = profile?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        } catch {
-            userName = ""
-        }
     }
 
     /// Matches the mock's "Good Morning" copy; switches for afternoon/evening locally.

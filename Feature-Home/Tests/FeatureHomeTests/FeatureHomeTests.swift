@@ -84,39 +84,59 @@ final class FeatureHomeTests: XCTestCase {
         window.makeKeyAndVisible()
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
-        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
         let width = Int(size.width), height = Int(size.height)
-        var bytes = [UInt8](repeating: 0, count: width * height * 4)
-        bytes.withUnsafeMutableBytes { buffer in
-            let context = CGContext(
-                data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
-                bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            )!
-            // `drawHierarchy` draws nothing without a window scene; the layer tree renders,
-            // bottom row first in this bitmap (Core Graphics order).
-            host.view.layer.render(in: context)
-        }
-        window.isHidden = true
-        func grey(_ x: Int, _ y: Int) -> Double {
-            let i = ((height - 1 - y) * width + x) * 4
-            return (Double(bytes[i]) + Double(bytes[i + 1]) + Double(bytes[i + 2])) / 3
-        }
         typealias M = NotificationsScreenMetrics
         // Back button (inset tap area) → title (38pt line box) → banner, with no safe area.
         let bannerTop = (M.headerTopSpacing - M.backTapTargetInset) + M.backTapTargetSize
             + (M.backButtonToTitleSpacing - M.backTapTargetInset) + 38 + M.titleToBannerSpacing
         let bannerBottom = Int(bannerTop) + 80
-        XCTAssertLessThan(grey(201, bannerBottom - 4), 60, "banner fill above its bottom edge")
+        func render() -> (fill: Double, background: Double, below6: Double, below20: Double) {
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+            var bytes = [UInt8](repeating: 0, count: width * height * 4)
+            bytes.withUnsafeMutableBytes { buffer in
+                let context = CGContext(
+                    data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                )!
+                // `drawHierarchy` draws nothing without a window scene; the layer tree renders,
+                // bottom row first in this bitmap (Core Graphics order).
+                host.view.layer.render(in: context)
+            }
+            func grey(_ x: Int, _ y: Int) -> Double {
+                let i = ((height - 1 - y) * width + x) * 4
+                return (Double(bytes[i]) + Double(bytes[i + 1]) + Double(bytes[i + 2])) / 3
+            }
+            let background = grey(398, 2)
+            return (
+                fill: grey(201, bannerBottom - 4),
+                background: background,
+                below6: background - grey(201, bannerBottom + 6),
+                below20: background - grey(201, bannerBottom + 20)
+            )
+        }
+        func shadowIsDrawn(
+            _ sample: (fill: Double, background: Double, below6: Double, below20: Double)
+        ) -> Bool {
+            sample.fill < 60 && sample.background > 250
+                && (8...22).contains(sample.below6)
+                && (3...11).contains(sample.below20)
+        }
+        let deadline = Date().addingTimeInterval(2)
+        var sample = render()
+        while !shadowIsDrawn(sample), Date() < deadline {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            sample = render()
+        }
+        window.isHidden = true
         // Relative to the white background (top-right corner, beside the back button):
         // Figma is about 15 darker at +6 and 7 at +20. No shadow gives 0; a second copy
         // would give about 29 and 14, past both ranges.
-        let background = grey(398, 2)
-        let below6 = background - grey(201, bannerBottom + 6)
-        let below20 = background - grey(201, bannerBottom + 20)
-        XCTAssertGreaterThan(background, 250, "white background")
-        XCTAssertTrue((8...22).contains(below6), "shadow 6pt below darkens \(below6), Figma 15")
-        XCTAssertTrue((3...11).contains(below20), "shadow 20pt below darkens \(below20), Figma 7")
+        XCTAssertLessThan(sample.fill, 60, "banner fill above its bottom edge")
+        XCTAssertGreaterThan(sample.background, 250, "white background")
+        XCTAssertTrue((8...22).contains(sample.below6), "shadow 6pt below darkens \(sample.below6), Figma 15")
+        XCTAssertTrue((3...11).contains(sample.below20), "shadow 20pt below darkens \(sample.below20), Figma 7")
     }
 
     /// Figma BODY 4023:2016: Products 14pt under the handle, sections 24pt apart.
