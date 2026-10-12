@@ -17,10 +17,12 @@ public struct LoyaltyCard: View {
     /// Home sits the card on a solid orange field where the shared card shadow reads too
     /// heavy; onboarding keeps the default shadow over the gradient.
     var showsShadow: Bool = true
-    /// Tapping the chip is a no-op until a real destination exists (e.g. onboarding's
-    /// marketing preview); Home passes a closure that presents the full-screen QR detail.
+    /// Chip tap, and the summary's VoiceOver action when non-nil. Nil on the
+    /// onboarding marketing preview, so the summary stays a label; Home presents
+    /// the full-screen QR detail.
     var onChipTap: (() -> Void)?
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let cornerRadius: CGFloat = DSConstant.cardCornerRadius.value
     /// Figma card height. Cap-trimmed heading boxes plus the 20pt section gap
@@ -71,8 +73,7 @@ public struct LoyaltyCard: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: LoyaltyCardMetrics.sectionSpacing) {
-                header
-                pointsText
+                summary
                 chip
             }
             .padding(DSConstant.mediumLarge.value)
@@ -81,14 +82,27 @@ public struct LoyaltyCard: View {
         .background(DSColor.Background.Layer.level0)
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .modifier(LoyaltyCardShadowModifier(isEnabled: showsShadow))
+    }
+
+    /// Rank, subtitle, and points as one element, separate from the chip.
+    /// VoiceOver treats it as a button that runs `onChipTap` only when that
+    /// closure is set. Finger taps stay on the chip only.
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: LoyaltyCardMetrics.sectionSpacing) {
+            header
+            pointsText
+        }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            String(
-                format: DesignSystemLocalizedString.string("common.a11y.loyaltyCardSummary", locale: locale),
-                rankTitle,
-                rankSubtitle,
-                Self.pointsString(points)
-            )
+        .accessibilityLabel(summaryAccessibilityLabel)
+        .modifier(LoyaltyCardSummaryAccessibilityModifier(action: onChipTap))
+    }
+
+    private var summaryAccessibilityLabel: String {
+        String(
+            format: DesignSystemLocalizedString.string("common.a11y.loyaltyCardSummary", locale: locale),
+            rankTitle,
+            rankSubtitle,
+            Self.pointsString(points)
         )
     }
 
@@ -97,17 +111,27 @@ public struct LoyaltyCard: View {
             rankBadge
 
             VStack(alignment: .leading, spacing: LoyaltyCardMetrics.rankSubtitleSpacing) {
-                SharpGroteskCapTrim(followingGap: LoyaltyCardMetrics.rankSubtitleSpacing) {
+                if dynamicTypeSize > .large {
+                    // "Silver" is one word in a narrow column. Fitting the line
+                    // keeps it whole; the default size still uses the cap-trimmed title.
                     Text(rankTitle)
-                        .typography(LoyaltyCardMetrics.rankTitleStyle)
+                        .font(DSFont.heading(size: LoyaltyCardMetrics.rankTitleFontSize))
                         .foregroundColor(DSColor.Text.heading)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.3)
+                } else {
+                    SharpGroteskCapTrim(followingGap: LoyaltyCardMetrics.rankSubtitleSpacing) {
+                        Text(rankTitle)
+                            .typography(LoyaltyCardMetrics.rankTitleStyle)
+                            .foregroundColor(DSColor.Text.heading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 Text(rankSubtitle)
                     .typography(LoyaltyCardMetrics.subtitleStyle)
                     .foregroundColor(LoyaltyCardMetrics.rankSubtitleColor)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize > .large ? nil : 2)
             }
             .padding(.trailing, LoyaltyCardMetrics.illustrationClearance)
         }
@@ -297,6 +321,23 @@ struct SharpGroteskCapTrim: Layout {
         let belowAnchor = max(0, dims.height - descentAnchor)
         let overflow = max(0, belowAnchor - followingGap)
         return (cap, baseline, cap + lineSpan + overflow)
+    }
+}
+
+/// Button trait and default VoiceOver action only when Home supplies `onChipTap`.
+/// The onboarding preview leaves the closure nil, so the summary is a label.
+private struct LoyaltyCardSummaryAccessibilityModifier: ViewModifier {
+    let action: (() -> Void)?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let action {
+            content
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(.default, action)
+        } else {
+            content
+        }
     }
 }
 

@@ -20,6 +20,7 @@ struct CreateCardScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         OnboardingScaffold(
@@ -35,8 +36,12 @@ struct CreateCardScreen: View {
             // The scaffold already insets 24pt on the sides, so the card fills the
             // content width (354pt on a 402pt frame).
             statusCard
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .offset(y: -CreateCardStatusMetrics.contentCenterLift)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: dynamicTypeSize > .large ? nil : .infinity,
+                    alignment: .center
+                )
+                .offset(y: dynamicTypeSize > .large ? 0 : -CreateCardStatusMetrics.contentCenterLift)
         }
         .onAppear {
             analytics.trackCreatingCardScreenViewed(file: #fileID)

@@ -16,28 +16,18 @@ struct ProcessingScanScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        // Create Card centres its card in the scaffold slot (Figma). This step
-        // still centres on the step: the shared `DSStatusCard` chrome matches,
-        // the overlay position does not.
-        GeometryReader { screen in
-            OnboardingScaffold(
-                subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
-                headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
-                primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
-                isPrimaryEnabled: viewModel.linkedCard != nil,
-                showsBack: false,
-                onPrimary: {
-                    viewModel.tapEnterMinit()
+        Group {
+            if dynamicTypeSize > .large {
+                // The centred overlay covers the headline once the type outgrows
+                // the band. In the scroll, the card sits under the headline.
+                finishingScaffold {
+                    statusCard
                 }
-            ) {
-                Color.clear
-            }
-            .overlay {
-                statusCard
-                    .padding(.horizontal, DSConstant.large.value)
-                    .position(x: screen.size.width / 2, y: screen.size.height / 2)
+            } else {
+                centeredOverlay
             }
         }
         .onAppear {
@@ -60,6 +50,43 @@ struct ProcessingScanScreen: View {
             }
         } message: {
             Text(claimFailedAlertMessage)
+        }
+    }
+
+    private func finishingScaffold<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
+        OnboardingScaffold(
+            subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
+            headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
+            primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
+            isPrimaryEnabled: viewModel.linkedCard != nil,
+            showsBack: false,
+            onPrimary: {
+                viewModel.tapEnterMinit()
+            },
+            content: content
+        )
+    }
+
+    /// Default content size keeps the card centred on the screen.
+    private var centeredOverlay: some View {
+        GeometryReader { screen in
+            OnboardingScaffold(
+                subtitle: OnboardingLocalizedString.string("onboarding.finish.subtitle", locale: locale),
+                headline: OnboardingLocalizedString.string("onboarding.finish.headline", locale: locale),
+                primaryTitle: OnboardingLocalizedString.string("onboarding.button.enterMinit", locale: locale),
+                isPrimaryEnabled: viewModel.linkedCard != nil,
+                showsBack: false,
+                onPrimary: {
+                    viewModel.tapEnterMinit()
+                }
+            ) {
+                Color.clear
+            }
+            .overlay {
+                statusCard
+                    .padding(.horizontal, DSConstant.large.value)
+                    .position(x: screen.size.width / 2, y: screen.size.height / 2)
+            }
         }
     }
 

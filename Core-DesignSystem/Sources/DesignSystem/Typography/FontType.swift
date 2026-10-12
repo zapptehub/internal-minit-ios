@@ -48,12 +48,14 @@ public enum FontType {
     // seen in the DSInputField/DSCheckbox/DSRadio screenshot spec.
     case uiSmallSemibold
     /// System 12 pt medium. Tracking is 0, same as `uiRegular` and `uiSmallSemibold`.
-    /// `.system(size:weight:)` is the same Dynamic Type path those styles use.
+    /// `.system(size:weight:)` is a fixed design size. `.typography(_:)` scales it
+    /// with the body text style and no cap, the same way Android `sp` scales.
     case uiCaptionMedium
 
-    /// Exposed for the rare case where a `Font` value is needed directly (e.g. styling
-    /// individual runs of an `AttributedString`). Prefer `.typography(_:)` for plain `Text`,
-    /// which also applies `tracking` — a raw `Font` alone can't carry letter-spacing.
+    /// Design-size face. System styles here are fixed `.system(size:weight:)` values —
+    /// that initializer does **not** follow Dynamic Type. Prefer `.typography(_:)`, which
+    /// scales those styles with `UIFontMetrics` for `.body` and no cap. Sharp Grotesk
+    /// headings already scale via `Font.custom`. A raw `Font` also can't carry tracking.
     public var font: Font {
         switch self {
         case .headingLargeBold: return DSFont.heading(size: 56)
@@ -78,6 +80,29 @@ public enum FontType {
         }
     }
 
+    /// Design size at the default content size. Headings and system styles share this
+    /// so a too-wide word can be fitted without changing the `.large` face.
+    var designPointSize: CGFloat {
+        switch self {
+        case .headingLargeBold: return 56
+        case .headingLargeSemibold: return 40
+        case .headingH2: return 30
+        case .headingMediumBold: return 20
+        case .headingPopupTitle: return 32
+        case .headingSmall: return 15
+        case .headingSection: return 18
+        case .headingH4: return 14
+        case .paragraphLargeRegular: return 17
+        case .paragraphRegular, .paragraphBold: return 15
+        case .bodyMediumSmall: return 14
+        case .bodyBoldLabel: return 12
+        case .bodyBoldMedium: return 16
+        case .uiLargeBold, .uiLargeRegular: return 17
+        case .uiRegular, .uiSmallSemibold: return 13
+        case .uiCaptionMedium: return 12
+        }
+    }
+
     /// Figma letter-spacing for this style, applied by `.typography(_:)` alongside `font`.
     /// Only the large headings carry a non-zero value in Figma; every other case is `0`
     /// (SwiftUI's default), so callers no longer need their own `.tracking(_:)` afterward.
@@ -99,10 +124,10 @@ public enum FontType {
     /// box is the Figma line height, and a two-line Heading/H1 box is 88.
     ///
     /// Sharp Grotesk's line box is the point size (`ascender − descender`;
-    /// hhea lineGap is not included). Body/Medium/small uses
-    /// `UIFont.lineHeight` of the 14pt medium system face. Both deltas scale
-    /// with the body text style, matching `.system(size:weight:)` and
-    /// `Font.custom(_:size:)`.
+    /// hhea lineGap is not included). Body styles use `UIFont.lineHeight` of
+    /// the system face at the design size. `.typography` scales system faces
+    /// with the body text style, and these deltas scale the same way
+    /// (`@ScaledMetric` relative to `.body`), matching `Font.custom(_:size:)`.
     var figmaLineBox: FigmaLineBox? {
         switch self {
         case .headingLargeSemibold:
@@ -128,6 +153,64 @@ public enum FontType {
             return nil
         }
     }
+
+    /// System faces that must scale like Android `sp`: linear with the body
+    /// text style, including accessibility sizes, with no maximum.
+    /// Headings are absent — `Font.custom` already scales those.
+    var systemFontSpec: SystemFontSpec? {
+        switch self {
+        case .paragraphLargeRegular: return SystemFontSpec(size: 17, weight: .regular)
+        case .paragraphRegular: return SystemFontSpec(size: 15, weight: .regular)
+        case .paragraphBold: return SystemFontSpec(size: 15, weight: .bold)
+        case .bodyMediumSmall: return SystemFontSpec(size: 14, weight: .medium)
+        case .bodyBoldLabel: return SystemFontSpec(size: 12, weight: .bold)
+        case .bodyBoldMedium: return SystemFontSpec(size: 16, weight: .bold)
+        case .uiLargeBold: return SystemFontSpec(size: 17, weight: .semibold)
+        case .uiLargeRegular: return SystemFontSpec(size: 17, weight: .regular)
+        case .uiRegular: return SystemFontSpec(size: 13, weight: .regular)
+        case .uiSmallSemibold: return SystemFontSpec(size: 13, weight: .semibold)
+        case .uiCaptionMedium: return SystemFontSpec(size: 12, weight: .medium)
+        default: return nil
+        }
+    }
+
+    /// System font scaled for `dynamicTypeSize`. At `.large` this is the design
+    /// size in `font`. `nil` for Sharp Grotesk headings.
+    public func scaledSystemFont(for dynamicTypeSize: DynamicTypeSize) -> Font? {
+        guard let spec = systemFontSpec else { return nil }
+        return spec.font(for: dynamicTypeSize)
+    }
+}
+
+struct SystemFontSpec {
+    let size: CGFloat
+    let weight: Font.Weight
+
+    func font(for dynamicTypeSize: DynamicTypeSize) -> Font {
+        let traits = UITraitCollection(preferredContentSizeCategory: dynamicTypeSize.uiContentSizeCategory)
+        let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: size, compatibleWith: traits)
+        return .system(size: scaled, weight: weight)
+    }
+}
+
+extension DynamicTypeSize {
+    var uiContentSizeCategory: UIContentSizeCategory {
+        switch self {
+        case .xSmall: return .extraSmall
+        case .small: return .small
+        case .medium: return .medium
+        case .large: return .large
+        case .xLarge: return .extraLarge
+        case .xxLarge: return .extraExtraLarge
+        case .xxxLarge: return .extraExtraExtraLarge
+        case .accessibility1: return .accessibilityMedium
+        case .accessibility2: return .accessibilityLarge
+        case .accessibility3: return .accessibilityExtraLarge
+        case .accessibility4: return .accessibilityExtraExtraLarge
+        case .accessibility5: return .accessibilityExtraExtraExtraLarge
+        @unknown default: return .large
+        }
+    }
 }
 
 /// Extra leading that turns a font's own line box into a Figma line height.
@@ -146,7 +229,15 @@ struct FigmaLineBox {
 public extension View {
     @ViewBuilder
     func typography(_ type: FontType) -> some View {
-        if let lineBox = type.figmaLineBox {
+        if let spec = type.systemFontSpec {
+            modifier(
+                ScaledSystemFontModifier(
+                    spec: spec,
+                    tracking: type.tracking,
+                    lineBox: type.figmaLineBox
+                )
+            )
+        } else if let lineBox = type.figmaLineBox {
             self.font(type.font)
                 .tracking(type.tracking)
                 .modifier(
@@ -157,6 +248,39 @@ public extension View {
                 )
         } else {
             self.font(type.font).tracking(type.tracking)
+        }
+    }
+}
+
+/// Scales a system design size with the body text style. `@ScaledMetric` has no
+/// accessibility cap, matching Android `sp`. At the default content size the
+/// metric is the design size, so `.system(size:weight:)` is unchanged.
+private struct ScaledSystemFontModifier: ViewModifier {
+    let weight: Font.Weight
+    let tracking: CGFloat
+    let lineBox: FigmaLineBox?
+    @ScaledMetric private var size: CGFloat
+
+    init(spec: SystemFontSpec, tracking: CGFloat, lineBox: FigmaLineBox?) {
+        self.weight = spec.weight
+        self.tracking = tracking
+        self.lineBox = lineBox
+        _size = ScaledMetric(wrappedValue: spec.size, relativeTo: .body)
+    }
+
+    func body(content: Content) -> some View {
+        let styled = content
+            .font(.system(size: size, weight: weight))
+            .tracking(tracking)
+        if let lineBox {
+            styled.modifier(
+                FigmaLineBoxModifier(
+                    lineSpacing: lineBox.lineSpacing,
+                    halfLeading: lineBox.halfLeading
+                )
+            )
+        } else {
+            styled
         }
     }
 }

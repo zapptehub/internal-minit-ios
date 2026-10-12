@@ -148,9 +148,39 @@ final class OnboardingViewModelTests: XCTestCase {
         vm.continueFromName()
         await settle()
 
-        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertEqual(vm.errorMessage, "Something went wrong")
         XCTAssertEqual(vm.step, .name)
         XCTAssertFalse(vm.isLoading)
+    }
+
+    /// Name-save failure uses `onboarding.error.profileSaveFailed`
+    /// (Android `onboarding_error_profile_save_failed`) in the selected language.
+    func testContinueFromNameFailureUsesTheSelectedLanguageCatalog() async {
+        let expected = [
+            OnboardingLanguageCode.en: "Something went wrong",
+            OnboardingLanguageCode.hu: "Valami hiba történt",
+            OnboardingLanguageCode.sk: "Niečo sa pokazilo",
+        ]
+        for (language, sentence) in expected {
+            let profileRepo = FakeProfileRepository()
+            profileRepo.errorToThrow = SampleError.boom
+            let vm = makeViewModel(profileRepository: profileRepo)
+            vm.selectLanguage(language)
+            vm.name = "Iveta"
+
+            vm.continueFromName()
+            await settle()
+
+            let catalog = OnboardingLocalizedString.string(
+                "onboarding.error.profileSaveFailed",
+                locale: Locale(identifier: language.rawValue)
+            )
+            XCTAssertEqual(catalog, sentence, language.rawValue)
+            XCTAssertEqual(vm.errorMessage, catalog, language.rawValue)
+            XCTAssertEqual(vm.errorMessage, sentence, language.rawValue)
+            XCTAssertFalse(vm.errorMessage?.contains("SampleError") == true, language.rawValue)
+            XCTAssertEqual(vm.step, .name, language.rawValue)
+        }
     }
 
     // MARK: Language step

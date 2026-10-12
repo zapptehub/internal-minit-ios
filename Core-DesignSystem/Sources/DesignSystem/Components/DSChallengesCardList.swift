@@ -278,6 +278,7 @@ struct DSChallengesCard: View {
     /// `Font.custom(_:size:)` scales with the body text style, so the extra
     /// leading scales the same way: baseline-to-baseline stays 20/15 of the size.
     @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSChallengesCardList.titleLineSpacing
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         MinimumHeightLayout(minHeight: DSChallengesCardList.cardSize.height) {
@@ -297,7 +298,7 @@ struct DSChallengesCard: View {
                         .typography(DSChallengesCardList.titleStyle)
                         .lineSpacing(titleLineSpacing)
                         .foregroundColor(.white)
-                        .lineLimit(2)
+                        .lineLimit(dynamicTypeSize > .large ? nil : 2)
                         .multilineTextAlignment(.leading)
                 }
             }
@@ -327,6 +328,7 @@ struct DSChallengesCard: View {
 struct DSChallengesCardRow: View {
     let items: [DSChallengesCardList.Item]
     var onItemTap: () -> Void = {}
+    @Environment(\.locale) private var locale
 
     var body: some View {
         EqualHeightHStack(spacing: DSChallengesCardList.itemSpacing) {
@@ -334,10 +336,27 @@ struct DSChallengesCardRow: View {
                 DSChallengesCard(item: item)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onItemTap)
-                    .accessibilityElement(children: .combine)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(challengeCardLabel(item))
+                    .accessibilityValue(challengeProgressDescription(item))
                     .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    /// Android `contentDescription`: `"title, +45 pts"`.
+    private func challengeCardLabel(_ item: DSChallengesCardList.Item) -> String {
+        "\(item.title), \(item.badgeText)"
+    }
+
+    /// Android `stateDescription` from `common_a11y_challenge_progress`.
+    private func challengeProgressDescription(_ item: DSChallengesCardList.Item) -> String {
+        DesignSystemA11y.format(
+            "common.a11y.challengeProgress",
+            locale: locale,
+            item.progress,
+            item.repeatCount
+        )
     }
 }
 

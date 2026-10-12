@@ -42,6 +42,43 @@ final class CircleItemListSpacingTests: XCTestCase {
         XCTAssertEqual(headerCenterToCircleTop, 24, accuracy: 0.75)
     }
 
+    /// `uiRegular` is a fixed 13pt system font, so the product name used to stay
+    /// one line tall at accessibility sizes. It now scales with Dynamic Type and
+    /// wraps in the 56pt column. At `.large` it is still the 13pt line.
+    func testProductLabelScalesAboveTheDefaultContentSize() {
+        let width: CGFloat = 402
+        let largeLabel = Self.labelHeight(dynamicType: .large, width: width)
+        let grownLabel = Self.labelHeight(dynamicType: .accessibility5, width: width)
+        let uiRegular = Self.measure(
+            Text("Bread")
+                .typography(.uiRegular)
+                .lineLimit(2)
+                .frame(width: DSCircleItemList.circleDiameter),
+            width: width
+        )
+        XCTAssertEqual(largeLabel, uiRegular.height, accuracy: 0.75)
+        XCTAssertGreaterThan(grownLabel, largeLabel + 8)
+    }
+
+    private static func labelHeight(dynamicType: DynamicTypeSize, width: CGFloat) -> CGFloat {
+        let list = measure(
+            DSCircleItemList(
+                title: "Products",
+                items: [.init(id: 0, image: .mockPasteryImage2, label: "Bread")]
+            )
+            .environment(\.dynamicTypeSize, dynamicType),
+            width: width
+        )
+        let header = measure(
+            DSCollectionHeader(title: "Products", onSeeAllTapped: {})
+                .environment(\.dynamicTypeSize, dynamicType),
+            width: width
+        )
+        // list = header + 8 + rowTopInset + circle + 8 + label
+        return list.height - header.height - DSCircleItemList.circleDiameter
+            - DSConstant.small.value - (DSConstant.small.value + DSCircleItemList.rowTopInset)
+    }
+
     private static func measure<V: View>(_ view: V, width: CGFloat) -> CGSize {
         let host = UIHostingController(rootView: view.environment(\.dynamicTypeSize, .large))
         return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))

@@ -134,6 +134,7 @@ struct DSInputFieldColors {
 struct DSFloatingLabel: View {
     let text: String
     let color: Color
+    var accessibilityHintText: String? = nil
 
     var body: some View {
         Text(text)
@@ -141,6 +142,7 @@ struct DSFloatingLabel: View {
             .foregroundColor(color)
             .padding(.horizontal, DSInputFieldMetrics.labelHorizontalInset)
             .background(DSColor.Background.Layer.level0)
+            .dsAccessibilityHint(accessibilityHintText)
     }
 }
 
@@ -148,14 +150,16 @@ struct DSFloatingLabel: View {
 /// (text, password, date, unit, textarea). Renders the border, the floating label overlay,
 /// and the field's own content (passed in via `content`).
 ///
-/// Fills available horizontal width and uses a fixed height, matching Figma's Dev Mode
-/// spec for this component ("Width: Fill", "Height: Fixed 48px") — single-line variants
-/// share this container as-is; `.textarea` overrides the height (see Phase 3).
+/// Fills available horizontal width. The Figma height (48, or the textarea's 120)
+/// is a minimum that is also the maximum at the default content size. Above that
+/// size the container grows with its text.
 struct DSInputBorderedContainer<Content: View>: View {
     let label: String?
     let colors: DSInputFieldColors
     var height: CGFloat = DSInputFieldMetrics.fieldHeight
+    var accessibilityHintText: String? = nil
     @ViewBuilder let content: () -> Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -167,14 +171,21 @@ struct DSInputBorderedContainer<Content: View>: View {
                 .padding(.vertical, DSInputFieldMetrics.verticalPadding)
 
             if let label {
-                DSFloatingLabel(text: label, color: colors.labelColor)
-                    .offset(x: DSInputFieldMetrics.labelOffsetX, y: DSInputFieldMetrics.labelOffsetY)
+                DSFloatingLabel(
+                    text: label,
+                    color: colors.labelColor,
+                    accessibilityHintText: accessibilityHintText
+                )
+                .offset(x: DSInputFieldMetrics.labelOffsetX, y: DSInputFieldMetrics.labelOffsetY)
             }
         }
-        // Figma specifies "Height: Fixed", not a minimum — using an exact height (rather
-        // than `minHeight`) also lets `.textarea`'s counter pin to the bottom via a `Spacer`.
+        // Figma's height is the minimum. At the default content size a matching
+        // maximum keeps that exact height (and lets a textarea's `Spacer` pin
+        // the counter). Above the default size the field grows with its text,
+        // the way Android's text field does.
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .frame(height: height)
+        .frame(minHeight: height)
+        .frame(maxHeight: dynamicTypeSize > .large ? nil : height)
     }
 }
 

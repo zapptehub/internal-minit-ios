@@ -70,6 +70,14 @@ public struct DSButton: View {
     let labelStyle: FontType?
     let action: () -> Void
 
+    @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Breathing room once the label is taller than the Figma height. At the
+    /// default content size the minimum height still wins, so the pill stays
+    /// the design height.
+    private static let labelVerticalPadding: CGFloat = 4
+
     public init(
         title: String,
         type: DSButtonType,
@@ -115,7 +123,9 @@ public struct DSButton: View {
             if widthStyle == .icon {
                 Group {
                     if isLoading {
-                        ProgressView().tint(labelColor)
+                        ProgressView()
+                            .tint(labelColor)
+                            .accessibilityHidden(true)
                     } else if let icon, let iconSize {
                         DSIconView(icon: icon, size: iconSize, color: labelColor)
                     } else {
@@ -136,7 +146,9 @@ public struct DSButton: View {
             } else {
                 HStack(spacing: isLoyaltyCard ? LoyaltyCardMetrics.chipIconGap : DSConstant.small.value) {
                     if isLoading {
-                        ProgressView().tint(labelColor)
+                        ProgressView()
+                            .tint(labelColor)
+                            .accessibilityHidden(true)
                     } else if isLoyaltyCard {
                         // `.loyaltyCard` uses `paragraphBold`. Other types keep `uiLargeBold`
                         // and the intrinsic icon.
@@ -150,19 +162,24 @@ public struct DSButton: View {
                         Text(title)
                             .typography(LoyaltyCardMetrics.chipLabelStyle)
                             .foregroundColor(labelColor)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                            .multilineTextAlignment(.center)
                     } else {
                         icon?.image
                             .foregroundColor(labelColor)
                         Text(title)
                             .typography(labelFont)
                             .foregroundColor(labelColor)
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .padding(.horizontal, widthStyle == .compact ? DSConstant.medium.value : DSConstant.large.value)
+                .padding(.vertical, Self.labelVerticalPadding)
                 .frame(maxWidth: widthStyle == .expanded ? .infinity : nil)
-                .frame(height: heightStyle.value)
+                // Minimum height matches Android `heightIn(min = ...)`. At the
+                // default content size the max height locks the Figma size so
+                // the pill is unchanged; above that the label can wrap and grow.
+                .frame(minHeight: heightStyle.value)
+                .frame(maxHeight: dynamicTypeSize > .large ? nil : heightStyle.value)
                 .background(backgroundView)
                 .overlay(borderOverlay(Capsule()))
                 .clipShape(Capsule())
@@ -177,6 +194,9 @@ public struct DSButton: View {
         .disabled(!isEnabled)
         .allowsHitTesting(isEnabled && !isLoading)
         .accessibilityLabel(resolvedAccessibilityLabel)
+        .dsAccessibilityValue(
+            isLoading ? DesignSystemA11y.text("common.a11y.loading", locale: locale) : nil
+        )
     }
 
     private var resolvedAccessibilityLabel: Text {

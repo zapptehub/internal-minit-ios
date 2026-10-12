@@ -37,6 +37,12 @@ public struct DSInputField: View {
 
     @FocusState private var isFocused: Bool
     @State private var isSecureTextHidden = true
+    @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Design diameter and 17pt face. Scaled with the body text style so a digit
+    /// still fits the circle at accessibility sizes, and both stay exact at `.large`.
+    @ScaledMetric(relativeTo: .body) private var numberCircleDiameter = DSInputFieldMetrics.numberCircleDiameter
+    @ScaledMetric(relativeTo: .body) private var numberFontSize: CGFloat = 17
 
     public init(
         /// The floating label overlaid on the border (or, for `.number`, an accessibility-only
@@ -107,6 +113,23 @@ public struct DSInputField: View {
         .disabled(!isEnabled)
     }
 
+    /// Android uses the visible description as the error announcement when it is
+    /// non-blank, and the generic valid/invalid strings otherwise.
+    private var validationAccessibilityHint: String? {
+        switch validationState {
+        case .error:
+            let trimmed = description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmed.isEmpty {
+                return DesignSystemA11y.text("common.a11y.inputError", locale: locale)
+            }
+            return trimmed
+        case .success:
+            return DesignSystemA11y.text("common.a11y.inputValid", locale: locale)
+        case .none:
+            return nil
+        }
+    }
+
     private var isNumberType: Bool {
         if case .number = type { return true }
         return false
@@ -121,33 +144,46 @@ public struct DSInputField: View {
         }
     }
 
+    /// One line at the default content size. Above that, a long value wraps
+    /// inside the field instead of ending in an ellipsis, and the border grows
+    /// with it. The pinned actions stay outside this field.
+    @ViewBuilder
+    private var singleLineOrWrappingField: some View {
+        if dynamicTypeSize > .large {
+            TextField(placeholder ?? "", text: text, axis: .vertical)
+                .lineLimit(1...8)
+        } else {
+            TextField(placeholder ?? "", text: text)
+        }
+    }
+
     @ViewBuilder
     private func fieldContent(colors: DSInputFieldColors) -> some View {
         switch type {
         case .text, .date, .unit:
-            DSInputBorderedContainer(label: label, colors: colors) {
-                HStack(spacing: DSInputFieldMetrics.trailingAccessorySpacing) {
-                    TextField(placeholder ?? "", text: text)
+            DSInputBorderedContainer(
+                label: label,
+                colors: colors,
+                accessibilityHintText: validationAccessibilityHint
+            ) {
+                HStack(alignment: .center, spacing: DSInputFieldMetrics.trailingAccessorySpacing) {
+                    singleLineOrWrappingField
                         .typography(.uiLargeRegular)
                         .foregroundColor(colors.valueColor)
                         .keyboardType(resolvedKeyboardType)
                         .focused($isFocused)
+                        .dsAccessibilityHint(validationAccessibilityHint)
                     trailingAccessory(colors: colors)
                 }
             }
         case .password:
-            DSInputBorderedContainer(label: label, colors: colors) {
+            DSInputBorderedContainer(
+                label: label,
+                colors: colors,
+                accessibilityHintText: validationAccessibilityHint
+            ) {
                 HStack(spacing: DSInputFieldMetrics.trailingAccessorySpacing) {
-                    Group {
-                        if isSecureTextHidden {
-                            SecureField(placeholder ?? "", text: text)
-                        } else {
-                            TextField(placeholder ?? "", text: text)
-                        }
-                    }
-                    .typography(.uiLargeRegular)
-                    .foregroundColor(colors.valueColor)
-                    .focused($isFocused)
+                    passwordValue(valueColor: colors.valueColor)
 
                     Button {
                         isSecureTextHidden.toggle()
@@ -155,16 +191,27 @@ public struct DSInputField: View {
                         DSIconView(icon: isSecureTextHidden ? .eye : .eyeSlash, color: colors.valueColor)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(isSecureTextHidden ? "Show password" : "Hide password")
+                    .accessibilityLabel(
+                        DesignSystemA11y.text(
+                            isSecureTextHidden ? "common.a11y.showPassword" : "common.a11y.hidePassword",
+                            locale: locale
+                        )
+                    )
                 }
             }
         case .textarea(let maxLength):
-            DSInputBorderedContainer(label: label, colors: colors, height: DSInputFieldMetrics.textareaHeight) {
+            DSInputBorderedContainer(
+                label: label,
+                colors: colors,
+                height: DSInputFieldMetrics.textareaHeight,
+                accessibilityHintText: validationAccessibilityHint
+            ) {
                 VStack(alignment: .leading, spacing: DSInputFieldMetrics.trailingAccessorySpacing) {
                     TextField(placeholder ?? "", text: text, axis: .vertical)
                         .typography(.uiLargeRegular)
                         .foregroundColor(colors.valueColor)
                         .focused($isFocused)
+                        .dsAccessibilityHint(validationAccessibilityHint)
                     Spacer(minLength: 0)
                     HStack {
                         Spacer()
@@ -179,6 +226,40 @@ public struct DSInputField: View {
         }
     }
 
+    /// Empty prompt so the placeholder ("Value") is not the accessibility value.
+    /// The same string is drawn behind the glyphs and hidden from VoiceOver.
+    /// The field label is attached on the control itself.
+    @ViewBuilder
+    private func passwordValue(valueColor: Color) -> some View {
+        if isSecureTextHidden {
+            passwordValueField(SecureField("", text: text), valueColor: valueColor)
+        } else {
+            passwordValueField(TextField("", text: text), valueColor: valueColor)
+        }
+    }
+
+    private func passwordValueField<Field: View>(_ field: Field, valueColor: Color) -> some View {
+        field
+            .typography(.uiLargeRegular)
+            .foregroundColor(valueColor)
+            .background { passwordPlaceholder }
+            .focused($isFocused)
+            .accessibilityLabel(label ?? "")
+            .dsAccessibilityHint(validationAccessibilityHint)
+    }
+
+    @ViewBuilder
+    private var passwordPlaceholder: some View {
+        if text.wrappedValue.isEmpty, let placeholder, !placeholder.isEmpty {
+            Text(placeholder)
+                .typography(.uiLargeRegular)
+                .foregroundStyle(Color(uiColor: .placeholderText))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
+        }
+    }
+
     @ViewBuilder
     private func trailingAccessory(colors: DSInputFieldColors) -> some View {
         switch type {
@@ -189,6 +270,12 @@ public struct DSInputField: View {
                 DSIconView(icon: .calendar, color: colors.valueColor)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(
+                onCalendarTap == nil
+                    ? ""
+                    : DesignSystemA11y.text("common.a11y.openCalendar", locale: locale)
+            )
+            .accessibilityHidden(onCalendarTap == nil)
         case .unit(let suffix):
             Text(suffix)
                 .typography(.uiRegular)
@@ -217,6 +304,7 @@ public struct DSInputField: View {
                     text: text,
                     isFocused: isFocusedBinding,
                     textColor: colors.valueColor,
+                    fontSize: numberFontSize,
                     onDeleteBackwardOnEmpty: onDeleteBackwardOnEmpty
                 )
             } else {
@@ -228,8 +316,9 @@ public struct DSInputField: View {
                     .focused($isFocused)
             }
         }
-        .frame(width: DSInputFieldMetrics.numberCircleDiameter, height: DSInputFieldMetrics.numberCircleDiameter)
+        .frame(width: numberCircleDiameter, height: numberCircleDiameter)
         .accessibilityLabel(label ?? "")
+        .dsAccessibilityHint(validationAccessibilityHint)
     }
 }
 
@@ -247,6 +336,7 @@ private struct DSNumberBoxTextField: UIViewRepresentable {
     let text: Binding<String>
     let isFocused: Binding<Bool>
     let textColor: Color
+    let fontSize: CGFloat
     let onDeleteBackwardOnEmpty: () -> Void
 
     func makeUIView(context: Context) -> BackspaceDetectingTextField {
@@ -257,7 +347,7 @@ private struct DSNumberBoxTextField: UIViewRepresentable {
         textField.autocorrectionType = .no
         // Kept in sync by hand with `FontType.uiLargeRegular` (`.system(size: 17, weight:
         // .regular)`) — there's no public SwiftUI `Font` -> `UIFont` bridge to derive this from.
-        textField.font = .systemFont(ofSize: 17, weight: .regular)
+        textField.font = .systemFont(ofSize: fontSize, weight: .regular)
         // `tintColor` drives the text-input cursor (caret) and selection handles — black per
         // design, rather than the system/accent tint a plain `TextField` would otherwise pick up.
         textField.tintColor = .black
@@ -273,6 +363,10 @@ private struct DSNumberBoxTextField: UIViewRepresentable {
             uiView.text = text.wrappedValue
         }
         uiView.textColor = UIColor(textColor)
+        let font = UIFont.systemFont(ofSize: fontSize, weight: .regular)
+        if uiView.font != font {
+            uiView.font = font
+        }
         context.coordinator.onDeleteBackwardOnEmpty = onDeleteBackwardOnEmpty
 
         // Deferred to the next run loop turn: this `updateUIView` call is itself happening

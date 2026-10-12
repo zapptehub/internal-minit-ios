@@ -64,6 +64,7 @@ struct DSRadio: View {
     let hasError: Bool
     let isEnabled: Bool
     let onTap: () -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         let colors = DSSelectionControlColors(isEnabled: isEnabled, isSelected: isSelected, hasError: hasError)
@@ -95,6 +96,11 @@ struct DSRadio: View {
         .disabled(!isEnabled)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .dsAccessibilityHint(
+            isEnabled && hasError
+                ? DesignSystemA11y.text("common.a11y.selectionError", locale: locale)
+                : nil
+        )
     }
 }
 

@@ -17,12 +17,28 @@ import FeatureOnboarding
 /// Thrown errors from either check are distinct from confirmed "no session" / "no
 /// card" (`nil`) so the UI can offer Retry instead of guessing.
 ///
+/// Both lookups also have a deadline. Firebase Auth `getIDToken()` waits on a
+/// secure-token request when the cached token is missing or near expiry, and
+/// Realtime Database `getData()` only fails quickly when the connection is
+/// already down. A get that was marked sent, or an ID-token refresh, does not
+/// throw while the network never answers. Android's `Query.get()` does not
+/// fail at all in that case. The deadline turns that hang into the existing
+/// retry screens.
+///
+/// Cancellation is the same kind of failure. SwiftUI can cancel `bootstrap()`'s
+/// `.task` — or the linked-card check inside it — without starting another
+/// attempt, and returning early used to leave the UI on `.loading`. A cancelled
+/// bootstrap shows `.sessionRestoreFailed`; a cancelled post-auth check shows
+/// `.onboardingStatusFailed`. Either write is skipped when a newer bootstrap,
+/// login, logout, or retry has already taken over.
+///
 /// Follows the same convention as `OnboardingViewModel`/`LoginViewModel`: public
 /// methods are synchronous and dispatch their own `Task` internally, except
 /// `bootstrap()` itself, which the presenting view drives from `.task { }`.
 @MainActor
 @Observable
 final class AppFlowViewModel {
+    static let defaultRestoreTimeout: Duration = .seconds(15)
     enum State: Equatable {
         case loading
         /// `currentSession()` threw — validity couldn't be determined (e.g. offline),
@@ -47,29 +63,42 @@ final class AppFlowViewModel {
     private let authRepository: AuthRepository
     private let loyaltyCardRepository: LoyaltyCardRepository
     private let onboardingProgressStore: any OnboardingProgressStoring
+    private let restoreTimeout: Duration
+    /// Identifies the newest bootstrap, login, logout, or retry. An older attempt
+    /// applies a result — including after cancellation — only while this still matches.
+    private var launchAttempt = 0
 
     init(
         authRepository: AuthRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
-        onboardingProgressStore: any OnboardingProgressStoring
+        onboardingProgressStore: any OnboardingProgressStoring,
+        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout
     ) {
         self.authRepository = authRepository
         self.loyaltyCardRepository = loyaltyCardRepository
         self.onboardingProgressStore = onboardingProgressStore
+        self.restoreTimeout = restoreTimeout
     }
 
     /// Called once from `ContentView`'s `.task { }`.
     func bootstrap() async {
+        let attempt = beginLaunchAttempt()
         state = .loading
         do {
-            if let session = try await authRepository.currentSession() {
-                await resolvePostAuthDestination(userId: session.userId)
+            if let session = try await withLaunchTimeout({
+                try await self.authRepository.currentSession()
+            }) {
+                guard isCurrentLaunchAttempt(attempt) else { return }
+                await resolvePostAuthDestination(userId: session.userId, attempt: attempt)
             } else {
+                guard isCurrentLaunchAttempt(attempt) else { return }
                 restoredLocale = nil
                 state = .unauthenticated
             }
+        } catch is CancellationError {
+            applySessionRestoreFailureIfCurrent(attempt)
         } catch {
-            state = .sessionRestoreFailed
+            applySessionRestoreFailureIfCurrent(attempt)
         }
     }
 
@@ -78,10 +107,9 @@ final class AppFlowViewModel {
         case .sessionRestoreFailed:
             Task { await bootstrap() }
         case .onboardingStatusFailed(let userId):
-            Task {
-                state = .loading
-                await resolvePostAuthDestination(userId: userId)
-            }
+            let attempt = beginLaunchAttempt()
+            state = .loading
+            Task { await resolvePostAuthDestination(userId: userId, attempt: attempt) }
         default:
             break
         }
@@ -93,8 +121,9 @@ final class AppFlowViewModel {
     /// the linked-card check so a returning account that already finished onboarding
     /// skips straight into the main app.
     func didLogIn(_ session: AuthData) {
+        let attempt = beginLaunchAttempt()
         state = .loading
-        Task { await resolvePostAuthDestination(userId: session.userId) }
+        Task { await resolvePostAuthDestination(userId: session.userId, attempt: attempt) }
     }
 
     /// `FeatureOnboarding`'s `onCompleted` callback — fires only after the terminal
@@ -108,8 +137,10 @@ final class AppFlowViewModel {
     /// Signs the user out and returns them to the unauthenticated flow (e.g. from the
     /// dashboard-under-construction placeholder's Log Out button).
     func logOut() {
+        let attempt = beginLaunchAttempt()
         Task {
             await authRepository.logout()
+            guard isCurrentLaunchAttempt(attempt) else { return }
             restoredLocale = nil
             state = .unauthenticated
         }
@@ -118,9 +149,13 @@ final class AppFlowViewModel {
     /// Routes a known-authenticated `userId` based on whether a loyalty card is already
     /// linked: skip onboarding when complete, otherwise mount the flow (and restore any
     /// mid-onboarding locale checkpoint).
-    private func resolvePostAuthDestination(userId: String) async {
+    private func resolvePostAuthDestination(userId: String, attempt: Int) async {
         do {
-            if try await loyaltyCardRepository.fetchLinkedCard(userId: userId) != nil {
+            let linkedCard = try await withLaunchTimeout {
+                try await self.loyaltyCardRepository.fetchLinkedCard(userId: userId)
+            }
+            guard isCurrentLaunchAttempt(attempt) else { return }
+            if linkedCard != nil {
                 restoredLocale = nil
                 state = .authenticated(userId: userId)
                 return
@@ -129,8 +164,109 @@ final class AppFlowViewModel {
             let persistedLanguage = try? onboardingProgressStore.load(userId: userId)?.language
             restoredLocale = persistedLanguage.map { Locale(identifier: $0.rawValue) }
             state = .onboarding(userId: userId)
+        } catch is CancellationError {
+            applyOnboardingStatusFailureIfCurrent(attempt, userId: userId)
         } catch {
-            state = .onboardingStatusFailed(userId: userId)
+            applyOnboardingStatusFailureIfCurrent(attempt, userId: userId)
+        }
+    }
+
+    private func beginLaunchAttempt() -> Int {
+        launchAttempt += 1
+        return launchAttempt
+    }
+
+    private func isCurrentLaunchAttempt(_ attempt: Int) -> Bool {
+        attempt == launchAttempt
+    }
+
+    private func applySessionRestoreFailureIfCurrent(_ attempt: Int) {
+        guard isCurrentLaunchAttempt(attempt) else { return }
+        state = .sessionRestoreFailed
+    }
+
+    private func applyOnboardingStatusFailureIfCurrent(_ attempt: Int, userId: String) {
+        guard isCurrentLaunchAttempt(attempt) else { return }
+        state = .onboardingStatusFailed(userId: userId)
+    }
+
+    /// Runs `operation` until it finishes or `restoreTimeout` elapses.
+    ///
+    /// The caller resumes on timeout without waiting for `operation`. Firebase's
+    /// token and `getData` callbacks are not cancellation-cooperative, so a task
+    /// group would stay suspended on the hung call and the launch screen would
+    /// not appear.
+    private func withLaunchTimeout<T: Sendable>(
+        _ operation: @escaping () async throws -> T
+    ) async throws -> T {
+        let gate = LaunchTimeoutGate()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let operationTask = Task {
+                    do {
+                        let value = try await operation()
+                        gate.resume(continuation, with: .success(value))
+                    } catch {
+                        gate.resume(continuation, with: .failure(error))
+                    }
+                }
+                let timeoutTask = Task {
+                    do {
+                        try await Task.sleep(for: restoreTimeout)
+                        gate.resume(continuation, with: .failure(LaunchRestoreTimeout()))
+                    } catch {
+                        gate.resume(continuation, with: .failure(error))
+                    }
+                }
+                gate.track(operationTask)
+                gate.track(timeoutTask)
+            }
+        } onCancel: {
+            gate.cancelTrackedTasks()
         }
     }
 }
+
+/// One resume of the launch-timeout continuation, then cancellation of the other task.
+private final class LaunchTimeoutGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didResume = false
+    private var cancelled = false
+    private var tasks: [Task<Void, Never>] = []
+
+    func track(_ task: Task<Void, Never>) {
+        lock.lock()
+        tasks.append(task)
+        let shouldCancel = cancelled
+        lock.unlock()
+        if shouldCancel {
+            task.cancel()
+        }
+    }
+
+    func cancelTrackedTasks() {
+        lock.lock()
+        cancelled = true
+        let pending = tasks
+        lock.unlock()
+        pending.forEach { $0.cancel() }
+    }
+
+    func resume<T>(
+        _ continuation: CheckedContinuation<T, Error>,
+        with result: Result<T, Error>
+    ) {
+        lock.lock()
+        let shouldResume = !didResume
+        if shouldResume {
+            didResume = true
+        }
+        let pending = tasks
+        lock.unlock()
+        guard shouldResume else { return }
+        pending.forEach { $0.cancel() }
+        continuation.resume(with: result)
+    }
+}
+
+private struct LaunchRestoreTimeout: Error {}

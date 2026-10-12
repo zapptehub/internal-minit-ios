@@ -35,6 +35,22 @@ final class LoyaltyCardSpacingTests: XCTestCase {
         XCTAssertEqual(gaps.cardHeight, 200, accuracy: 4, "\(gaps)")
     }
 
+    /// "Silver" fits on one line at the default size, so the card matches a
+    /// one-letter rank. At accessibility sizes the word is fitted to the
+    /// column instead of splitting mid-word, and the card still grows.
+    @MainActor
+    func testRankTitleWrapsAtAccessibilitySizesAndStaysOneLineAtDefault() {
+        let silverLarge = Self.cardHeight(rank: "Silver", dynamicType: .large)
+        let shortLarge = Self.cardHeight(rank: "A", dynamicType: .large)
+        XCTAssertEqual(silverLarge, shortLarge, accuracy: 1)
+        XCTAssertEqual(silverLarge, 200, accuracy: 4)
+
+        let silverAX = Self.cardHeight(rank: "Silver", dynamicType: .accessibility5)
+        let shortAX = Self.cardHeight(rank: "A", dynamicType: .accessibility5)
+        XCTAssertEqual(silverAX, shortAX, accuracy: 16)
+        XCTAssertGreaterThan(silverAX, silverLarge + 40)
+    }
+
     /// The line box SwiftUI lays out is `ascender − descender`. Including `leading`
     /// in the bottom trim (the previous bug) shortens a 56pt line from the cap
     /// height (~40pt) to ~25pt.
@@ -132,6 +148,26 @@ final class LoyaltyCardSpacingTests: XCTestCase {
         host.view.frame = window.bounds
         host.view.layoutIfNeeded()
         return (store.height, store.baseline)
+    }
+
+    @MainActor
+    static func cardHeight(
+        rank: String,
+        dynamicType: DynamicTypeSize,
+        width: CGFloat = 354
+    ) -> CGFloat {
+        let view = LoyaltyCard(
+            rankTitle: rank,
+            rankSubtitle: "540 pts until Platinum",
+            points: 3210,
+            chipLabel: "Minit Card",
+            showsShadow: false
+        )
+        .frame(width: width)
+        .environment(\.dynamicTypeSize, dynamicType)
+        return UIHostingController(rootView: view)
+            .sizeThatFits(in: CGSize(width: width, height: 4000))
+            .height
     }
 
     @MainActor

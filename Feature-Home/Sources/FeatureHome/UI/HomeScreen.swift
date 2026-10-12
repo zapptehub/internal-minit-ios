@@ -173,15 +173,16 @@ struct HomeScreen: View {
     /// Pink name underline from the mock is deferred.
     private var greeting: some View {
         let timeOfDayGreeting = timeOfDayGreeting
-        return (
-            Text("\(timeOfDayGreeting) ")
-                .foregroundColor(DSColor.Text.inverse)
-            + Text(model.userName)
-                .foregroundColor(DSColor.Text.heading)
+        return DSGrowingText(
+            text: "\(timeOfDayGreeting) ",
+            type: .headingH2,
+            color: DSColor.Text.inverse,
+            accentText: model.userName,
+            accentColor: DSColor.Text.heading,
+            alignment: .center
         )
-        .typography(.headingH2)
-        .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.horizontal, HomeHeaderMetrics.contentHorizontalInset)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(timeOfDayGreeting) \(model.userName)".trimmingCharacters(in: .whitespaces))

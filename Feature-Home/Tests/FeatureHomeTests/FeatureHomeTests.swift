@@ -14,6 +14,37 @@ final class FeatureHomeTests: XCTestCase {
         )
     }
 
+    /// VoiceOver reads the offer name and the offer title as one label.
+    func testNotificationsDailyOfferBannerReadsTheOfferText() {
+        let cases: [(String, String, String)] = [
+            ("en", "Daily Offer", "15% Off on every coffee"),
+            ("hu", "Napi ajánlat", "15% kedvezmény minden kávéra"),
+            ("sk", "Denná ponuka", "15% zľava na každú kávu"),
+        ]
+        for (identifier, name, title) in cases {
+            let locale = Locale(identifier: identifier)
+            XCTAssertEqual(NotificationsScreen.dailyOfferPlainTitle(locale: locale), title, identifier)
+            XCTAssertEqual(
+                NotificationsScreen.dailyOfferAccessibilityLabel(locale: locale),
+                "\(name), \(title)",
+                identifier
+            )
+            XCTAssertNotEqual(
+                NotificationsScreen.dailyOfferAccessibilityLabel(locale: locale),
+                name,
+                identifier
+            )
+        }
+        XCTAssertEqual(
+            NotificationsDailyOfferAccessibility.label(offerName: "Daily Offer", offerTitle: " "),
+            "Daily Offer"
+        )
+        XCTAssertEqual(
+            NotificationsDailyOfferAccessibility.label(offerName: " ", offerTitle: "15% Off on every coffee"),
+            "15% Off on every coffee"
+        )
+    }
+
     /// Figma "AMP / Notifications" 4088:1319.
     func testNotificationsBannerHasItsOwnID() {
         // Home's daily offers are 0, 1 and 2; Android's fixture uses 3 too.

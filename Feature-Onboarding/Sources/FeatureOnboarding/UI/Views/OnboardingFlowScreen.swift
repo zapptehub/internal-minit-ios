@@ -11,6 +11,7 @@ import CoreExtensions
 /// (`scannerPermission`/`scanning`/`manualCardEntry`) is Task 4.4;
 /// `ProcessingScanScreen` (`.processingScan`) is Task 4.5.
 struct OnboardingFlowScreen: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
 
@@ -63,12 +64,12 @@ struct OnboardingFlowScreen: View {
                     }
 
                     stepContent
-                        .transition(stepTransition)
+                        .transition(stepMotion.transition)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(LinearGradient.minitBackground.ignoresSafeArea())
-                .animation(.easeInOut(duration: 0.32), value: viewModel.step)
-                .animation(.easeInOut(duration: 0.32), value: viewModel.progressFraction)
+                .animation(stepMotion.animation, value: viewModel.step)
+                .animation(stepMotion.animation, value: viewModel.progressFraction)
             }
         }
         .environment(\.locale, currentLocale)
@@ -115,14 +116,12 @@ struct OnboardingFlowScreen: View {
 
     /// Push (forward) slides the new step in from the trailing edge while the old one
     /// exits leading, like `NavigationStack.push`; back mirrors it in reverse, like
-    /// `.pop`. Recomputed from `viewModel.stepDirection` on every step change.
-    private var stepTransition: AnyTransition {
-        switch viewModel.stepDirection {
-        case .forward:
-            return .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
-        case .backward:
-            return .asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing))
-        }
+    /// `.pop`. Reduce Motion snaps to the step already in place.
+    private var stepMotion: OnboardingStepMotion {
+        OnboardingStepMotion.resolve(
+            direction: viewModel.stepDirection,
+            reduceMotion: reduceMotion
+        )
     }
 
     private var bootstrapAlertPresented: Binding<Bool> {

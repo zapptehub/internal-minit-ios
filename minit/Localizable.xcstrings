@@ -1,0 +1,117 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "appFlow.sessionRestoreFailed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to restore your session"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült visszaállítani a munkamenetedet"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reláciu sa nepodarilo obnoviť"
+          }
+        }
+      }
+    },
+    "appFlow.sessionRestoreFailed.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check whether you're signed in. Check your connection and try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült ellenőriznünk, hogy be vagy-e jelentkezve. Ellenőrizd az internetkapcsolatodat, majd próbáld újra."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodarilo sa overiť, či ste prihlásení. Skontrolujte pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
+    "appFlow.onboardingStatusFailed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to check your onboarding status"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült ellenőrizni a bevezetési folyamat állapotát"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodarilo sa overiť stav úvodného nastavenia"
+          }
+        }
+      }
+    },
+    "appFlow.onboardingStatusFailed.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check whether you can continue. Check your connection and try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült ellenőriznünk, hogy folytathatod-e. Ellenőrizd az internetkapcsolatodat, majd próbáld újra."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodarilo sa overiť, či môžete pokračovať. Skontrolujte pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
+    "appFlow.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Újrapróbálás"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skúsiť znova"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

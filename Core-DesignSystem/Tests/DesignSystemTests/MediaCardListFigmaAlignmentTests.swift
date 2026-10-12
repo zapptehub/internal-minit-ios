@@ -80,7 +80,7 @@ final class MediaCardListFigmaAlignmentTests: XCTestCase {
             Text(title)
                 .typography(DSMediaCardList.titleStyle)
                 .lineSpacing(spacing)
-                .lineLimit(2)
+                .lineLimit(size > .large ? nil : 2)
                 .multilineTextAlignment(.leading)
         }
         let width = DSMediaCardList.cardSize.width - DSMediaCardList.titleHorizontalPadding * 2

@@ -25,7 +25,10 @@ extension OnboardingViewModel {
                 advance(via: .nameConfirmed)
             } catch {
                 isLoading = false
-                errorMessage = error.localizedDescription
+                errorMessage = OnboardingLocalizedString.string(
+                    "onboarding.error.profileSaveFailed",
+                    locale: Locale(identifier: selectedLanguage.rawValue)
+                )
             }
         }
     }

@@ -35,6 +35,7 @@ struct DSCollectionHeader: View {
                 Text(title)
                     .typography(Self.titleStyle)
                     .foregroundColor(DSColor.Text.heading)
+                    .accessibilityAddTraits(.isHeader)
             }
             Spacer(minLength: 0)
             seeAllButton

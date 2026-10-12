@@ -21,6 +21,11 @@ public struct DSOTPField: View {
     // SwiftUI focus. The digit-parsing/auto-advance/backspace-cascade logic itself lives there
     // (not here) so it can be unit tested as a plain value type.
     @State private var model: OTPFieldModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Same body-relative scale as `DSInputField`'s number circle, so the
+    /// two-row height matches the boxes that are actually drawn.
+    @ScaledMetric(relativeTo: .body) private var circleDiameter = DSInputFieldMetrics.numberCircleDiameter
+    @State private var rowWidth: CGFloat = 0
 
     /// - Parameters:
     ///   - label: Base accessibility label for each box (e.g. "Verification code digit") —
@@ -36,22 +41,28 @@ public struct DSOTPField: View {
     }
 
     public var body: some View {
-        HStack(spacing: DSConstant.medium.value) {
-            ForEach(0..<length, id: \.self) { index in
-                DSInputField(
-                    label: "\(label) \(index + 1)",
-                    text: digitBinding(at: index),
-                    type: .number,
-                    // A filled box should look "focused" even after keyboard focus moves
-                    // to the next box — and an empty box should look like the plain
-                    // default state even while it's the one actually focused.
-                    isFocusedOverride: !model.digits[index].isEmpty,
-                    isFocusedBinding: isFocusedBinding(at: index),
-                    onDeleteBackwardOnEmpty: {
-                        model.handleDeleteBackwardOnEmpty(at: index)
-                        code.wrappedValue = model.code
+        Group {
+            if dynamicTypeSize > .large {
+                // Scaled circles no longer share one row. A second row keeps each
+                // digit at its text size instead of overlapping or leaving the screen.
+                // The row's own `sizeThatFits` can report a single line when its
+                // width proposal is unbounded, and the second row then draws
+                // through the button. The explicit height reserves both rows.
+                OTPWrappingRow(spacing: DSConstant.medium.value) {
+                    digitBoxes
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: wrappedRowHeight, alignment: .top)
+                .background {
+                    GeometryReader { geo in
+                        Color.clear.preference(key: OTPRowWidthKey.self, value: geo.size.width)
                     }
-                )
+                }
+                .onPreferenceChange(OTPRowWidthKey.self) { rowWidth = $0 }
+            } else {
+                HStack(spacing: DSConstant.medium.value) {
+                    digitBoxes
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -62,6 +73,36 @@ public struct DSOTPField: View {
         // when the screen re-appears) — guarded so it doesn't fight the boxes' own edits.
         .onChange(of: code.wrappedValue) { _, newValue in
             model.syncExternalCode(newValue)
+        }
+    }
+
+    /// One row when four circles fit the measured width, otherwise two.
+    private var wrappedRowHeight: CGFloat {
+        let spacing = DSConstant.medium.value
+        let oneRow = circleDiameter * CGFloat(length) + spacing * CGFloat(max(0, length - 1))
+        let available = rowWidth > 1 ? rowWidth : 320
+        if oneRow <= available + 0.5 {
+            return circleDiameter
+        }
+        return circleDiameter * 2 + spacing
+    }
+
+    private var digitBoxes: some View {
+        ForEach(0..<length, id: \.self) { index in
+            DSInputField(
+                label: "\(label) \(index + 1)",
+                text: digitBinding(at: index),
+                type: .number,
+                // A filled box should look "focused" even after keyboard focus moves
+                // to the next box — and an empty box should look like the plain
+                // default state even while it's the one actually focused.
+                isFocusedOverride: !model.digits[index].isEmpty,
+                isFocusedBinding: isFocusedBinding(at: index),
+                onDeleteBackwardOnEmpty: {
+                    model.handleDeleteBackwardOnEmpty(at: index)
+                    code.wrappedValue = model.code
+                }
+            )
         }
     }
 
@@ -91,6 +132,63 @@ public struct DSOTPField: View {
                 }
             }
         )
+    }
+}
+
+private struct OTPRowWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// One row when the circles fit; otherwise two centered rows of the same boxes.
+private struct OTPWrappingRow: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let width = proposal.width ?? sizes.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, sizes.count - 1))
+        let rows = rowRanges(sizes: sizes, width: width)
+        var height: CGFloat = 0
+        for range in rows {
+            let rowHeight = sizes[range].map(\.height).max() ?? 0
+            height += rowHeight
+        }
+        if rows.count > 1 {
+            height += spacing * CGFloat(rows.count - 1)
+        }
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let rows = rowRanges(sizes: sizes, width: bounds.width)
+        var y = bounds.minY
+        for range in rows {
+            let rowHeight = sizes[range].map(\.height).max() ?? 0
+            let rowWidth = sizes[range].reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, range.count - 1))
+            var x = bounds.minX + (bounds.width - rowWidth) / 2
+            for index in range {
+                let size = sizes[index]
+                subviews[index].place(
+                    at: CGPoint(x: x, y: y + (rowHeight - size.height) / 2),
+                    proposal: ProposedViewSize(size)
+                )
+                x += size.width + spacing
+            }
+            y += rowHeight + spacing
+        }
+    }
+
+    private func rowRanges(sizes: [CGSize], width: CGFloat) -> [Range<Int>] {
+        guard !sizes.isEmpty else { return [] }
+        let rowWidth = sizes.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, sizes.count - 1))
+        if rowWidth <= width + 0.5 {
+            return [0..<sizes.count]
+        }
+        let midpoint = sizes.count / 2
+        return [0..<midpoint, midpoint..<sizes.count]
     }
 }
 

@@ -7,6 +7,7 @@ struct NameEntryScreen: View {
     let analytics: OnboardingAnalyticsTracking
     @Environment(\.locale) private var locale
     @FocusState private var isNameFieldFocused: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Figma default size (30pt); `@ScaledMetric` keeps oversized-field look while
     /// respecting Dynamic Type (Task 6.2).
@@ -32,6 +33,7 @@ struct NameEntryScreen: View {
                     text: $viewModel.name
                 )
                 .font(.system(size: nameFieldFontSize))
+                .frame(minHeight: dynamicTypeSize > .large ? nameFieldFontSize * 1.25 : nil, alignment: .leading)
                 .foregroundColor(DSColor.Text.heading)
                 .tint(DSColor.Text.heading)
                 .textContentType(.givenName)

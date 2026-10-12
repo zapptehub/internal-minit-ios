@@ -43,6 +43,9 @@ public struct DSBannerCarousel: View {
     let items: [Item]
     /// When set, a banner tap calls this instead of the built-in under-construction alert.
     let onBannerTap: (() -> Void)?
+    /// Replaces the generated badge-and-title label on every page. Notifications
+    /// passes its own daily-offer name; Home leaves this nil.
+    let accessibilityLabelOverride: String?
     /// Seconds the active banner stays on screen before auto-advancing to the next one
     /// (looping back to the first after the last). `nil` disables auto-advance — banners
     /// only change via manual swipe, and the active page indicator renders fully filled
@@ -52,15 +55,21 @@ public struct DSBannerCarousel: View {
     @State private var scrolledItemID: Item.ID?
     @State private var showsUnderConstructionAlert = false
     /// Active indicator's white→orange fill fraction (0...1). Held at `1` when
-    /// `autoAdvanceInterval` is `nil`; otherwise driven tick-by-tick from `0` to `1` over
+    /// `autoAdvanceInterval` is `nil` or Reduce Motion is on (the countdown's end
+    /// state); otherwise driven tick-by-tick from `0` to `1` over
     /// `autoAdvanceInterval` seconds, like a story-style countdown bar.
     @State private var progress: Double
     /// Set for as long as the user's finger is down on a banner. `runAutoAdvanceCountdown`
     /// simply stops accumulating elapsed time while this is `true`, freezing `progress` in
     /// place (Instagram Stories-style pause) instead of resetting or cancelling the countdown.
     @State private var isPressed = false
+    /// Ideal height of the tallest page's copy. The row stays 80 until the
+    /// wrapped title needs more, matching Android `heightIn(min = 80.dp)`.
+    @State private var bannerContentHeight: CGFloat = 0
+    @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let bannerHeight: CGFloat = 80
+    private static let bannerMinHeight: CGFloat = 80
     static let itemSpacing: CGFloat = DSConstant.small.value
     /// Figma Home "Offers" (6065:4746): the active banner sits 20 from each screen edge
     /// (x 20, width 362 on a 402 screen) with 8 (`itemSpacing`) to its neighbours, so they
@@ -73,7 +82,7 @@ public struct DSBannerCarousel: View {
     private static let indicatorInactiveWidth: CGFloat = 8
     /// Decorative artwork sits top-trailing, sized to roughly fill the banner's height
     /// while still tucking behind the title/button content in front of it.
-    private static let illustrationSize = CGSize(width: bannerHeight, height: bannerHeight)
+    private static let illustrationSize = CGSize(width: bannerMinHeight, height: bannerMinHeight)
     private static let arrowButtonDiameter: CGFloat = 32
     private static let arrowIconSize: CGFloat = 16
     /// Warm tan mock color for the "Daily Offer" badge, uniform across every banner fill
@@ -93,10 +102,12 @@ public struct DSBannerCarousel: View {
         items: [Item],
         autoAdvanceInterval: Double? = nil,
         initialIndex: Int = 0,
-        onBannerTap: (() -> Void)? = nil
+        onBannerTap: (() -> Void)? = nil,
+        accessibilityLabel: String? = nil
     ) {
         self.items = items
         self.onBannerTap = onBannerTap
+        self.accessibilityLabelOverride = accessibilityLabel
         self.autoAdvanceInterval = autoAdvanceInterval
         let startIndex = items.indices.contains(initialIndex) ? initialIndex : 0
         _scrolledItemID = State(initialValue: items.isEmpty ? nil : items[startIndex].id)
@@ -105,6 +116,18 @@ public struct DSBannerCarousel: View {
 
     public var body: some View {
         bannerStack
+            // The scroll container does not publish each page, so the badge and
+            // title were separate buttons and off-screen pages stayed visible.
+            // One element stands in for the page that is current.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(currentBannerAccessibilityText)
+            .accessibilityValue(currentBannerPositionDescription)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction(.default, activateBanner)
+            // VoiceOver swipe up/down. Stops on the first and last banners.
+            // The scroll view and the page indicator both follow `scrolledItemID`;
+            // `DSMotion` snaps that move when Reduce Motion is on.
+            .accessibilityAdjustableAction(adjustCurrentBanner)
             .task(id: scrolledItemID) {
                 await runAutoAdvanceCountdown()
             }
@@ -122,10 +145,15 @@ public struct DSBannerCarousel: View {
     private var bannerColumn: some View {
         VStack(spacing: DSConstant.small.value) {
             scrollView
-                .frame(height: Self.bannerHeight)
+                .frame(height: max(Self.bannerMinHeight, bannerContentHeight))
 
             if items.count > 1 {
                 pageIndicator
+            }
+        }
+        .onPreferenceChange(BannerContentHeightKey.self) { newHeight in
+            if abs(bannerContentHeight - newHeight) > 0.5 {
+                bannerContentHeight = newHeight
             }
         }
     }
@@ -193,29 +221,16 @@ public struct DSBannerCarousel: View {
                     .accessibilityHidden(true)
             }
 
-            HStack(alignment: .center, spacing: DSConstant.small.value) {
-                // `.uiSmallSemibold` (not `.uiRegular`) — a thin regular caption read too
-                // faint against the bold title below it; same 13pt size, just heavier.
-                VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
-                    if let badgeText = item.badgeText {
-                        Text(badgeText)
-                            .typography(.uiSmallSemibold)
-                            .foregroundColor(Self.badgeTextColor)
-                    }
-                    if let title = item.title {
-                        title.typography(.headingMediumBold)
+            bannerCopy(item)
+                .background {
+                    // `fixedSize` on the copy reports the wrapped height even when
+                    // the row is still the 80pt minimum, so the row can grow.
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: BannerContentHeightKey.self, value: proxy.size.height)
                     }
                 }
-
-                Spacer(minLength: 0)
-
-                if item.title != nil {
-                    arrowButton
-                }
-            }
-            .padding(DSConstant.mediumLarge.value)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(item.backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .background {
@@ -223,20 +238,110 @@ public struct DSBannerCarousel: View {
             Self.shadowCasters(color: item.backgroundColor)
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            if let onBannerTap {
-                onBannerTap()
-            } else {
-                showsUnderConstructionAlert = true
-            }
-        }
+        .onTapGesture(perform: activateBanner)
         .onLongPressGesture(
             minimumDuration: 0.15,
             maximumDistance: 10,
             pressing: { isPressed = $0 },
             perform: {}
         )
-        .accessibilityAddTraits(.isButton)
+    }
+
+    /// Badge, title, and arrow. The title wraps in the width left of the arrow;
+    /// `fixedSize` keeps that wrapped height when the row proposes less.
+    private func bannerCopy(_ item: Item) -> some View {
+        HStack(alignment: .center, spacing: DSConstant.small.value) {
+            // `.uiSmallSemibold` (not `.uiRegular`) — a thin regular caption read too
+            // faint against the bold title below it; same 13pt size, just heavier.
+            VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
+                if let badgeText = item.badgeText {
+                    Text(badgeText)
+                        .typography(.uiSmallSemibold)
+                        .foregroundColor(Self.badgeTextColor)
+                }
+                if let title = item.title {
+                    title
+                        .typography(.headingMediumBold)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+
+            if item.title != nil {
+                arrowButton
+            }
+        }
+        .padding(DSConstant.mediumLarge.value)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func activateBanner() {
+        if let onBannerTap {
+            onBannerTap()
+        } else {
+            showsUnderConstructionAlert = true
+        }
+    }
+
+    /// Increment moves to the next banner, decrement to the previous.
+    /// A single banner is already at both ends, so either swipe leaves it put.
+    private func adjustCurrentBanner(_ direction: AccessibilityAdjustmentDirection) {
+        guard let currentIndex = items.firstIndex(where: { $0.id == currentBannerID }) else { return }
+        let targetIndex: Int
+        switch direction {
+        case .increment:
+            targetIndex = currentIndex + 1
+        case .decrement:
+            targetIndex = currentIndex - 1
+        }
+        guard items.indices.contains(targetIndex) else { return }
+        DSMotion.perform(reduceMotion: reduceMotion) {
+            scrolledItemID = items[targetIndex].id
+        }
+    }
+
+    private var currentBannerID: Item.ID? {
+        scrolledItemID ?? items.first?.id
+    }
+
+    private var currentBannerAccessibilityText: Text {
+        guard let item = items.first(where: { $0.id == currentBannerID }) else {
+            return Text("")
+        }
+        return bannerAccessibilityText(for: item)
+    }
+
+    private var currentBannerPositionDescription: String {
+        guard let item = items.first(where: { $0.id == currentBannerID }) else {
+            return ""
+        }
+        return bannerPositionDescription(for: item)
+    }
+
+    private func bannerAccessibilityText(for item: Item) -> Text {
+        if let accessibilityLabelOverride, !accessibilityLabelOverride.isEmpty {
+            return Text(accessibilityLabelOverride)
+        }
+        switch (item.badgeText, item.title) {
+        case let (badge?, title?):
+            return Text(badge) + Text(", ") + title
+        case let (badge?, nil):
+            return Text(badge)
+        case let (nil, title?):
+            return title
+        case (nil, nil):
+            return Text("")
+        }
+    }
+
+    private func bannerPositionDescription(for item: Item) -> String {
+        let position = (items.firstIndex { $0.id == item.id } ?? 0) + 1
+        return DesignSystemA11y.format(
+            "common.a11y.bannerPosition",
+            locale: locale,
+            position,
+            items.count
+        )
     }
 
     /// Decorative only — the arrow itself has no separate action; tapping it (like
@@ -261,7 +366,8 @@ public struct DSBannerCarousel: View {
                 indicator(isActive: index == selectedIndex)
             }
         }
-        .animation(.default, value: selectedIndex)
+        // Reduce Motion snaps the active pill to its end width instead of easing.
+        .animation(DSMotion.animation(.default, reduceMotion: reduceMotion), value: selectedIndex)
         .accessibilityHidden(true)
     }
 
@@ -274,8 +380,11 @@ public struct DSBannerCarousel: View {
             if isActive {
                 Capsule()
                     .fill(DSColor.Background.Button.primary)
-                    .frame(width: Self.indicatorActiveWidth * progress)
-                    .animation(.linear(duration: Self.tickInterval), value: progress)
+                    .frame(width: Self.indicatorActiveWidth * displayedProgress)
+                    .animation(
+                        DSMotion.animation(.linear(duration: Self.tickInterval), reduceMotion: reduceMotion),
+                        value: displayedProgress
+                    )
             }
         }
         .frame(
@@ -284,11 +393,17 @@ public struct DSBannerCarousel: View {
         )
     }
 
+    /// Fill drawn in the active pill. Reduce Motion snaps to the completed bar.
+    private var displayedProgress: Double {
+        DSMotion.indicatorProgress(reduceMotion: reduceMotion, animated: progress)
+    }
+
     /// Re-runs from scratch whenever `scrolledItemID` changes — via SwiftUI's `.task(id:)`
     /// auto-cancellation — whether that change came from this same countdown advancing the
     /// page, or from the user manually swiping. Ticks in small steps (rather than one long
     /// animation) purely so `isPressed` can be checked before each step — freezing `progress`
     /// mid-flight while pressed, then continuing on from the same point on release.
+    /// Reduce Motion draws `displayedProgress` at the completed fill; this clock is unchanged.
     private func runAutoAdvanceCountdown() async {
         guard let autoAdvanceInterval, items.count > 1 else {
             progress = 1
@@ -306,6 +421,13 @@ public struct DSBannerCarousel: View {
         }
         guard !Task.isCancelled else { return }
         advanceToNextItem()
+    }
+
+    private struct BannerContentHeightKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = max(value, nextValue())
+        }
     }
 
     private func advanceToNextItem() {

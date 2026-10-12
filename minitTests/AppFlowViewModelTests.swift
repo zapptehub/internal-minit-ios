@@ -9,17 +9,41 @@ final class AppFlowViewModelTests: XCTestCase {
     private func makeViewModel(
         auth: FakeAuthRepository = FakeAuthRepository(),
         loyalty: FakeLoyaltyCardRepository = FakeLoyaltyCardRepository(),
-        progress: FakeOnboardingProgressStore? = nil
+        progress: FakeOnboardingProgressStore? = nil,
+        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout
     ) -> AppFlowViewModel {
         AppFlowViewModel(
             authRepository: auth,
             loyaltyCardRepository: loyalty,
-            onboardingProgressStore: progress ?? FakeOnboardingProgressStore()
+            onboardingProgressStore: progress ?? FakeOnboardingProgressStore(),
+            restoreTimeout: restoreTimeout
         )
     }
 
     private func settle() async {
         try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+
+    /// Polls until `viewModel.state` equals `expected`, or until `timeout` elapses.
+    /// Callers assert the state afterward so a missed deadline fails the test.
+    private func waitForState(
+        _ viewModel: AppFlowViewModel,
+        _ expected: AppFlowViewModel.State,
+        timeout: Duration = .seconds(2)
+    ) async {
+        await waitUntil(timeout: timeout) { viewModel.state == expected }
+    }
+
+    /// Polls until `condition` is true, or until `timeout` elapses.
+    private func waitUntil(
+        timeout: Duration = .seconds(2),
+        _ condition: () -> Bool
+    ) async {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while !condition(), clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
     }
 
     // MARK: Session restore
@@ -43,6 +67,36 @@ final class AppFlowViewModelTests: XCTestCase {
         await vm.bootstrap()
 
         XCTAssertEqual(vm.state, .sessionRestoreFailed)
+    }
+
+    /// Firebase session restore can suspend until the network returns. The
+    /// fake never returns, so this fails if the deadline waits on that call.
+    func testBootstrapWhenSessionRestoreNeverReturnsFailsAfterTimeout() async {
+        XCTAssertEqual(AppFlowViewModel.defaultRestoreTimeout, .seconds(15))
+        let auth = FakeAuthRepository()
+        auth.hangCurrentSession = true
+        let vm = makeViewModel(auth: auth, restoreTimeout: .milliseconds(50))
+
+        await vm.bootstrap()
+
+        XCTAssertEqual(vm.state, .sessionRestoreFailed)
+        XCTAssertEqual(auth.currentSessionCallCount, 1)
+    }
+
+    func testRetryAfterHungSessionRestoreRunsBootstrapAgain() async {
+        let auth = FakeAuthRepository()
+        auth.hangCurrentSession = true
+        let vm = makeViewModel(auth: auth, restoreTimeout: .milliseconds(50))
+        await vm.bootstrap()
+        XCTAssertEqual(vm.state, .sessionRestoreFailed)
+
+        auth.hangCurrentSession = false
+        auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
+        vm.retryBootstrap()
+        await waitForState(vm, .onboarding(userId: "user-1"))
+
+        XCTAssertEqual(vm.state, .onboarding(userId: "user-1"))
+        XCTAssertEqual(auth.currentSessionCallCount, 2)
     }
 
     func testRetryBootstrapFromSessionRestoreFailedReRunsBootstrap() async {
@@ -122,6 +176,30 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-1"))
     }
 
+    func testBootstrapWhenLinkedCardFetchNeverReturnsFailsAfterTimeout() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.hangFetchLinkedCard = true
+        let vm = makeViewModel(auth: auth, loyalty: loyalty, restoreTimeout: .milliseconds(50))
+
+        await vm.bootstrap()
+
+        XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-1"))
+        XCTAssertEqual(auth.currentSessionCallCount, 1)
+    }
+
+    func testDidLogInWhenLinkedCardFetchNeverReturnsFailsAfterTimeout() async {
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.hangFetchLinkedCard = true
+        let vm = makeViewModel(loyalty: loyalty, restoreTimeout: .milliseconds(50))
+
+        vm.didLogIn(AuthData(token: "t", userId: "user-2"))
+        await waitForState(vm, .onboardingStatusFailed(userId: "user-2"))
+
+        XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-2"))
+    }
+
     func testRetryBootstrapFromOnboardingStatusFailedReChecksLinkedCard() async {
         let auth = FakeAuthRepository()
         auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
@@ -199,6 +277,147 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(auth.logoutCallCount, 1)
         XCTAssertNil(vm.restoredLocale)
     }
+
+    // MARK: Cancellation
+
+    func testCancelledBootstrapGoesSessionRestoreFailed() async {
+        let auth = FakeAuthRepository()
+        auth.hangCurrentSession = true
+        let vm = makeViewModel(auth: auth)
+        let finished = AttemptFinished()
+        let task = Task {
+            await vm.bootstrap()
+            finished.markFinished()
+        }
+        await waitUntil { auth.currentSessionCallCount >= 1 }
+        XCTAssertGreaterThanOrEqual(auth.currentSessionCallCount, 1)
+
+        task.cancel()
+        await waitUntil { finished.isFinished }
+        await waitForState(vm, .sessionRestoreFailed)
+
+        XCTAssertTrue(finished.isFinished)
+        XCTAssertEqual(vm.state, .sessionRestoreFailed)
+    }
+
+    func testCancelledPostAuthCheckGoesOnboardingStatusFailed() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.hangFetchLinkedCard = true
+        let vm = makeViewModel(auth: auth, loyalty: loyalty)
+        let finished = AttemptFinished()
+        let task = Task {
+            await vm.bootstrap()
+            finished.markFinished()
+        }
+        await waitUntil { loyalty.fetchLinkedCardCallCount >= 1 }
+        XCTAssertGreaterThanOrEqual(loyalty.fetchLinkedCardCallCount, 1)
+
+        task.cancel()
+        await waitUntil { finished.isFinished }
+        await waitForState(vm, .onboardingStatusFailed(userId: "user-1"))
+
+        XCTAssertTrue(finished.isFinished)
+        XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-1"))
+    }
+
+    /// A newer `bootstrap()` is also what Retry starts after a session-restore failure.
+    func testCancelledOlderBootstrapKeepsInFlightNewerAttempt() async {
+        let auth = FakeAuthRepository()
+        auth.hangCurrentSession = true
+        let vm = makeViewModel(auth: auth)
+        let olderFinished = AttemptFinished()
+        let newerFinished = AttemptFinished()
+        let older = Task {
+            await vm.bootstrap()
+            olderFinished.markFinished()
+        }
+        await waitUntil { auth.currentSessionCallCount >= 1 }
+        XCTAssertGreaterThanOrEqual(auth.currentSessionCallCount, 1)
+
+        let newer = Task {
+            await vm.bootstrap()
+            newerFinished.markFinished()
+        }
+        await waitUntil { auth.currentSessionCallCount >= 2 }
+        XCTAssertGreaterThanOrEqual(auth.currentSessionCallCount, 2)
+        XCTAssertEqual(vm.state, .loading)
+
+        older.cancel()
+        await waitUntil { olderFinished.isFinished }
+        await waitForState(vm, .loading)
+
+        XCTAssertTrue(olderFinished.isFinished)
+        XCTAssertEqual(vm.state, .loading)
+
+        newer.cancel()
+        await waitUntil { newerFinished.isFinished }
+        await waitForState(vm, .sessionRestoreFailed)
+        XCTAssertTrue(newerFinished.isFinished)
+        XCTAssertEqual(vm.state, .sessionRestoreFailed)
+    }
+
+    func testCancelledOlderPostAuthCheckKeepsFinishedLogin() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.hangFetchLinkedCard = true
+        let vm = makeViewModel(auth: auth, loyalty: loyalty)
+        let olderFinished = AttemptFinished()
+        let older = Task {
+            await vm.bootstrap()
+            olderFinished.markFinished()
+        }
+        await waitUntil { loyalty.fetchLinkedCardCallCount >= 1 }
+        XCTAssertGreaterThanOrEqual(loyalty.fetchLinkedCardCallCount, 1)
+
+        loyalty.hangFetchLinkedCard = false
+        loyalty.linkedCard = LoyaltyCardData(code: "MINIT-2", ownerUserId: "user-2", points: 0)
+        vm.didLogIn(AuthData(token: "t", userId: "user-2"))
+        await waitForState(vm, .authenticated(userId: "user-2"))
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-2"))
+
+        older.cancel()
+        await waitUntil { olderFinished.isFinished }
+        await waitForState(vm, .authenticated(userId: "user-2"))
+
+        XCTAssertTrue(olderFinished.isFinished)
+        XCTAssertEqual(vm.state, .authenticated(userId: "user-2"))
+    }
+
+    func testCancelledOlderBootstrapKeepsFinishedLogout() async {
+        let auth = FakeAuthRepository()
+        auth.hangCurrentSession = true
+        let vm = makeViewModel(auth: auth)
+        let olderFinished = AttemptFinished()
+        let older = Task {
+            await vm.bootstrap()
+            olderFinished.markFinished()
+        }
+        await waitUntil { auth.currentSessionCallCount >= 1 }
+        XCTAssertGreaterThanOrEqual(auth.currentSessionCallCount, 1)
+
+        vm.logOut()
+        await waitForState(vm, .unauthenticated)
+        XCTAssertEqual(vm.state, .unauthenticated)
+
+        older.cancel()
+        await waitUntil { olderFinished.isFinished }
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertTrue(olderFinished.isFinished)
+        XCTAssertEqual(vm.state, .unauthenticated)
+    }
+}
+
+/// Stays suspended until the caller cancels. `Task.sleep` observes cancellation,
+/// so this does not park a `CheckedContinuation` the runtime would report as leaked.
+private func hangUntilCancelled() async throws {
+    while !Task.isCancelled {
+        try await Task.sleep(for: .seconds(3600))
+    }
+    throw CancellationError()
 }
 
 // MARK: - Fakes
@@ -210,6 +429,7 @@ private enum TestError: Error {
 private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
     var sessionToReturn: AuthData?
     var errorToThrow: Error?
+    var hangCurrentSession = false
     private(set) var currentSessionCallCount = 0
     private(set) var logoutCallCount = 0
 
@@ -223,6 +443,9 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
 
     func currentSession() async throws -> AuthData? {
         currentSessionCallCount += 1
+        if hangCurrentSession {
+            try await hangUntilCancelled()
+        }
         if let errorToThrow { throw errorToThrow }
         return sessionToReturn
     }
@@ -238,6 +461,8 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
 private final class FakeLoyaltyCardRepository: LoyaltyCardRepository, @unchecked Sendable {
     var linkedCard: LoyaltyCardData?
     var fetchLinkedCardErrorToThrow: Error?
+    var hangFetchLinkedCard = false
+    private(set) var fetchLinkedCardCallCount = 0
 
     func createCard(userId: String) async throws -> LoyaltyCardData {
         LoyaltyCardData(code: "NEW", ownerUserId: userId, points: 0)
@@ -248,6 +473,10 @@ private final class FakeLoyaltyCardRepository: LoyaltyCardRepository, @unchecked
     }
 
     func fetchLinkedCard(userId: String) async throws -> LoyaltyCardData? {
+        fetchLinkedCardCallCount += 1
+        if hangFetchLinkedCard {
+            try await hangUntilCancelled()
+        }
         if let fetchLinkedCardErrorToThrow { throw fetchLinkedCardErrorToThrow }
         return linkedCard
     }
@@ -267,5 +496,25 @@ private final class FakeOnboardingProgressStore: OnboardingProgressStoring {
 
     func clear(userId: String) {
         progressByUserId[userId] = nil
+    }
+}
+
+/// Set on the main actor when a launch task's `bootstrap()` call has returned,
+/// including after cancellation. Tests poll this instead of sleeping so a late
+/// failure write is visible before the assertion.
+private final class AttemptFinished: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+
+    func markFinished() {
+        lock.lock()
+        finished = true
+        lock.unlock()
+    }
+
+    var isFinished: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return finished
     }
 }

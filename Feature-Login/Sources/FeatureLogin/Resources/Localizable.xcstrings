@@ -353,6 +353,50 @@
         }
       }
     },
+    "login.error.accountDisabled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account has been disabled."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ez a fiók le van tiltva."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tento účet bol deaktivovaný."
+          }
+        }
+      }
+    },
+    "login.error.emailAlreadyInUse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An account already exists with this email address."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ehhez az e-mail címhez már tartozik fiók."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Účet s touto e-mailovou adresou už existuje."
+          }
+        }
+      }
+    },
     "login.error.emptyEmail": {
       "localizations": {
         "en": {
@@ -375,24 +419,24 @@
         }
       }
     },
-    "login.error.emptyFields": {
+    "login.error.invalidCredentials": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Please enter your email and password."
+            "value": "The email or password is incorrect."
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kérjük, add meg az e-mail címedet és a jelszavadat."
+            "value": "Az e-mail cím vagy a jelszó helytelen."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zadajte, prosím, svoju e-mailovú adresu a heslo."
+            "value": "E-mailová adresa alebo heslo je nesprávne."
           }
         }
       }
@@ -415,6 +459,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zadajte, prosím, platnú e-mailovú adresu."
+          }
+        }
+      }
+    },
+    "login.error.network": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your internet connection and try again."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ellenőrizd az internetkapcsolatot, és próbáld újra."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte internetové pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
+    "login.error.tooManyRequests": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many attempts. Please try again later."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Túl sok próbálkozás. Próbáld újra később."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Príliš veľa pokusov. Skúste to znova neskôr."
+          }
+        }
+      }
+    },
+    "login.error.unexpected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. Please try again."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valami hiba történt. Próbáld újra."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niečo sa pokazilo. Skúste to znova."
+          }
+        }
+      }
+    },
+    "login.error.weakPassword": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The password is too weak. Please choose a stronger password."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A jelszó túl gyenge. Válassz erősebb jelszót."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heslo je príliš slabé. Zvoľte si, prosím, silnejšie heslo."
           }
         }
       }

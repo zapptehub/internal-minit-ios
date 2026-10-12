@@ -23,21 +23,22 @@ final class DSPopupHostModel: ObservableObject {
         horizontalPadding: CGFloat,
         isEnabled: Bool = true,
         ownerID: UUID,
+        reduceMotion: Bool = false,
         onDismiss: @escaping () -> Void
     ) {
         self.horizontalPadding = horizontalPadding
         isContentEnabled = isEnabled
         self.onDismiss = onDismiss
         self.ownerID = ownerID
-        withAnimation(.default) { self.content = content }
+        DSMotion.perform(reduceMotion: reduceMotion) { self.content = content }
     }
 
     /// Clears the popup if `ownerID` still owns it (the presenter's binding went false).
-    func clear(ownerID: UUID) {
+    func clear(ownerID: UUID, reduceMotion: Bool = false) {
         guard self.ownerID == ownerID else { return }
         self.ownerID = nil
         onDismiss = nil
-        withAnimation(.default) { content = nil }
+        DSMotion.perform(reduceMotion: reduceMotion) { content = nil }
     }
 
     /// Scrim tap: tells the presenter, whose binding change then clears the popup.
@@ -63,6 +64,9 @@ private struct DSPopupHostModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // The popup is a sibling overlay. Hide the screen underneath so VoiceOver
+            // cannot move into Home or the tab bar while it is presented.
+            .accessibilityHidden(model.content != nil)
             .environment(\.dsPopupHost, model)
             .overlay {
                 DSPopupLayer(
@@ -93,6 +97,7 @@ struct DSPopupLayer<PopupContent: View>: View {
     let horizontalPadding: CGFloat
     let onDismiss: () -> Void
     @ViewBuilder let popupContent: () -> PopupContent
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -100,15 +105,129 @@ struct DSPopupLayer<PopupContent: View>: View {
                 ZStack {
                     Color.black.opacity(DSPopupMetrics.scrimOpacity)
                         .onTapGesture { onDismiss() }
+                        .accessibilityHidden(true)
 
                     popupContent()
                         .padding(.horizontal, horizontalPadding)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
-                .transition(.opacity)
+                // Identity (not a faded insertion) so Reduce Motion shows the popup
+                // fully visible instead of leaving it at the transition's start.
+                .transition(DSMotion.animates(reduceMotion: reduceMotion) ? .opacity : .identity)
+                .modifier(DSPopupModalModifier())
             }
         }
-        .animation(.default, value: isPresented)
+        .animation(DSMotion.animation(.default, reduceMotion: reduceMotion), value: isPresented)
+    }
+}
+
+/// `.isModal` on the popup, plus `accessibilityViewIsModal` on an anchor we own.
+/// SwiftUI resets that flag on hosting views it owns; the anchor keeps it.
+private struct DSPopupModalModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .background {
+                DSPopupModalAnchor()
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
+/// Modal flag for the popup, and accessibility-hides the screen beside the overlay.
+///
+/// The card is a set of accessibility elements on the hosting view, not a subview of
+/// this anchor, so the flag can live here without swallowing the title, QR, or Close.
+/// Siblings of the overlay branch are Home and the tab bar.
+private struct DSPopupModalAnchor: UIViewRepresentable {
+    func makeUIView(context: Context) -> DSPopupModalAnchorView {
+        let view = DSPopupModalAnchorView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        view.isAccessibilityElement = false
+        return view
+    }
+
+    func updateUIView(_ uiView: DSPopupModalAnchorView, context: Context) {
+        uiView.isUserInteractionEnabled = false
+        uiView.backgroundColor = .clear
+        uiView.applyModal()
+    }
+}
+
+private final class DSPopupModalAnchorView: UIView {
+    private var hiddenSiblings: [UIView] = []
+    private var isApplying = false
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            restoreHiddenSiblings()
+        } else {
+            applyModal()
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        applyModal()
+    }
+
+    deinit {
+        restoreHiddenSiblings()
+    }
+
+    func applyModal() {
+        guard window != nil, !isApplying else { return }
+        isApplying = true
+        defer { isApplying = false }
+
+        // This view is ours, so the flag stays put. SwiftUI resets it on the hosting
+        // views it owns. The block wins over the Bool if UIKit consults both.
+        accessibilityViewIsModal = true
+        accessibilityViewIsModalBlock = { true }
+
+        // Highest ancestor that still has a sizable sibling: that sibling is the
+        // screen (and, under a TabView, the tab bar). Hide it while the popup is up.
+        var overlayBranch: UIView = self
+        var view: UIView = self
+        while let parent = view.superview, parent !== window {
+            let hasScreenSibling = parent.subviews.contains { sibling in
+                sibling !== view && sibling.bounds.width > 40 && sibling.bounds.height > 40
+            }
+            if hasScreenSibling {
+                overlayBranch = view
+            }
+            view = parent
+        }
+        updateHiddenSiblings(of: overlayBranch)
+    }
+
+    private func updateHiddenSiblings(of modal: UIView?) {
+        let desired: [UIView]
+        if let modal, let parent = modal.superview {
+            desired = parent.subviews.filter { $0 !== modal }
+        } else {
+            desired = []
+        }
+        let desiredIDs = desired.map(ObjectIdentifier.init)
+        let hiddenIDs = hiddenSiblings.map(ObjectIdentifier.init)
+        guard desiredIDs != hiddenIDs else { return }
+        for sibling in hiddenSiblings where !desired.contains(where: { $0 === sibling }) {
+            sibling.accessibilityElementsHidden = false
+        }
+        for sibling in desired where !sibling.accessibilityElementsHidden {
+            sibling.accessibilityElementsHidden = true
+        }
+        hiddenSiblings = desired
+    }
+
+    private func restoreHiddenSiblings() {
+        for sibling in hiddenSiblings {
+            sibling.accessibilityElementsHidden = false
+        }
+        hiddenSiblings = []
     }
 }

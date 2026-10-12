@@ -70,7 +70,9 @@ struct ContentView: View {
         case .loading:
             loadingView
         case .sessionRestoreFailed, .onboardingStatusFailed:
-            launchFailedView
+            LaunchFailedView(state: appFlow.state) {
+                appFlow.retryBootstrap()
+            }
         case .unauthenticated:
             unauthenticatedFlow
         case .onboarding(let userId):
@@ -88,27 +90,6 @@ struct ContentView: View {
         ProgressView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DSColor.Background.Layer.level0.ignoresSafeArea())
-    }
-
-    /// Covers both `.sessionRestoreFailed` (couldn't tell if signed in) and
-    /// `.onboardingStatusFailed` (signed in, but couldn't tell if a card is linked).
-    /// No mockup exists; kept DS-consistent and minimal.
-    private var launchFailedView: some View {
-        VStack(spacing: DSConstant.medium.value) {
-            Text("Something went wrong")
-                .typography(.headingMediumBold)
-                .foregroundColor(DSColor.Text.heading)
-            Text("We couldn't check your session. Check your connection and try again.")
-                .typography(.paragraphRegular)
-                .foregroundColor(DSColor.Text.secondary)
-                .multilineTextAlignment(.center)
-            DSButton(title: "Retry", type: .tertiary) {
-                appFlow.retryBootstrap()
-            }
-        }
-        .padding(DSConstant.large.value)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DSColor.Background.Layer.level0.ignoresSafeArea())
     }
 
     private var unauthenticatedFlow: some View {
@@ -163,5 +144,96 @@ struct ContentView: View {
                 appFlow.didCompleteOnboarding(userId: userId)
             }
         )
+    }
+}
+
+/// Session-restore failure and onboarding-status failure each show their own
+/// catalog title and message. Reads the locale `ContentView` publishes, which
+/// is the in-app language when one has been confirmed.
+struct LaunchFailedView: View {
+    let state: AppFlowViewModel.State
+    var announce: (String, String) -> Void
+    let onRetry: () -> Void
+    @Environment(\.locale) private var locale
+
+    init(
+        state: AppFlowViewModel.State,
+        announce: @escaping (String, String) -> Void = { title, message in
+            LaunchFailureAnnouncement.post(title: title, message: message)
+        },
+        onRetry: @escaping () -> Void
+    ) {
+        self.state = state
+        self.announce = announce
+        self.onRetry = onRetry
+    }
+
+    var body: some View {
+        if let copy = LaunchFailureCopy(state: state, locale: locale) {
+            VStack(spacing: DSConstant.medium.value) {
+                LaunchFailureStatusIcon()
+                Text(copy.title)
+                    .typography(.headingMediumBold)
+                    .foregroundColor(DSColor.Text.heading)
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+                Text(copy.message)
+                    .typography(.paragraphRegular)
+                    .foregroundColor(DSColor.Text.secondary)
+                    .multilineTextAlignment(.center)
+                DSButton(title: copy.retry, type: .tertiary) {
+                    onRetry()
+                }
+            }
+            .padding(DSConstant.large.value)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DSColor.Background.Layer.level0.ignoresSafeArea())
+            .onAppear {
+                announce(copy.title, copy.message)
+            }
+        }
+    }
+}
+
+/// Warning glyph matching Android's launch-failure icon: a 48 pt circle
+/// (`DsSize.MinimumTouchTarget`) and a 24 pt triangle (`DsSize.IconLarge`),
+/// error-tinted on the level-one surface. Decorative — the title and message
+/// carry the meaning, and an assertive announcement speaks them on appear.
+private struct LaunchFailureStatusIcon: View {
+    /// Android `DsSize.MinimumTouchTarget` / scale 1200.
+    private static let diameter: CGFloat = 48
+    /// Android `DsSize.IconLarge` / scale 600.
+    private static let glyphSize = DSConstant.large.value
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(DSColor.Background.Layer.level1)
+                .frame(width: Self.diameter, height: Self.diameter)
+            DSIconView(
+                icon: .warningTriangle,
+                size: Self.glyphSize,
+                color: DSColor.Border.error
+            )
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// Assertive VoiceOver announcement for the launch-failure screen, matching
+/// Android's `LiveRegionMode.Assertive` on the retry column.
+enum LaunchFailureAnnouncement {
+    static func spoken(title: String, message: String) -> String {
+        "\(title). \(message)"
+    }
+
+    static func attributed(title: String, message: String) -> AttributedString {
+        var announcement = AttributedString(spoken(title: title, message: message))
+        announcement.accessibilitySpeechAnnouncementPriority = .high
+        return announcement
+    }
+
+    static func post(title: String, message: String) {
+        AccessibilityNotification.Announcement(attributed(title: title, message: message)).post()
     }
 }

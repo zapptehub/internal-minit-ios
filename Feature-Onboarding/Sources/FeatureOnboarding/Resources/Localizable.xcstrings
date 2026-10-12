@@ -24,47 +24,25 @@
         }
       }
     },
-    "onboarding.placeholder.headline": {
+    "onboarding.error.profileSaveFailed": {
+      "comment": "Shown inline when saving the display name fails. Same sentence as Android onboarding_error_profile_save_failed.",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Onboarding"
+            "value": "Something went wrong"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Onboarding"
+            "value": "Niečo sa pokazilo"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Onboarding"
-          }
-        }
-      }
-    },
-    "onboarding.placeholder.subtitle": {
-      "comment": "Temporary placeholder copy until Task 4.1 replaces this screen with the real flow.",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Screens land in Tasks 4.2–4.5. Tap below to exit early during development."
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Obrazovky pribudnú v úlohách 4.2–4.5. Klepnutím nižšie ukončíte počas vývoja."
-          }
-        },
-        "hu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A képernyők a 4.2–4.5 feladatokban érkeznek. Fejlesztés közben az alábbi gombbal kiléphetsz."
+            "value": "Valami hiba történt"
           }
         }
       }
@@ -1083,28 +1061,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kamerakereső a hűségkártya QR-kódjához"
-          }
-        }
-      }
-    },
-    "onboarding.a11y.loyaltyCardSummary": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@, %@, %@ points"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@, %@, %@ bodov"
-          }
-        },
-        "hu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@, %@, %@ pont"
           }
         }
       }

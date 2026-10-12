@@ -134,9 +134,7 @@ public final class LoginViewModel {
                 state = .idle
                 path.append(exists ? .welcomeBack : .createAccount)
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -165,9 +163,7 @@ public final class LoginViewModel {
                 state = .idle
                 path.append(.verificationCode(.signUp))
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -189,9 +185,7 @@ public final class LoginViewModel {
                 state = .idle
                 path.append(.verificationCode(.signIn))
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -208,9 +202,7 @@ public final class LoginViewModel {
                 state = .idle
                 path.append(.verificationCode(.passwordReset))
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -240,9 +232,7 @@ public final class LoginViewModel {
                 otpCode = ""
                 startResendCountdown()
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -276,9 +266,7 @@ public final class LoginViewModel {
                     passwordResetCompleted = true
                 }
             } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
+                presentAuthFailure(error)
             }
         }
     }
@@ -295,23 +283,12 @@ public final class LoginViewModel {
         }
     }
 
-    public func login() {
-        guard guardValidEmail() else { return }
-        guard !password.isEmpty else {
-            errorMessage = LoginLocalizedString.string("login.error.emptyFields", locale: currentLocale)
-            return
-        }
-        state = .loading
-        Task {
-            do {
-                let data = try await authRepository.login(email: email, password: password)
-                state = .authenticated(data)
-            } catch {
-                let message = error.localizedDescription
-                state = .error(message)
-                errorMessage = message
-            }
-        }
+    /// Catalog copy for a failed auth call, using the in-app language. Firebase's
+    /// English `localizedDescription` is not shown.
+    private func presentAuthFailure(_ error: Error) {
+        let message = LoginAuthErrorMessage.message(for: error, locale: currentLocale)
+        state = .error(message)
+        errorMessage = message
     }
 
     public func clearError() {

@@ -28,14 +28,35 @@ struct OnboardingScaffold<Content: View>: View {
     var headlineLineLimit: Int? = nil
     let onPrimary: () -> Void
     var onBack: (() -> Void)? = nil
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ViewBuilder let content: () -> Content
 
     var body: some View {
+        Group {
+            if dynamicTypeSize > .large {
+                largeBody
+            } else {
+                regularBody
+            }
+        }
+        .padding(.horizontal, DSConstant.large.value)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Do *not* `.ignoresSafeArea()` here — `OnboardingFlowScreen` already paints the
+        // same gradient full-bleed behind the persistent progress bar. Expanding this
+        // background past the scaffold's bounds covers that bar (especially when the
+        // screen wraps the scaffold in a `GeometryReader`, as create/claim finish do).
+        .background(LinearGradient.minitBackground)
+    }
+
+    /// Default content size keeps the original stack so header and button
+    /// positions stay on the Figma measurements.
+    private var regularBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
                 Text(subtitle)
                     .typography(.bodyMediumSmall)
                     .foregroundColor(OnboardingScaffoldHeader.color)
+                    .uncompressedWhenTextIsLarge()
 
                 headlineText
             }
@@ -57,25 +78,57 @@ struct OnboardingScaffold<Content: View>: View {
             .background(OnboardingFrameReader(id: OnboardingFrameID.bottomBar))
             .padding(.bottom, DSConstant.medium.value)
         }
-        .padding(.horizontal, DSConstant.large.value)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Do *not* `.ignoresSafeArea()` here — `OnboardingFlowScreen` already paints the
-        // same gradient full-bleed behind the persistent progress bar. Expanding this
-        // background past the scaffold's bounds covers that bar (especially when the
-        // screen wraps the scaffold in a `GeometryReader`, as create/claim finish do).
-        .background(LinearGradient.minitBackground)
+    }
+
+    /// Above the default content size the headline can be taller than the screen.
+    /// The header and step content scroll; the action bar stays on screen.
+    private var largeBody: some View {
+        DSLargeTextScroll(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: DSConstant.small.value) {
+                    Text(subtitle)
+                        .typography(.bodyMediumSmall)
+                        .foregroundColor(OnboardingScaffoldHeader.color)
+                        .uncompressedWhenTextIsLarge()
+
+                    headlineText
+                }
+                .padding(.top, DSConstant.mediumLarge.value)
+
+                content()
+                    .padding(.top, DSConstant.large.value)
+            }
+        } bottom: {
+            OnboardingBottomBar(
+                primaryTitle: primaryTitle,
+                isPrimaryEnabled: isPrimaryEnabled,
+                isPrimaryLoading: isPrimaryLoading,
+                showsBack: showsBack,
+                onPrimary: onPrimary,
+                onBack: onBack
+            )
+            .padding(.bottom, DSConstant.medium.value)
+        }
     }
 
     @ViewBuilder
     private var headlineText: some View {
-        let text = Text(headline)
-            .typography(.headingLargeSemibold)
-            .foregroundColor(DSColor.Text.inverse)
-
-        if let headlineLineLimit {
-            text.lineLimit(headlineLineLimit, reservesSpace: true)
+        if dynamicTypeSize > .large {
+            DSGrowingText(
+                text: headline,
+                type: .headingLargeSemibold,
+                color: DSColor.Text.inverse
+            )
+        } else if let headlineLineLimit {
+            Text(headline)
+                .typography(.headingLargeSemibold)
+                .foregroundColor(DSColor.Text.inverse)
+                .lineLimit(headlineLineLimit, reservesSpace: true)
         } else {
-            text.fixedSize(horizontal: false, vertical: true)
+            Text(headline)
+                .typography(.headingLargeSemibold)
+                .foregroundColor(DSColor.Text.inverse)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

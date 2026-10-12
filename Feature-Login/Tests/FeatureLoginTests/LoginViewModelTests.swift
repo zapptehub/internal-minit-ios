@@ -5,41 +5,6 @@ import CoreExtensions
 
 @MainActor
 final class LoginViewModelTests: XCTestCase {
-    func testLoginSuccessUpdatesState() async {
-        let mockRepo = MockAuthRepository()
-        let vm = LoginViewModel(authRepository: mockRepo)
-
-        vm.email = "test@example.com"
-        vm.password = "password"
-        vm.login()
-
-        try? await Task.sleep(nanoseconds: 100_000_000)
-
-        XCTAssertNotNil(vm.state.authData)
-    }
-
-    func testLoginFailureUpdatesErrorState() async {
-        let mockRepo = MockAuthRepository()
-        mockRepo.shouldThrow = true
-        let vm = LoginViewModel(authRepository: mockRepo)
-
-        vm.email = "test@example.com"
-        vm.password = "password"
-        vm.login()
-
-        try? await Task.sleep(nanoseconds: 100_000_000)
-
-        XCTAssertNotNil(vm.errorMessage)
-    }
-
-    func testLoginWithEmptyFieldsSetErrorMessage() {
-        let vm = LoginViewModel(authRepository: MockAuthRepository())
-
-        vm.login()
-
-        XCTAssertNotNil(vm.errorMessage)
-    }
-
     func testSignInWithAppleShowsUnderConstructionAlert() {
         let vm = LoginViewModel(authRepository: MockAuthRepository())
 
@@ -397,8 +362,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.continueFromEmail()
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertTrue(vm.path.isEmpty)
     }
 
@@ -413,8 +378,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.submitCreateAccount()
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertTrue(vm.path.isEmpty)
     }
 
@@ -428,8 +393,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.submitSignIn()
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertTrue(vm.path.isEmpty)
     }
 
@@ -442,8 +407,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.submitForgotPasswordEmail()
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertTrue(vm.path.isEmpty)
     }
 
@@ -458,8 +423,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.resendCode()
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertEqual(vm.otpCode, "1234")
         XCTAssertEqual(vm.resendCountdownSeconds, 0)
     }
@@ -475,8 +440,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.confirmVerification(purpose: .signUp)
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertNil(vm.state.authData)
     }
 
@@ -491,8 +456,8 @@ final class LoginViewModelTests: XCTestCase {
         vm.confirmVerification(purpose: .signIn)
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertNil(vm.state.authData)
     }
 
@@ -506,15 +471,16 @@ final class LoginViewModelTests: XCTestCase {
         vm.confirmVerification(purpose: .passwordReset)
         try? await Task.sleep(nanoseconds: 100_000_000)
 
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
-        XCTAssertEqual(vm.errorMessage, MockFailure.expected.errorDescription)
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
+        XCTAssertEqual(vm.errorMessage, "Something went wrong. Please try again.")
         XCTAssertFalse(vm.passwordResetCompleted)
     }
 
     func testClearErrorResetsErrorMessageToNil() {
         let vm = LoginViewModel(authRepository: MockAuthRepository())
-        vm.login()
-        XCTAssertNotNil(vm.errorMessage, "Precondition: login with empty fields should set an error")
+        vm.email = "iveta@minitbakery.com"
+        vm.submitSignIn()
+        XCTAssertNotNil(vm.errorMessage, "Precondition: sign-in with an empty password should set an error")
 
         vm.clearError()
 
@@ -537,12 +503,80 @@ final class LoginViewModelTests: XCTestCase {
 
         vm.continueFromEmail()
         try? await Task.sleep(nanoseconds: 100_000_000)
-        XCTAssertEqual(vm.state, .error(MockFailure.expected.errorDescription!))
+        XCTAssertEqual(vm.state, .error("Something went wrong. Please try again."))
 
         vm.clearError()
 
         XCTAssertEqual(vm.state, .idle)
         XCTAssertNil(vm.errorMessage)
+    }
+
+    func testConfirmSignInFirebaseCredentialErrorsShowCatalogCopy() async {
+        let firebaseDescription = "The password is invalid or the user does not have a password."
+        let expected = [
+            "en": "The email or password is incorrect.",
+            "hu": "Az e-mail cím vagy a jelszó helytelen.",
+            "sk": "E-mailová adresa alebo heslo je nesprávne.",
+        ]
+        // AuthErrorCode.wrongPassword (17009) and .invalidCredential (17004). The latter is
+        // what Firebase now returns for a wrong password (server INVALID_LOGIN_CREDENTIALS).
+        let codes = [17009, 17004]
+        for language in ["en", "hu", "sk"] {
+            for code in codes {
+                let store = TestAppLanguagePreferenceStore()
+                store.languageCode = language
+                let mock = MockAuthRepository()
+                mock.errorToThrow = NSError(
+                    domain: "FIRAuthErrorDomain",
+                    code: code,
+                    userInfo: [NSLocalizedDescriptionKey: firebaseDescription]
+                )
+                let vm = LoginViewModel(authRepository: mock, appLanguagePreference: store)
+                vm.email = "iveta@minitbakery.com"
+                vm.password = "wrong"
+                vm.otpCode = "1234"
+
+                vm.confirmVerification(purpose: .signIn)
+                try? await Task.sleep(nanoseconds: 100_000_000)
+
+                XCTAssertEqual(vm.errorMessage, expected[language], "\(language) \(code)")
+                XCTAssertEqual(vm.state, .error(expected[language]!), "\(language) \(code)")
+                XCTAssertNil(vm.state.authData, "\(language) \(code)")
+            }
+        }
+    }
+
+    func testEveryAuthPathShowsInvalidCredentialsCopy() async {
+        let expected = "E-mailová adresa alebo heslo je nesprávne."
+        let actions: [(String, (LoginViewModel) -> Void)] = [
+            ("continueFromEmail", { $0.continueFromEmail() }),
+            ("submitCreateAccount", { $0.submitCreateAccount() }),
+            ("submitSignIn", { $0.submitSignIn() }),
+            ("submitForgotPasswordEmail", { $0.submitForgotPasswordEmail() }),
+            ("resendCode", { $0.resendCode() }),
+            ("confirmSignUp", { $0.confirmVerification(purpose: .signUp) }),
+            ("confirmSignIn", { $0.confirmVerification(purpose: .signIn) }),
+            ("confirmPasswordReset", { $0.confirmVerification(purpose: .passwordReset) }),
+        ]
+
+        for (name, action) in actions {
+            let store = TestAppLanguagePreferenceStore()
+            store.languageCode = "sk"
+            let mock = MockAuthRepository()
+            mock.errorToThrow = AuthOperationError.invalidCredentials
+            let vm = LoginViewModel(authRepository: mock, appLanguagePreference: store)
+            vm.email = "iveta@minitbakery.com"
+            vm.password = "password"
+            vm.confirmPassword = "password"
+            vm.otpCode = "1234"
+            vm.resendCountdownSeconds = 0
+
+            action(vm)
+            try? await Task.sleep(nanoseconds: 100_000_000)
+
+            XCTAssertEqual(vm.errorMessage, expected, name)
+            XCTAssertEqual(vm.state, .error(expected), name)
+        }
     }
 }
 

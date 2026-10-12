@@ -26,6 +26,8 @@ public struct DSStatusCard: View {
     /// gap the same way keeps baseline-to-baseline at 23/20 of the resolved
     /// line box (23pt when the title is 20pt).
     @ScaledMetric(relativeTo: .body) private var titleLineSpacing = StatusCardMetrics.titleLineSpacing
+    @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(state: State) {
         self.state = state
@@ -36,14 +38,7 @@ public struct DSStatusCard: View {
             icon
 
             VStack(spacing: StatusCardMetrics.titleToSubtitleSpacing) {
-                SharpGroteskCapTrim(followingGap: titleFollowingGap) {
-                    Text(title)
-                        .typography(StatusCardMetrics.titleStyle)
-                        .lineSpacing(titleLineSpacing)
-                        .foregroundColor(StatusCardMetrics.titleColor)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
+                titleLabel
 
                 if let subtitle {
                     Text(subtitle)
@@ -51,6 +46,7 @@ public struct DSStatusCard: View {
                         .foregroundColor(StatusCardMetrics.subtitleColor)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
+                        .uncompressedWhenTextIsLarge()
                 }
             }
         }
@@ -59,6 +55,39 @@ public struct DSStatusCard: View {
         .background(StatusCardMetrics.surface)
         .cornerRadius(StatusCardMetrics.cornerRadius)
         .dsShadow(StatusCardMetrics.shadow)
+        .accessibilityElement(children: .combine)
+        .dsAccessibilityValue(
+            isLoading ? DesignSystemA11y.text("common.a11y.loading", locale: locale) : nil
+        )
+    }
+
+    /// Above the default size a long word such as "Processing" is fitted to
+    /// the card so it stays whole. At `.large` the cap-trimmed title is unchanged.
+    @ViewBuilder
+    private var titleLabel: some View {
+        if dynamicTypeSize > .large {
+            DSGrowingText(
+                text: title,
+                type: StatusCardMetrics.titleStyle,
+                color: StatusCardMetrics.titleColor,
+                alignment: .center
+            )
+            .frame(maxWidth: .infinity)
+        } else {
+            SharpGroteskCapTrim(followingGap: titleFollowingGap) {
+                Text(title)
+                    .typography(StatusCardMetrics.titleStyle)
+                    .lineSpacing(titleLineSpacing)
+                    .foregroundColor(StatusCardMetrics.titleColor)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var isLoading: Bool {
+        if case .loading = state { return true }
+        return false
     }
 
     /// Space under the title the cap trim may paint descenders into.

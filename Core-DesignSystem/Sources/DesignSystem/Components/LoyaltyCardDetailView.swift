@@ -58,12 +58,18 @@ public struct LoyaltyCardDetailView: View {
                 Text(title ?? DesignSystemLocalizedString.string("common.loyaltyCardDetail.title", locale: locale))
                     .typography(Self.titleStyle)
                     .foregroundColor(DSColor.Text.heading)
+                    .accessibilityAddTraits(.isHeader)
             }
 
+            // Android's QR is decorative (`DsImageView` contentDescription defaults to null).
+            // The asset name is what VoiceOver would speak, so iOS names it instead.
             DSImageView(
                 image: .mockQrCode,
                 size: CGSize(width: Self.qrCodeSize, height: Self.qrCodeSize)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(DesignSystemA11y.text("common.a11y.loyaltyCardQrCode", locale: locale))
+            .accessibilityAddTraits(.isImage)
 
             // Flat #F2F2F2 pill — `.social` is the only `DSButtonType` that renders a
             // plain neutral background regardless of state (see `DSButton`'s
@@ -127,6 +133,7 @@ public struct DSPopupOverlay<PopupContent: View>: ViewModifier {
 
     @Environment(\.dsPopupHost) private var host
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var ownerID = UUID()
 
     public init(
@@ -145,16 +152,18 @@ public struct DSPopupOverlay<PopupContent: View>: ViewModifier {
                 .onAppear { sync(host) }
                 .onChange(of: isPresented) { sync(host) }
                 .onChange(of: isEnabled) { sync(host) }
-                .onDisappear { host.clear(ownerID: ownerID) }
+                .onDisappear { host.clear(ownerID: ownerID, reduceMotion: reduceMotion) }
         } else {
-            content.overlay {
-                DSPopupLayer(
-                    isPresented: isPresented,
-                    horizontalPadding: horizontalPadding,
-                    onDismiss: { isPresented = false },
-                    popupContent: popupContent
-                )
-            }
+            content
+                .accessibilityHidden(isPresented)
+                .overlay {
+                    DSPopupLayer(
+                        isPresented: isPresented,
+                        horizontalPadding: horizontalPadding,
+                        onDismiss: { isPresented = false },
+                        popupContent: popupContent
+                    )
+                }
         }
     }
 
@@ -166,10 +175,11 @@ public struct DSPopupOverlay<PopupContent: View>: ViewModifier {
                 horizontalPadding: horizontalPadding,
                 isEnabled: isEnabled,
                 ownerID: ownerID,
+                reduceMotion: reduceMotion,
                 onDismiss: { binding.wrappedValue = false }
             )
         } else {
-            host.clear(ownerID: ownerID)
+            host.clear(ownerID: ownerID, reduceMotion: reduceMotion)
         }
     }
 }

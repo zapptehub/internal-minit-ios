@@ -10,6 +10,7 @@ public struct DSCheckbox: View {
     private let isChecked: Binding<Bool>
     private let hasError: Bool
     private let isEnabled: Bool
+    @Environment(\.locale) private var locale
 
     public init(
         label: String,
@@ -55,6 +56,11 @@ public struct DSCheckbox: View {
         .disabled(!isEnabled)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isChecked.wrappedValue ? [.isSelected] : [])
+        .dsAccessibilityHint(
+            isEnabled && hasError
+                ? DesignSystemA11y.text("common.a11y.selectionError", locale: locale)
+                : nil
+        )
     }
 }
 

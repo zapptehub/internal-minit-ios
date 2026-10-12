@@ -6,6 +6,7 @@ struct StartScreen: View {
     let analytics: StartAnalyticsTracking?
     let onGetStarted: () -> Void
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Matches the Figma frame's fixed top offset before the centered logo/headline group.
     /// Not a reusable DSConstant — it's a one-off screen offset, not a spacing-scale token in Figma either.
@@ -16,28 +17,56 @@ struct StartScreen: View {
             backgroundLayer
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer().frame(height: topOffset)
+            if dynamicTypeSize > .large {
+                DSLargeTextScroll(spacing: 0) {
+                    VStack(spacing: DSConstant.xLarge.value) {
+                        DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
+                            .accessibilityHidden(true)
+                            .padding(.top, topOffset)
 
-                Spacer()
-
-                VStack(spacing: DSConstant.xLarge.value) {
-                    DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
-                        .accessibilityHidden(true)
-
-                    Text(StartLocalizedString.string("start.headline", locale: locale))
-                        .typography(.headingLargeBold)
-                        .foregroundColor(DSColor.Text.inverse)
-                        .multilineTextAlignment(.center)
+                        DSGrowingText(
+                            text: StartLocalizedString.string("start.headline", locale: locale),
+                            type: .headingLargeBold,
+                            color: DSColor.Text.inverse,
+                            alignment: .center
+                        )
+                        .accessibilityAddTraits(.isHeader)
+                    }
+                    .frame(maxWidth: .infinity)
+                } bottom: {
+                    bottomContainer
                 }
-
-                Spacer()
-
-                bottomContainer
+            } else {
+                contentStack
             }
         }
         .onAppear {
             analytics?.trackScreenOpened(file: #fileID)
+        }
+    }
+
+    private var contentStack: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: topOffset)
+
+            Spacer()
+
+            VStack(spacing: DSConstant.xLarge.value) {
+                DSImageView(image: .minitLogo, size: CGSize(width: 105.238, height: 105.238))
+                    .accessibilityHidden(true)
+
+                DSGrowingText(
+                    text: StartLocalizedString.string("start.headline", locale: locale),
+                    type: .headingLargeBold,
+                    color: DSColor.Text.inverse,
+                    alignment: .center
+                )
+                .accessibilityAddTraits(.isHeader)
+            }
+
+            Spacer()
+
+            bottomContainer
         }
     }
 
@@ -54,6 +83,7 @@ struct StartScreen: View {
                 .scaledToFill()
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .clipped()
+                .accessibilityHidden(true)
         }
     }
 
@@ -72,6 +102,7 @@ struct StartScreen: View {
                 .foregroundColor(DSColor.Text.inverse)
                 .tint(DSColor.Text.inverse)
                 .multilineTextAlignment(.center)
+                .uncompressedWhenTextIsLarge()
         }
         .padding(.horizontal, DSConstant.xxLarge.value)
         .padding(.bottom, DSConstant.xxLarge.value)
@@ -89,7 +120,7 @@ struct StartScreen: View {
         let raw = StartLocalizedString.string("start.legal", locale: locale)
         var attributed = (try? AttributedString(markdown: raw)) ?? AttributedString(raw)
         for run in attributed.runs where run.link != nil {
-            attributed[run.range].font = FontType.paragraphBold.font
+            attributed[run.range].font = FontType.paragraphBold.scaledSystemFont(for: dynamicTypeSize)
             attributed[run.range].underlineStyle = .single
         }
         return attributed

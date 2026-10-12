@@ -75,10 +75,12 @@ struct NotificationsScreen: View {
     /// Figma "Page Title" (6123:1790): Sharp Grotesk SmBold 20 at 30pt, `#331A00`.
     /// `headingH2` is that face and size with the 38pt line box.
     private var title: some View {
-        Text(HomeLocalizedString.string("home.notifications.title", locale: locale))
-            .typography(.headingH2)
-            .foregroundColor(DSColor.Text.heading)
-            .accessibilityAddTraits(.isHeader)
+        DSGrowingText(
+            text: HomeLocalizedString.string("home.notifications.title", locale: locale),
+            type: .headingH2,
+            color: DSColor.Text.heading
+        )
+        .accessibilityAddTraits(.isHeader)
     }
 
     /// Single-item `DSBannerCarousel` — same live component `HomeScreen` uses for its
@@ -108,16 +110,36 @@ struct NotificationsScreen: View {
                     title: dailyOfferTitle
                 )
             ],
-            onBannerTap: onDailyOfferTap
+            onBannerTap: onDailyOfferTap,
+            accessibilityLabel: Self.dailyOfferAccessibilityLabel(locale: locale)
         )
-        .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale))
     }
 
     /// "15%" always renders in the shared brand-orange highlight color, matching
     /// `HomeScreen.dailyOfferTitle`'s "Buy 1 get 2" idiom for its own quantities.
+    /// VoiceOver uses the same characters as the visible title.
+    private static let dailyOfferPercent = "15%"
+
+    static func dailyOfferPlainTitle(locale: Locale) -> String {
+        dailyOfferPercent + dailyOfferTitleSuffix(locale: locale)
+    }
+
+    /// "Daily Offer, 15% Off on every coffee" — the carousel override replaces
+    /// the badge and title, so this label has to carry both.
+    static func dailyOfferAccessibilityLabel(locale: Locale) -> String {
+        NotificationsDailyOfferAccessibility.label(
+            offerName: HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale),
+            offerTitle: dailyOfferPlainTitle(locale: locale)
+        )
+    }
+
+    private static func dailyOfferTitleSuffix(locale: Locale) -> String {
+        HomeLocalizedString.string("home.notifications.dailyOfferBanner.title.suffix", locale: locale)
+    }
+
     private var dailyOfferTitle: Text {
-        Text("15%").foregroundColor(DSColor.Text.accent)
-        + Text(HomeLocalizedString.string("home.notifications.dailyOfferBanner.title.suffix", locale: locale))
+        Text(Self.dailyOfferPercent).foregroundColor(DSColor.Text.accent)
+        + Text(Self.dailyOfferTitleSuffix(locale: locale))
             .foregroundColor(DSColor.Text.inverse)
     }
 
@@ -156,6 +178,20 @@ struct NotificationsScreen: View {
             )
             .frame(height: 1)
             .accessibilityHidden(true)
+    }
+}
+
+/// One VoiceOver label for the notifications Daily Offer banner.
+///
+/// The carousel override replaces badge and title, so the spoken name has to
+/// carry both: "Daily Offer, 15% Off on every coffee".
+enum NotificationsDailyOfferAccessibility {
+    static func label(offerName: String, offerTitle: String) -> String {
+        let name = offerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = offerTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty { return title }
+        if title.isEmpty { return name }
+        return "\(name), \(title)"
     }
 }
 
@@ -201,6 +237,7 @@ struct NotificationRow: View {
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .body) private var lineHeight = NotificationsScreenMetrics.rowLineHeight
+    @ScaledMetric(relativeTo: .body) private var titlePointSize = NotificationsScreenMetrics.rowTitlePointSize
 
     private typealias Metrics = NotificationsScreenMetrics
 
@@ -219,7 +256,7 @@ struct NotificationRow: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(HomeLocalizedString.string(item.titleKey, locale: locale))
-                    .font(.system(size: Metrics.rowTitlePointSize, weight: .medium))
+                    .font(.system(size: titlePointSize, weight: .medium))
                     .foregroundColor(DSColor.Text.primary)
                     .frame(minHeight: lineHeight)
                 Text(HomeLocalizedString.string(item.dateKey, locale: locale))

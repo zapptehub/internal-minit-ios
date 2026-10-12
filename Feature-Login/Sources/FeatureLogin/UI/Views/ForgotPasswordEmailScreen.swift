@@ -9,19 +9,43 @@ struct ForgotPasswordEmailScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let headlineToFieldsSpacing: CGFloat = DSConstant.xxLarge.value
 
     var body: some View {
+        Group {
+            if dynamicTypeSize > .large {
+                DSLargeTextScroll(spacing: 0) {
+                    form
+                } bottom: {
+                    resetButton
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    form
+                    resetButton
+                    Spacer()
+                }
+            }
+        }
+        .authFlowStepContent()
+    }
+
+    private var form: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(LoginLocalizedString.string("forgotPassword.headline", locale: locale))
-                    .typography(.headingLargeSemibold)
-                    .foregroundColor(DSColor.Text.heading)
+                DSGrowingText(
+                    text: LoginLocalizedString.string("forgotPassword.headline", locale: locale),
+                    type: .headingLargeSemibold,
+                    color: DSColor.Text.heading
+                )
+                .accessibilityAddTraits(.isHeader)
 
                 Text(LoginLocalizedString.string("forgotPassword.subtitle", locale: locale))
                     .typography(.paragraphRegular)
                     .foregroundColor(DSColor.Text.secondary)
+                    .uncompressedWhenTextIsLarge()
             }
 
             DSInputField(
@@ -40,20 +64,20 @@ struct ForgotPasswordEmailScreen: View {
                     .padding(.top, DSConstant.large.value)
             }
 
-            DSButton(
-                title: LoginLocalizedString.string("forgotPassword.button.resetPassword", locale: locale),
-                type: .tertiary,
-                isEnabled: isResetEnabled,
-                isLoading: viewModel.state.isLoading
-            ) {
-                analytics.trackForgotPasswordRequested(file: #fileID)
-                viewModel.submitForgotPasswordEmail()
-            }
-            .padding(.top, DSConstant.xxLarge.value)
-
-            Spacer()
         }
-        .authFlowStepContent()
+    }
+
+    private var resetButton: some View {
+        DSButton(
+            title: LoginLocalizedString.string("forgotPassword.button.resetPassword", locale: locale),
+            type: .tertiary,
+            isEnabled: isResetEnabled,
+            isLoading: viewModel.state.isLoading
+        ) {
+            analytics.trackForgotPasswordRequested(file: #fileID)
+            viewModel.submitForgotPasswordEmail()
+        }
+        .padding(.top, DSConstant.xxLarge.value)
     }
 
     private var isResetEnabled: Bool {

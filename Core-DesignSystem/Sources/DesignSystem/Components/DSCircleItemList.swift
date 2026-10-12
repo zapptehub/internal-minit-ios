@@ -35,6 +35,7 @@ public struct DSCircleItemList: View {
     let onSeeAllTap: (() -> Void)?
 
     @State private var showsUnderConstructionAlert = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     static let circleDiameter: CGFloat = 56
     private static let imageSize = CGSize(width: 49, height: 49)
@@ -124,10 +125,9 @@ public struct DSCircleItemList: View {
                     }
                 }
 
-            Text(item.label)
+            Text(scalingLabel(item.label))
                 .typography(.uiRegular)
                 .foregroundColor(DSColor.Text.primary)
-                .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(width: Self.circleDiameter)
         }
@@ -140,12 +140,36 @@ public struct DSCircleItemList: View {
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.label)
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// Above the default size a 56pt column is narrower than a word. Breaks
+    /// between characters so the whole label wraps, the way Android's 13sp
+    /// text does, instead of ellipsizing it. At `.large` the string is unchanged
+    /// and still fits on one line.
+    private func scalingLabel(_ label: String) -> String {
+        guard dynamicTypeSize > .large else { return label }
+        return label.map(String.init).joined(separator: "\u{200B}")
     }
 
     /// Same brand pink as `LoyaltyCard`'s rank-progress ring / `DSColor.Background.pink` —
     /// no dedicated "badge" token in Figma to copy this round.
+    ///
+    /// The disc is a fixed 20pt mark. `uiSmallSemibold` would grow the "%" with
+    /// Dynamic Type until it fills the disc. Above the default size the badge
+    /// is locked to `.large`, so its size and its place on the circle stay the
+    /// default ones. At `.large` the mark is unchanged.
+    @ViewBuilder
     private var discountBadge: some View {
+        if dynamicTypeSize > .large {
+            discountBadgeMark.dynamicTypeSize(.large)
+        } else {
+            discountBadgeMark
+        }
+    }
+
+    private var discountBadgeMark: some View {
         Circle()
             .fill(DSColor.Background.pink)
             .frame(width: Self.badgeDiameter, height: Self.badgeDiameter)

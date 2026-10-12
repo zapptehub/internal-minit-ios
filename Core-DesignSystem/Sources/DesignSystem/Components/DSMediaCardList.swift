@@ -142,6 +142,7 @@ struct DSMediaCard: View {
     /// `Font.custom(_:size:)` scales with the body text style, so the extra leading scales
     /// the same way: baseline-to-baseline stays 18/14 of the size.
     @ScaledMetric(relativeTo: .body) private var titleLineSpacing = DSMediaCardList.titleLineSpacing
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -167,7 +168,7 @@ struct DSMediaCard: View {
                     .typography(DSMediaCardList.titleStyle)
                     .lineSpacing(titleLineSpacing)
                     .foregroundColor(DSColor.Text.heading)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize > .large ? nil : 2)
                     .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

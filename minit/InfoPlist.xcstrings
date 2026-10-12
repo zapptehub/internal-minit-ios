@@ -1,0 +1,29 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit needs camera access to scan your loyalty card QR code."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Minitnek hozzáférésre van szüksége a kamerához a hűségkártyád QR-kódjának beolvasásához."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit potrebuje prístup ku kamere na naskenovanie QR kódu vašej vernostnej karty."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

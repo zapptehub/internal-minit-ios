@@ -23,6 +23,7 @@ struct ScanningScreen: View {
     @Bindable var viewModel: OnboardingViewModel
     let analytics: OnboardingAnalyticsTracking
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         ZStack {
@@ -68,40 +69,79 @@ struct ScanningScreen: View {
     /// and the caption/hint sit a fixed gap below its bottom edge, independent of
     /// their own (dynamic, possibly multi-line) height.
     private func overlay(simulatedScanAction: (() -> Void)?) -> some View {
-        GeometryReader { proxy in
-            ZStack {
-                ReticleShape()
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                    .frame(width: Self.reticleSize, height: Self.reticleSize)
-                    .accessibilityHidden(true)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
-                VStack(spacing: DSConstant.small.value) {
-                    Text(OnboardingLocalizedString.string("onboarding.scanner.caption", locale: locale))
-                        .typography(.paragraphRegular)
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-
-                    if simulatedScanAction != nil {
-                        // Simulator-only dev hint — this branch never compiles into a
-                        // device/App Store build, so it's deliberately not localized
-                        // like the real user-facing caption above.
-                        Text("Simulator — tap the button below to simulate a scan.")
-                            .typography(.uiRegular)
-                            .foregroundColor(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                    }
+        Group {
+            if dynamicTypeSize > .large {
+            // Keep the reticle in the space above the caption so the grown
+            // lines do not run through the brackets or the capture button.
+            VStack(spacing: DSConstant.medium.value) {
+                ZStack {
+                    ReticleShape()
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .frame(width: Self.reticleSize, height: Self.reticleSize)
+                        .accessibilityHidden(true)
+                    backRow
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
-                .padding(.horizontal, DSConstant.xLarge.value)
-                .padding(.top, proxy.size.height / 2 + Self.reticleSize / 2 + DSConstant.xLarge.value)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                backRow
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                captureButton(action: simulatedScanAction)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                captionBlock(simulatedScanAction: simulatedScanAction, height: 0)
             }
+        } else {
+            GeometryReader { proxy in
+                ZStack {
+                    ReticleShape()
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .frame(width: Self.reticleSize, height: Self.reticleSize)
+                        .accessibilityHidden(true)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+                    captionBlock(simulatedScanAction: simulatedScanAction, height: proxy.size.height)
+
+                    backRow
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                    captureButton(action: simulatedScanAction)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                }
+            }
+        }
+        }
+    }
+
+    @ViewBuilder
+    private func captionBlock(simulatedScanAction: (() -> Void)?, height: CGFloat) -> some View {
+        let captions = VStack(spacing: DSConstant.small.value) {
+            Text(OnboardingLocalizedString.string("onboarding.scanner.caption", locale: locale))
+                .typography(.paragraphRegular)
+                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .uncompressedWhenTextIsLarge()
+
+            if simulatedScanAction != nil {
+                // Simulator-only dev hint — this branch never compiles into a
+                // device/App Store build, so it's deliberately not localized
+                // like the real user-facing caption above.
+                Text("Simulator — tap the button below to simulate a scan.")
+                    .typography(.uiRegular)
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .uncompressedWhenTextIsLarge()
+            }
+        }
+        .padding(.horizontal, DSConstant.xLarge.value)
+
+        if dynamicTypeSize > .large {
+            // The reticle caption used to sit on a fixed offset and ran
+            // through the capture button once the lines grew.
+            VStack(spacing: DSConstant.medium.value) {
+                captions
+                captureButton(action: simulatedScanAction)
+            }
+            .frame(maxWidth: .infinity, alignment: .bottom)
+        } else {
+            captions
+                .padding(.top, height / 2 + Self.reticleSize / 2 + DSConstant.xLarge.value)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 

@@ -56,6 +56,7 @@ struct DSSelectableRow: View {
     private static let indicatorSize = DSComponentMetric.SelectionControl.controlSize
     private static let checkmarkSize = DSComponentMetric.SelectionControl.checkmarkSize
     private static let height = DSComponentMetric.SelectableRow.height
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// Unselected row fill — flat black scrim at 6% opacity over whatever's behind it
     /// (gradient background or otherwise).
     private static let unselectedFill = Color.black.opacity(0.06)
@@ -91,7 +92,8 @@ struct DSSelectableRow: View {
                 .frame(width: Self.indicatorSize, height: Self.indicatorSize)
             }
             .padding(.horizontal, DSConstant.large.value)
-            .frame(height: Self.height)
+            .frame(minHeight: Self.height)
+            .frame(maxHeight: dynamicTypeSize > .large ? nil : Self.height)
             .background(rowBackground)
             .clipShape(Capsule(style: .continuous))
         }

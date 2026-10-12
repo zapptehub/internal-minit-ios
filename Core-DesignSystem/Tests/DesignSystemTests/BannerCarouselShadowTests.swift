@@ -90,7 +90,50 @@ final class BannerCarouselShadowTests: XCTestCase {
         XCTAssertLessThan(Self.grey(image, x: 396, y: y), 230, "right neighbour peeks at x 390...402")
     }
 
+    /// Android `heightIn(min = 80.dp)`: the row stays 80 at the default size and
+    /// grows once the offer title wraps. A fixed 80pt frame ellipsized it.
+    @MainActor
+    func testBannerRowStaysEightyAtDefaultAndGrowsWhenTheTitleWraps() {
+        let large = Self.bannerHeight(dynamicType: .large)
+        let grown = Self.bannerHeight(dynamicType: .accessibility5)
+        XCTAssertEqual(large, 80, accuracy: 1)
+        XCTAssertGreaterThan(grown, 120)
+    }
+
     // MARK: Helpers
+
+    @MainActor
+    private static func bannerHeight(dynamicType: DynamicTypeSize) -> CGFloat {
+        let title = Text("Buy ").foregroundColor(.white)
+            + Text("1").foregroundColor(.orange)
+            + Text(" get ").foregroundColor(.white)
+            + Text("2").foregroundColor(.orange)
+            + Text(" Croissants").foregroundColor(.white)
+        let carousel = DSBannerCarousel(
+            items: [
+                .init(
+                    id: 0,
+                    backgroundColor: DSColor.Background.brown,
+                    badgeText: "Daily Offer",
+                    title: title
+                ),
+            ]
+        )
+        .frame(width: 362)
+        .environment(\.dynamicTypeSize, dynamicType)
+        let host = UIHostingController(rootView: carousel)
+        host.safeAreaRegions = []
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 362, height: 600))
+        window.rootViewController = host
+        host.view.frame = window.bounds
+        window.makeKeyAndVisible()
+        host.view.setNeedsLayout()
+        host.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        let height = host.sizeThatFits(in: CGSize(width: 362, height: 2000)).height
+        window.isHidden = true
+        return height
+    }
 
     /// Hosts the view in a real window (the carousel is a UIKit-backed scroll view, which
     /// `ImageRenderer` does not draw) and renders its layer tree at 1x into RGBA bytes.

@@ -21,6 +21,7 @@ public struct UnderConstructionScreen: View {
             Text(DesignSystemLocalizedString.string(headlineKey, locale: locale))
                 .typography(.headingMediumBold)
                 .foregroundColor(DSColor.Text.heading)
+                .accessibilityAddTraits(.isHeader)
             Text(DesignSystemLocalizedString.string("common.underConstructionScreen.message", locale: locale))
                 .typography(.paragraphRegular)
                 .foregroundColor(DSColor.Text.secondary)

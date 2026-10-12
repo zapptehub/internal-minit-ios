@@ -10,6 +10,7 @@ struct VerificationCodeScreen: View {
     let analytics: LoginAnalyticsTracking
     let purpose: VerificationPurpose
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Set when the user taps Confirm; cleared after async outcome is tracked so resend
     /// failures don't fire sign-in/sign-up failure events.
@@ -18,46 +19,30 @@ struct VerificationCodeScreen: View {
     private let headlineToContentSpacing: CGFloat = DSConstant.xxLarge.value
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: DSConstant.small.value) {
-                Text(LoginLocalizedString.string("verification.headline", locale: locale))
-                    .typography(.headingLargeSemibold)
-                    .foregroundColor(DSColor.Text.heading)
-
-                subtitle
+        Group {
+            if dynamicTypeSize > .large {
+                DSLargeTextScroll(spacing: 0) {
+                    upperContent
+                } bottom: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        confirmButton
+                        if showsSupportFooter {
+                            supportFooter
+                                .padding(.top, DSConstant.large.value)
+                        }
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    upperContent
+                    confirmButton
+                    if showsSupportFooter {
+                        supportFooter
+                            .padding(.top, DSConstant.large.value)
+                    }
+                    Spacer()
+                }
             }
-
-            DSOTPField(
-                label: LoginLocalizedString.string("verification.field.otp", locale: locale),
-                code: $viewModel.otpCode
-            )
-            .padding(.top, headlineToContentSpacing)
-
-            resendRow
-                .padding(.top, DSConstant.large.value)
-
-            if let errorMessage = viewModel.errorMessage {
-                DSWarningMessage(message: errorMessage)
-                    .padding(.top, DSConstant.large.value)
-            }
-
-            DSButton(
-                title: confirmButtonTitle,
-                type: .tertiary,
-                isEnabled: isConfirmEnabled,
-                isLoading: viewModel.state.isLoading
-            ) {
-                confirmInFlight = true
-                viewModel.confirmVerification(purpose: purpose)
-            }
-            .padding(.top, DSConstant.large.value)
-
-            if showsSupportFooter {
-                supportFooter
-                    .padding(.top, DSConstant.large.value)
-            }
-
-            Spacer()
         }
         .authFlowStepContent()
         .onAppear {
@@ -99,6 +84,48 @@ struct VerificationCodeScreen: View {
         }
     }
 
+    private var confirmButton: some View {
+        DSButton(
+            title: confirmButtonTitle,
+            type: .tertiary,
+            isEnabled: isConfirmEnabled,
+            isLoading: viewModel.state.isLoading
+        ) {
+            confirmInFlight = true
+            viewModel.confirmVerification(purpose: purpose)
+        }
+        .padding(.top, DSConstant.large.value)
+    }
+
+    private var upperContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: DSConstant.small.value) {
+                DSGrowingText(
+                    text: LoginLocalizedString.string("verification.headline", locale: locale),
+                    type: .headingLargeSemibold,
+                    color: DSColor.Text.heading
+                )
+                .accessibilityAddTraits(.isHeader)
+
+                subtitle
+            }
+
+            DSOTPField(
+                label: LoginLocalizedString.string("verification.field.otp", locale: locale),
+                code: $viewModel.otpCode
+            )
+            .padding(.top, headlineToContentSpacing)
+
+            resendRow
+                .padding(.top, DSConstant.large.value)
+
+            if let errorMessage = viewModel.errorMessage {
+                DSWarningMessage(message: errorMessage)
+                    .padding(.top, DSConstant.large.value)
+            }
+        }
+    }
+
     private var subtitle: some View {
         (
             Text(LoginLocalizedString.string("verification.subtitle.prefix", locale: locale))
@@ -109,6 +136,7 @@ struct VerificationCodeScreen: View {
         )
         .typography(.paragraphRegular)
         .lineSpacing(DSConstant.small.value)
+        .uncompressedWhenTextIsLarge()
     }
 
     private var resendRow: some View {

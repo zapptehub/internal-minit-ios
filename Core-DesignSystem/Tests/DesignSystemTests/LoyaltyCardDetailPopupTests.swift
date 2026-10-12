@@ -263,6 +263,21 @@ final class LoyaltyCardDetailPopupTests: XCTestCase {
         XCTAssertNil(host.content)
     }
 
+    /// Reduce Motion still presents and clears; the animation decision itself is `DSMotion`.
+    func testHostPresentAndClearWhenReduceMotionIsOn() {
+        let host = DSPopupHostModel()
+        let owner = UUID()
+        host.present(
+            AnyView(Color.white),
+            horizontalPadding: 20,
+            ownerID: owner,
+            reduceMotion: true
+        ) {}
+        XCTAssertNotNil(host.content)
+        host.clear(ownerID: owner, reduceMotion: true)
+        XCTAssertNil(host.content)
+    }
+
     /// Closing via the binding (Close button) removes the hosted popup.
     func testHostedPopupClosesWhenBindingTurnsFalse() throws {
         let size = CGSize(width: 402, height: 874)

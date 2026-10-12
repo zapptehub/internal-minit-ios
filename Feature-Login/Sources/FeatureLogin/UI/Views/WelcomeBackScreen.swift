@@ -10,6 +10,7 @@ struct WelcomeBackScreen: View {
     @Bindable var viewModel: LoginViewModel
     let analytics: LoginAnalyticsTracking
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let fieldSpacing: CGFloat = 24
     private let headlineToFieldsSpacing: CGFloat = DSConstant.xxLarge.value
@@ -19,6 +20,25 @@ struct WelcomeBackScreen: View {
     private let forgotPasswordToSignInSpacing: CGFloat = DSConstant.large.value
 
     var body: some View {
+        Group {
+            if dynamicTypeSize > .large {
+                DSLargeTextScroll(spacing: 0) {
+                    form
+                } bottom: {
+                    signInButton
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    form
+                    signInButton
+                    Spacer()
+                }
+            }
+        }
+        .authFlowStepContent()
+    }
+
+    private var form: some View {
         VStack(alignment: .leading, spacing: 0) {
             headline
 
@@ -45,21 +65,20 @@ struct WelcomeBackScreen: View {
                 DSWarningMessage(message: errorMessage)
                     .padding(.top, DSConstant.large.value)
             }
-
-            DSButton(
-                title: LoginLocalizedString.string("welcomeBack.button.signIn", locale: locale),
-                type: .primary,
-                isEnabled: isSignInEnabled,
-                isLoading: viewModel.state.isLoading
-            ) {
-                analytics.trackLoginAttempt(file: #fileID)
-                viewModel.submitSignIn()
-            }
-            .padding(.top, forgotPasswordToSignInSpacing)
-
-            Spacer()
         }
-        .authFlowStepContent()
+    }
+
+    private var signInButton: some View {
+        DSButton(
+            title: LoginLocalizedString.string("welcomeBack.button.signIn", locale: locale),
+            type: .primary,
+            isEnabled: isSignInEnabled,
+            isLoading: viewModel.state.isLoading
+        ) {
+            analytics.trackLoginAttempt(file: #fileID)
+            viewModel.submitSignIn()
+        }
+        .padding(.top, forgotPasswordToSignInSpacing)
     }
 
     /// Plain text link — not `DSButton(.textStyle)` because that renders a 56pt-tall pill
@@ -79,13 +98,14 @@ struct WelcomeBackScreen: View {
     }
 
     private var headline: some View {
-        (
-            Text(LoginLocalizedString.string("welcomeBack.headline.prefix", locale: locale))
-                .foregroundColor(DSColor.Text.heading)
-            + Text(viewModel.firstName)
-                .foregroundColor(DSColor.Text.accent)
+        DSGrowingText(
+            text: LoginLocalizedString.string("welcomeBack.headline.prefix", locale: locale),
+            type: .headingLargeSemibold,
+            color: DSColor.Text.heading,
+            accentText: viewModel.firstName,
+            accentColor: DSColor.Text.accent
         )
-        .typography(.headingLargeSemibold)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private var isSignInEnabled: Bool {
