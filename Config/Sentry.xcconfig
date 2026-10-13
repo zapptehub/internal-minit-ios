@@ -1,0 +1,12 @@
+// Sentry configuration for the minit app target.
+// The DSN is injected into Info.plist (key SentryDSN) via $(SENTRY_DSN).
+// xcconfig treats "//" as a comment, hence the $() split in the URL.
+// A DSN is a public client key (it only allows sending events), so it is
+// safe to keep in the repo. Leave SENTRY_DSN empty to disable Sentry.
+SENTRY_DSN = https:/$()/3949c3290b20bc30ee6f81365ed29931@o4512249783844864.ingest.de.sentry.io/4512249879068752
+
+// Sentry environment tag. Local builds default to "development".
+// Firebase App Distribution (internal) builds override it on the command line:
+//   xcodebuild ... SENTRY_ENVIRONMENT=internal
+// To rename an environment, change the value here / in that override only.
+SENTRY_ENVIRONMENT = development

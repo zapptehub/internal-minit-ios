@@ -13,6 +13,7 @@ import FirebaseCore
 struct minitApp: App {
     init() {
         FirebaseApp.configure()
+        SentryConfiguration.start()
         #if DEBUG
         LoggingConfiguration.configure(fileLoggingEnabled: true)
         #else

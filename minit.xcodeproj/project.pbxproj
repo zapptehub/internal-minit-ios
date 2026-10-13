@@ -28,6 +28,7 @@
 		FAA3D0D9300A874B00181699 /* FeatureOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0D8300A874B00181699 /* FeatureOnboarding */; };
 		FAA3D0DB300A874B00181699 /* OnboardingTestUtilities in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */; };
 		FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */ = {isa = PBXBuildFile; productRef = FAC0E116300B010100181707 /* FeatureTabRoot */; };
+		FAE5E0032FFA000100000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = FAE5E0022FFA000100000001 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,6 +44,7 @@
 /* Begin PBXFileReference section */
 		FA4312A02FF234DE00B7DC6A /* minit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = minit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAE652F2AA05AD4C85B81515 /* minitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = minitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAE5E0042FFA000100000001 /* Sentry.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Sentry.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -91,6 +93,7 @@
 				FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */,
 				FA7F73B02FF42D590032754F /* LoginTestUtilities in Frameworks */,
 				FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */,
+				FAE5E0032FFA000100000001 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +105,7 @@
 			children = (
 				FA4312A22FF234DE00B7DC6A /* minit */,
 				FAD73E8B4B49DA4BD1BEEF9A /* minitTests */,
+				FAE5E0052FFA000100000001 /* Config */,
 				FA4312A12FF234DE00B7DC6A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -113,6 +117,14 @@
 				FAE652F2AA05AD4C85B81515 /* minitTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FAE5E0052FFA000100000001 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				FAE5E0042FFA000100000001 /* Sentry.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -156,6 +168,7 @@
 				FAA3D0D8300A874B00181699 /* FeatureOnboarding */,
 				FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */,
 				FAC0E116300B010100181707 /* FeatureTabRoot */,
+				FAE5E0022FFA000100000001 /* Sentry */,
 			);
 			productName = minit;
 			productReference = FA4312A02FF234DE00B7DC6A /* minit.app */;
@@ -233,6 +246,7 @@
 				FAC0E113300B010100181704 /* XCLocalSwiftPackageReference "Feature-Card" */,
 				FAC0E114300B010100181705 /* XCLocalSwiftPackageReference "Feature-Game" */,
 				FAC0E115300B010100181706 /* XCLocalSwiftPackageReference "Feature-TabRoot" */,
+				FAE5E0012FFA000100000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FA4312A12FF234DE00B7DC6A /* Products */;
@@ -427,6 +441,7 @@
 		};
 		FA4312AC2FF234DF00B7DC6A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAE5E0042FFA000100000001 /* Sentry.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -436,6 +451,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/minit-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Minit needs camera access to scan your loyalty card QR code.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -471,6 +487,7 @@
 		};
 		FA4312AD2FF234DF00B7DC6A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAE5E0042FFA000100000001 /* Sentry.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -480,6 +497,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/minit-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Minit needs camera access to scan your loyalty card QR code.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -648,6 +666,14 @@
 				minimumVersion = 12.16.0;
 			};
 		};
+		FAE5E0012FFA000100000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.30.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -741,6 +767,11 @@
 		FAC0E116300B010100181707 /* FeatureTabRoot */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FeatureTabRoot;
+		};
+		FAE5E0022FFA000100000001 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FAE5E0012FFA000100000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
