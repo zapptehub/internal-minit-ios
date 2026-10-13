@@ -1,3 +1,5 @@
+import Foundation
+
 /// Domain model for a loyalty card. No Firebase types appear here.
 public struct LoyaltyCardData: Equatable, Sendable {
     public let code: String
@@ -89,4 +91,44 @@ public enum LoyaltyCardError: Error, Equatable, Sendable {
         /// No SDK error to classify, such as a transaction that did not commit.
         case unknown
     }
+}
+
+extension String {
+    /// Trims a physical-card code the way Kotlin `String.trim()` does.
+    ///
+    /// Removes Unicode space, line, and paragraph separators (general categories
+    /// Zs, Zl, Zp) plus C0 whitespace U+0009–U+000D and U+001C–U+001F. Case and
+    /// interior characters stay. U+0085 and other non-whitespace controls stay.
+    func normalizeLoyaltyCardCode() -> String {
+        trimmingCharacters(in: Self.loyaltyCardCodeTrimSet)
+    }
+
+    /// Whether this code can be one Realtime Database key segment.
+    ///
+    /// Matches Android `isValidLoyaltyCardCode`: non-empty, and no `.` `#` `$`
+    /// `[` `]` `/` or code point U+0000–U+001F or U+007F. There is no maximum
+    /// length. Claim trims first; a stored id is checked unchanged.
+    func isValidLoyaltyCardCode() -> Bool {
+        guard !isEmpty else { return false }
+        return unicodeScalars.allSatisfy { scalar in
+            let value = scalar.value
+            return value > 31 && value != 127 && !Self.firebaseInvalidKeyScalars.contains(scalar)
+        }
+    }
+
+    private static let firebaseInvalidKeyScalars = Set(".#$[]/".unicodeScalars)
+
+    /// Kotlin `Char.isWhitespace()` on the JVM: `Character.isWhitespace` or `isSpaceChar`.
+    private static let loyaltyCardCodeTrimSet: CharacterSet = {
+        var set = CharacterSet.whitespaces
+        let lineFeed = Unicode.Scalar(0x0A)!
+        let carriageReturn = Unicode.Scalar(0x0D)!
+        set.insert(charactersIn: lineFeed ... carriageReturn)
+        let fileSeparator = Unicode.Scalar(0x1C)!
+        let unitSeparator = Unicode.Scalar(0x1F)!
+        set.insert(charactersIn: fileSeparator ... unitSeparator)
+        set.insert(Unicode.Scalar(0x2028)!)
+        set.insert(Unicode.Scalar(0x2029)!)
+        return set
+    }()
 }

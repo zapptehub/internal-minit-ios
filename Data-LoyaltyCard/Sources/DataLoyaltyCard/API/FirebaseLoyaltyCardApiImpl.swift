@@ -32,7 +32,8 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
     }
 
     public func fetchCard(code: String) async throws -> LoyaltyCardDto? {
-        let snapshot = try await readSnapshot(cardReference(code: code))
+        let reference = try cardReference(code: code)
+        let snapshot = try await readSnapshot(reference)
         guard snapshot.exists(), snapshot.value != nil else {
             return nil
         }
@@ -46,7 +47,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
     }
 
     public func ensureCardOwned(code: String, ownerUserId: String, points: Int) async throws -> LoyaltyCardDto {
-        let reference = cardReference(code: code)
+        let reference = try cardReference(code: code, failure: .underlying(.decoding))
         let abortBox = TransactionAbortBox()
 
         // Unlike `claimExistingCard`, a `null`/uncached first pass here is not a bug:
@@ -90,13 +91,15 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
         return try decodeCard(from: snapshot, fallbackCode: code)
     }
 
-    // NOTE: This method is only exercised manually (simulator + live DB inspection).
+    // NOTE: The transaction below is only exercised manually (simulator + live DB).
+    // Unit tests stop invalid codes before `cardReference` and do not run it.
     // `LoyaltyCardRepositoryTests` covers `LoyaltyCardRepositoryImpl` against
     // `InMemoryLoyaltyCardApi`, which does not go through this Firebase transaction
     // code at all, so it would not catch a regression here. If we ever stand up a
     // Firebase emulator harness for tests, this method (and its null/race branches
     // below) should be the first thing covered.
     public func claimExistingCard(code: String, userId: String) async throws -> LoyaltyCardDto {
+        try Self.requireValidLoyaltyCardCode(code)
         // Definitive existence check via a normal read (`getData()` is a real server
         // round-trip). RTDB transaction blocks can still run their *first* pass against
         // a locally-cached `null` for a path the client has never synced before, even
@@ -116,7 +119,7 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
             return prefetched
         }
 
-        let reference = cardReference(code: code)
+        let reference = try cardReference(code: code)
         let abortBox = TransactionAbortBox()
         let fallbackPoints = prefetched.points ?? 0
 
@@ -169,14 +172,92 @@ public final class FirebaseLoyaltyCardApiImpl: LoyaltyCardApi {
         return try decodeCard(from: snapshot, fallbackCode: code)
     }
 
+    public func claimAndLink(code: String, userId: String) async throws -> LoyaltyCardDto {
+        try Self.requireValidLoyaltyCardCode(code)
+        guard let prefetched = try await fetchCard(code: code) else {
+            throw LoyaltyCardError.notFound
+        }
+        if let existingOwner = Self.nonEmptyString(from: prefetched.ownerUserId),
+           existingOwner != userId {
+            throw LoyaltyCardError.alreadyClaimed
+        }
+
+        let points = prefetched.points ?? 0
+        let updates: [String: Any] = [
+            "users/\(userId)/loyaltyCardId": code,
+            "loyaltyCards/\(code)": [
+                "code": code,
+                "ownerUserId": userId,
+                "points": points
+            ]
+        ]
+
+        do {
+            try await Database.database().reference().updateChildValues(updates)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw try await classifyClaimAndLinkFailure(code: code, userId: userId, error: error)
+        }
+
+        guard let committed = try await fetchCard(code: code),
+              Self.nonEmptyString(from: committed.ownerUserId) == userId else {
+            throw LoyaltyCardError.underlying(.unknown)
+        }
+        return committed
+    }
+
     // MARK: - Private
+
+    private func classifyClaimAndLinkFailure(
+        code: String,
+        userId: String,
+        error: Error
+    ) async throws -> LoyaltyCardError {
+        let nsError = error as NSError
+        let permissionDenied = nsError.domain == LoyaltyCardError.Underlying.firebaseDatabaseDomain &&
+            nsError.code == LoyaltyCardError.Underlying.firebasePermissionDeniedCode
+        guard permissionDenied else {
+            return Self.databaseFailure(error)
+        }
+
+        if let linked = try await fetchLinkedCardId(userId: userId), linked != code {
+            return .alreadyLinked
+        }
+        guard let card = try await fetchCard(code: code) else {
+            return .notFound
+        }
+        if let owner = Self.nonEmptyString(from: card.ownerUserId), owner != userId {
+            return .alreadyClaimed
+        }
+        return .underlying(.database(domain: nsError.domain, code: nsError.code))
+    }
 
     private func userLoyaltyCardIdReference(userId: String) -> DatabaseReference {
         Database.database().reference().child("users").child(userId).child("loyaltyCardId")
     }
 
-    private func cardReference(code: String) -> DatabaseReference {
-        Database.database().reference().child("loyaltyCards").child(code)
+    /// Rejects a code before it becomes a Realtime Database path.
+    ///
+    /// `child` raises `NSException` for `.` `#` `$` `[` `]` and ASCII controls.
+    /// `/` would open another path segment. Claim and lookup use `.notFound`.
+    /// A stored id that cannot be created uses `.underlying(.decoding)`, the
+    /// iOS stand-in for Android `InvalidData` (analytics "decoding").
+    private static func requireValidLoyaltyCardCode(
+        _ code: String,
+        failure: LoyaltyCardError = .notFound
+    ) throws {
+        guard code.isValidLoyaltyCardCode() else {
+            throw failure
+        }
+    }
+
+    private func cardReference(
+        code: String,
+        failure: LoyaltyCardError = .notFound
+    ) throws -> DatabaseReference {
+        try Self.requireValidLoyaltyCardCode(code, failure: failure)
+        return Database.database().reference().child("loyaltyCards").child(code)
     }
 
     private func decodeCard(from snapshot: DataSnapshot, fallbackCode: String) throws -> LoyaltyCardDto {
