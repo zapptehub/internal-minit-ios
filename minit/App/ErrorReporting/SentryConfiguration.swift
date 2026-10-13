@@ -4,11 +4,19 @@ import Sentry
 
 /// Starts Sentry at launch and keeps its user in sync with Firebase Auth.
 ///
-/// Privacy is decided in one place, `fullCaptureEnvironments`:
-/// - Full capture ("internal", Firebase App Distribution testers): default PII,
-///   screenshots, view hierarchy, unmasked session replay (100%), user = uid + email.
-/// - Every other environment ("development"): no default PII, no screenshots, no view
-///   hierarchy, no session replay; the only user identifier is the Firebase uid.
+/// DEBUG-ONLY PRIVACY POLICY — MUST BE REVISITED BEFORE ANY PRODUCTION ENVIRONMENT EXISTS.
+/// Only "development" and "internal" exist today, and both deliberately keep personal data
+/// and auth tokens: no client-side scrubbing of Authorization headers, cookies or Firebase
+/// ID tokens is added. Note: sentry-cocoa itself always strips Authorization/Cookie/
+/// Set-Cookie and similar headers from failed-request (HTTP client error) events; that
+/// filter is hard-coded with no option to disable it. Server-side Data Scrubber settings
+/// live in the Sentry project settings, not here.
+///
+/// All environments send default PII (e.g. IP) and set the user to Firebase uid + email.
+/// Screen capture is decided in one place, `screenCaptureEnvironments`:
+/// - "internal" (Firebase App Distribution testers): screenshots, view hierarchy and
+///   unmasked session replay (100%).
+/// - Every other environment ("development"): no screenshots, view hierarchy or replay.
 /// The DSN and environment come from Info.plist keys `SentryDSN` / `SentryEnvironment`,
 /// filled from `Config/Sentry.xcconfig` (`SENTRY_DSN` / `SENTRY_ENVIRONMENT`).
 enum SentryConfiguration {
@@ -24,20 +32,25 @@ enum SentryConfiguration {
         }
 
         let environment = environment(bundle: bundle)
-        let fullCapture = fullCaptureEnvironments.contains(environment)
+        let screenCapture = screenCaptureEnvironments.contains(environment)
 
         SentrySDK.start { options in
             options.dsn = dsn
             options.environment = environment
             options.releaseName = releaseName(bundle: bundle)
-            options.sendDefaultPii = fullCapture
-            options.attachScreenshot = fullCapture
-            options.attachViewHierarchy = fullCapture
-            options.sessionReplay.sessionSampleRate = fullCapture ? 1.0 : 0
-            options.sessionReplay.onErrorSampleRate = fullCapture ? 1.0 : 0
-            if fullCapture {
+            options.sendDefaultPii = true
+            options.attachScreenshot = screenCapture
+            options.attachViewHierarchy = screenCapture
+            options.sessionReplay.sessionSampleRate = screenCapture ? 1.0 : 0
+            options.sessionReplay.onErrorSampleRate = screenCapture ? 1.0 : 0
+            if screenCapture {
                 options.sessionReplay.maskAllText = false
                 options.sessionReplay.maskAllImages = false
+                // DEBUG-ONLY: keep auth tokens. Record headers (incl. Authorization, cookies,
+                // Firebase ID tokens) and bodies of every request in the replay network tab.
+                options.sessionReplay.networkDetailAllowUrls = ["http"] // substring: every URL
+                options.sessionReplay.networkRequestHeaders = ["Authorization", "Cookie", "X-Firebase-AppCheck", "X-Client-Version", "X-Goog-Api-Key"]
+                options.sessionReplay.networkResponseHeaders = ["Set-Cookie"]
             }
         }
 
@@ -47,16 +60,14 @@ enum SentryConfiguration {
                 return
             }
             let sentryUser = User(userId: user.uid)
-            if fullCapture {
-                sentryUser.email = user.email
-            }
+            sentryUser.email = user.email
             SentrySDK.setUser(sentryUser)
         }
     }
 
-    /// Environments allowed to send everything (PII, screenshots, unmasked replay).
-    /// The single switch for full capture: edit this set to change or rename it.
-    static let fullCaptureEnvironments: Set<String> = ["internal"]
+    /// Environments allowed to capture the screen (screenshots, view hierarchy,
+    /// unmasked session replay). The single switch: edit this set to change or rename it.
+    static let screenCaptureEnvironments: Set<String> = ["internal"]
 
     /// Fallback when the Info.plist value is missing or unexpanded.
     static let defaultEnvironment = "development"
