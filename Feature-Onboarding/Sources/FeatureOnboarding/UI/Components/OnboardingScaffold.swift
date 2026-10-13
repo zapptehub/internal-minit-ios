@@ -23,7 +23,9 @@ struct OnboardingScaffold<Content: View>: View {
     /// "Choose your app language" vs. Slovak's 1-line "Vyber jazyk aplikácie") changes how
     /// much vertical space the header takes, which shifts the position of any content below
     /// it that's laid out relative to the remaining space (like `LanguageSelectionScreen`'s
-    /// row list). `nil` (the default) preserves the previous "size to fit" behavior for
+    /// row list). This is a minimum only: a longer headline (e.g. Hungarian's
+    /// "Válaszd ki az alkalmazás nyelvét") wraps onto extra lines and is never truncated.
+    /// `nil` (the default) preserves the previous "size to fit" behavior for
     /// screens that don't need this.
     var headlineLineLimit: Int? = nil
     let onPrimary: () -> Void
@@ -123,7 +125,9 @@ struct OnboardingScaffold<Content: View>: View {
             Text(headline)
                 .typography(.headingLargeSemibold)
                 .foregroundColor(DSColor.Text.inverse)
-                .lineLimit(headlineLineLimit, reservesSpace: true)
+                .fixedSize(horizontal: false, vertical: true)
+                // Reserve at least `headlineLineLimit` lines, but never truncate.
+                .lineLimit(headlineLineLimit...)
         } else {
             Text(headline)
                 .typography(.headingLargeSemibold)
