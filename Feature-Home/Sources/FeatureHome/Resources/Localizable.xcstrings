@@ -732,19 +732,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use the minit loyalty card 4 times"
+            "value": "Use the Minit loyalty card 4 times"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Használd a minit hűségkártyát 4 alkalommal"
+            "value": "Használd a Minit hűségkártyát 4 alkalommal"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Použi minit vernostnú kartu 4-krát"
+            "value": "Použi Minit vernostnú kartu 4-krát"
           }
         }
       }

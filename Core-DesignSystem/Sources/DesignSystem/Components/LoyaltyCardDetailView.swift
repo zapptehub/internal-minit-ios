@@ -61,8 +61,7 @@ public struct LoyaltyCardDetailView: View {
                     .accessibilityAddTraits(.isHeader)
             }
 
-            // Android's QR is decorative (`DsImageView` contentDescription defaults to null).
-            // The asset name is what VoiceOver would speak, so iOS names it instead.
+            // The asset name is what VoiceOver would speak, so the QR is named explicitly.
             DSImageView(
                 image: .mockQrCode,
                 size: CGSize(width: Self.qrCodeSize, height: Self.qrCodeSize)

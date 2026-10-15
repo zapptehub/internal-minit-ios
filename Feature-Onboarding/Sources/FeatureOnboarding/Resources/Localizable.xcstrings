@@ -228,19 +228,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create a new or add an existing minit loyalty card"
+            "value": "Create a new or add an existing Minit loyalty card"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vytvor novú alebo pridaj existujúcu minit vernostnú kartu"
+            "value": "Vytvor novú alebo pridaj existujúcu Minit vernostnú kartu"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hozz létre újat, vagy add hozzá a meglévő minit hűségkártyádat"
+            "value": "Hozz létre újat, vagy add hozzá a meglévő Minit hűségkártyádat"
           }
         }
       }
