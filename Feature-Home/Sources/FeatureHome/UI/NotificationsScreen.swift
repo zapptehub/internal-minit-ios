@@ -41,9 +41,9 @@ struct NotificationsScreen: View {
                     .padding(.horizontal, Metrics.horizontalInset)
                 VStack(alignment: .leading, spacing: Metrics.columnSpacing) {
                     dailyOfferBanner
-                    section(title: HomeLocalizedString.string("home.notifications.section.today", locale: locale), items: todayItems)
+                    section(title: HomeLoyaltyCopy.sectionTitle("today", locale: locale), items: todayItems)
                     dashedDivider
-                    section(title: HomeLocalizedString.string("home.notifications.section.allHistory", locale: locale), items: historyItems)
+                    section(title: HomeLoyaltyCopy.sectionTitle("history", locale: locale), items: historyItems)
                 }
                 .padding(.top, Metrics.titleToBannerSpacing)
                 .padding(.horizontal, Metrics.horizontalInset)
@@ -76,7 +76,7 @@ struct NotificationsScreen: View {
     /// `headingH2` is that face and size with the 38pt line box.
     private var title: some View {
         DSGrowingText(
-            text: HomeLocalizedString.string("home.notifications.title", locale: locale),
+            text: HomeLoyaltyCopy.sectionTitle("notifications", locale: locale),
             type: .headingH2,
             color: DSColor.Text.heading
         )
@@ -165,8 +165,7 @@ struct NotificationsScreen: View {
     }
 
     private func pointsLabel(for points: Int) -> String {
-        let format = HomeLocalizedString.string("home.notifications.pointsFormat", locale: locale)
-        return String(format: format, points)
+        HomeLoyaltyCopy.pointsBadge(points, locale: locale)
     }
 
     /// Figma line 4088:1695, 24 above and below (the column spacing).

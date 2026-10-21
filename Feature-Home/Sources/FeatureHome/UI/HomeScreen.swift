@@ -188,13 +188,16 @@ struct HomeScreen: View {
         .accessibilityLabel("\(timeOfDayGreeting) \(model.userName)".trimmingCharacters(in: .whitespaces))
     }
 
-    /// Hardcoded Home mock values until live rank/points wiring lands.
+    /// Firebase sample. The formatter turns tier ids and numbers into the title,
+    /// the points-until line, the chip, and the ring.
     private var loyaltyCard: some View {
-        LoyaltyCard(
-            rankTitle: HomeLocalizedString.string("home.loyaltyCard.rankTitle", locale: locale),
-            rankSubtitle: HomeLocalizedString.string("home.loyaltyCard.rankSubtitle", locale: locale),
-            points: 3210,
-            chipLabel: HomeLocalizedString.string("home.loyaltyCard.chipLabel", locale: locale),
+        let face = HomeFirebaseSample.face(locale: locale)
+        return LoyaltyCard(
+            rankTitle: face.rankTitle,
+            rankSubtitle: face.rankSubtitle,
+            points: face.points,
+            chipLabel: face.chipLabel,
+            rankProgress: face.rankProgress,
             showsShadow: false
         ) {
             model.openLoyaltyCardDetail()
@@ -302,7 +305,7 @@ struct HomeScreen: View {
     /// (see `DSCircleItemList`).
     private var productsSection: some View {
         DSCircleItemList(
-            title: HomeLocalizedString.string("home.products.title", locale: locale),
+            title: HomeLoyaltyCopy.sectionTitle("products", locale: locale),
             items: productCategories,
             onItemTap: { model.showUnderConstruction(.product) },
             onSeeAllTap: { model.showUnderConstruction(.productsSeeAll) }
@@ -372,7 +375,7 @@ struct HomeScreen: View {
     /// and repeat/progress counts match the Home mock (see `DSChallengesCardList`).
     private var challengesSection: some View {
         DSChallengesCardList(
-            title: HomeLocalizedString.string("home.challenges.title", locale: locale),
+            title: HomeLoyaltyCopy.sectionTitle("challenges", locale: locale),
             items: challengeItems,
             onItemTap: { model.showUnderConstruction(.challenge) },
             onSeeAllTap: { model.showUnderConstruction(.challengesSeeAll) }
@@ -420,7 +423,7 @@ struct HomeScreen: View {
     /// Slovak recipe names kept as-is across locales (see `DSMediaCardList`).
     private var newsAndRecipesSection: some View {
         DSMediaCardList(
-            title: HomeLocalizedString.string("home.newsAndRecipes.title", locale: locale),
+            title: HomeLoyaltyCopy.sectionTitle("news", locale: locale),
             items: [
                 .init(
                     id: 0,
@@ -438,11 +441,9 @@ struct HomeScreen: View {
         )
     }
 
-    /// Shares `home.notifications.pointsFormat` with `NotificationsScreen`'s point rows,
-    /// rather than a second "+N pts" string for the challenge badges.
+    /// Same plural as `NotificationsScreen`'s point rows.
     private func pointsLabel(for points: Int) -> String {
-        let format = HomeLocalizedString.string("home.notifications.pointsFormat", locale: locale)
-        return String(format: format, points)
+        HomeLoyaltyCopy.pointsBadge(points, locale: locale)
     }
 
     private var dailyOfferBadge: String {

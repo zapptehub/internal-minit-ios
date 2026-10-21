@@ -15,6 +15,8 @@ struct LoyaltyCardPreview: View {
     private static let backCardOffsetY: CGFloat = 38
     private static let backCardBlurRadius: CGFloat = 6
     private static let backCardOpacity: Double = 0.7
+    /// Marketing fill for this static preview ring. `LoyaltyCard` has no default.
+    private static let previewRankProgress: Double = 0.75
 
     var body: some View {
         ZStack {
@@ -35,7 +37,8 @@ struct LoyaltyCardPreview: View {
             rankTitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.rankTitle", locale: locale),
             rankSubtitle: OnboardingLocalizedString.string("onboarding.loyalty.preview.benefits", locale: locale),
             points: 1410,
-            chipLabel: OnboardingLocalizedString.string("onboarding.loyalty.preview.chip", locale: locale)
+            chipLabel: OnboardingLocalizedString.string("onboarding.loyalty.preview.chip", locale: locale),
+            rankProgress: Self.previewRankProgress
         )
     }
 }

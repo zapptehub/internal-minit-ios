@@ -432,7 +432,7 @@ private struct MinimumHeightLayout: Layout {
                 id: 0,
                 backgroundColor: DSColor.Background.orange,
                 icon: .qrScanLine,
-                badgeText: "+45 pts",
+                badgeText: "Badge",
                 title: "Use the minit loyalty card 4 times",
                 repeatCount: 4,
                 progress: 0
@@ -441,21 +441,21 @@ private struct MinimumHeightLayout: Layout {
                 id: 1,
                 backgroundColor: DSColor.Background.green,
                 icon: .croissant,
-                badgeText: "+45 pts",
+                badgeText: "Badge",
                 title: "Buy 1 Pizza or any other type of bakery"
             ),
             .init(
                 id: 2,
                 backgroundColor: DSColor.Background.pink,
                 icon: .coffeeCup,
-                badgeText: "+25 pts",
+                badgeText: "Badge",
                 title: "Add a Coffee to your morning breakfast"
             ),
             .init(
                 id: 3,
                 backgroundColor: DSColor.Background.brown,
                 icon: .croissant,
-                badgeText: "+45 pts",
+                badgeText: "Badge",
                 title: "Taste multiple Minit bakery types",
                 repeatCount: 4,
                 progress: 1

@@ -427,6 +427,7 @@ final class DesignSystemAccessibilityTests: XCTestCase {
             rankSubtitle: "540 pts until Platinum",
             points: 3210,
             chipLabel: "Minit Card",
+            rankProgress: 0.75,
             onChipTap: { taps.count += 1 }
         )
         .frame(width: 362)
@@ -972,6 +973,7 @@ private func loyaltyCardAccessibilityView(onChipTap: (() -> Void)?) -> some View
         rankSubtitle: "540 pts until Platinum",
         points: 3210,
         chipLabel: "Minit Card",
+        rankProgress: 0.75,
         onChipTap: onChipTap
     )
     .frame(width: 362)

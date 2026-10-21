@@ -161,6 +161,7 @@ final class LoyaltyCardSpacingTests: XCTestCase {
             rankSubtitle: "540 pts until Platinum",
             points: 3210,
             chipLabel: "Minit Card",
+            rankProgress: 0.75,
             showsShadow: false
         )
         .frame(width: width)
@@ -177,6 +178,7 @@ final class LoyaltyCardSpacingTests: XCTestCase {
             rankSubtitle: "Earn unique benefits",
             points: 1410,
             chipLabel: "Loyalty Card",
+            rankProgress: 0.75,
             showsShadow: false
         )
         .frame(width: width)

@@ -4,16 +4,15 @@ import UIKit
 /// Parameterized loyalty-card visual: rank badge + title/subtitle, large points value,
 /// decorative illustration behind foreground content, and a full-width chip pill.
 ///
-/// Used by onboarding's marketing preview and Home's live (currently hardcoded) card.
+/// Used by onboarding's marketing preview and Home.
 /// Text follows Figma node 6166:3315 (Points).
 public struct LoyaltyCard: View {
     let rankTitle: String
     let rankSubtitle: String
     let points: Int
     let chipLabel: String
-    /// Decorative rank-ring fill fraction (0...1). Purely marketing art for now — there
-    /// is no real "rank progress" backend concept yet.
-    var rankProgress: Double = 0.75
+    /// Rank-ring fill from 0 to 1. The caller supplies it. Home passes the progress token.
+    var rankProgress: Double
     /// Home sits the card on a solid orange field where the shared card shadow reads too
     /// heavy; onboarding keeps the default shadow over the gradient.
     var showsShadow: Bool = true
@@ -45,7 +44,7 @@ public struct LoyaltyCard: View {
         rankSubtitle: String,
         points: Int,
         chipLabel: String,
-        rankProgress: Double = 0.75,
+        rankProgress: Double,
         showsShadow: Bool = true,
         onChipTap: (() -> Void)? = nil
     ) {
@@ -112,7 +111,7 @@ public struct LoyaltyCard: View {
 
             VStack(alignment: .leading, spacing: LoyaltyCardMetrics.rankSubtitleSpacing) {
                 if dynamicTypeSize > .large {
-                    // "Silver" is one word in a narrow column. Fitting the line
+                    // The rank title is one word in a narrow column. Fitting the line
                     // keeps it whole; the default size still uses the cap-trimmed title.
                     Text(rankTitle)
                         .font(DSFont.heading(size: LoyaltyCardMetrics.rankTitleFontSize))
@@ -356,10 +355,11 @@ private struct LoyaltyCardShadowModifier: ViewModifier {
 
 #Preview("LoyaltyCard") {
     LoyaltyCard(
-        rankTitle: "Silver",
-        rankSubtitle: "540 pts until Platinum",
-        points: 3210,
-        chipLabel: "Minit Card"
+        rankTitle: "Rank",
+        rankSubtitle: "Subtitle",
+        points: 100,
+        chipLabel: "Card",
+        rankProgress: 0.5
     )
     .padding()
     .background(Color(white: 0.95))

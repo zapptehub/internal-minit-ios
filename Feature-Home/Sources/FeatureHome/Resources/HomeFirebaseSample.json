@@ -1,0 +1,18 @@
+{
+  "loyalty": {
+    "points": 3210,
+    "tierId": "silver",
+    "progress": 0.86
+  },
+  "currentTier": {
+    "id": "silver",
+    "pointsToNext": 290,
+    "progress": 0.86
+  },
+  "tiers": [
+    {"id": "bronze", "floor": 0, "nextFloor": 1500},
+    {"id": "silver", "floor": 1500, "nextFloor": 3500},
+    {"id": "gold", "floor": 3500, "nextFloor": 6000},
+    {"id": "platinum", "floor": 6000, "nextFloor": null}
+  ]
+}
