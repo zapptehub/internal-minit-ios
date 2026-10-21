@@ -8,7 +8,8 @@ let package = Package(
         .library(name: "DataProfile", targets: ["DataProfile"])
     ],
     dependencies: [
-        .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "12.0.0"))
+        .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "12.0.0")),
+        .package(path: "../Core-Networking")
     ],
     targets: [
         .target(
@@ -20,7 +21,10 @@ let package = Package(
         ),
         .testTarget(
             name: "DataProfileTests",
-            dependencies: ["DataProfile"],
+            dependencies: [
+                "DataProfile",
+                .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
+            ],
             path: "Tests/DataProfileTests"
         )
     ]

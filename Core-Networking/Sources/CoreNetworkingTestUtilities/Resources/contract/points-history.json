@@ -1,0 +1,17 @@
+{
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "delta": 3210,
+      "balanceAfter": 3210,
+      "reasonKey": "initial_grant",
+      "reason": {
+        "en": "Starting balance",
+        "sk": "Počiatočný zostatok",
+        "hu": "Kezdő egyenleg"
+      },
+      "createdAt": "2026-10-17T07:25:00.000000Z"
+    }
+  ],
+  "nextCursor": null
+}

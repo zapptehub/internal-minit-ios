@@ -1,0 +1,8 @@
+{
+  "id": "uid-card",
+  "name": "Iveta",
+  "surname": "Ozola",
+  "email": "iveta@example.com",
+  "loyaltyCardId": "MINIT-CONTRACT1",
+  "avatarUrl": "http://127.0.0.1:8080/v1/media/avatars/default.webp"
+}

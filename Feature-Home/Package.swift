@@ -10,7 +10,8 @@ let package = Package(
     dependencies: [
         .package(path: "../Core-DesignSystem"),
         .package(path: "../Core-Extensions"),
-        .package(path: "../Data-Profile")
+        .package(path: "../Data-Profile"),
+        .package(path: "../Core-Networking")
     ],
     targets: [
         .target(
@@ -27,7 +28,8 @@ let package = Package(
             name: "FeatureHomeTests",
             dependencies: [
                 "FeatureHome",
-                .product(name: "DataProfile", package: "Data-Profile")
+                .product(name: "DataProfile", package: "Data-Profile"),
+                .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
             ],
             path: "Tests/FeatureHomeTests"
         )
