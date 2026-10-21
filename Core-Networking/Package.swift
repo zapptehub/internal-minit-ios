@@ -6,8 +6,8 @@ let package = Package(
     platforms: [.iOS(.v17)],
     products: [
         .library(name: "CoreNetworking", targets: ["CoreNetworking"]),
-        // Test helper for contract fixtures (and, in task 4.7, the contract client).
-        // The minit app target does not link this product.
+        // Test helper for contract fixtures, the hand-built contract JWT, and the
+        // small contract client. The minit app target does not link this product.
         .library(name: "CoreNetworkingTestUtilities", targets: ["CoreNetworkingTestUtilities"])
     ],
     targets: [
@@ -17,6 +17,7 @@ let package = Package(
         ),
         .target(
             name: "CoreNetworkingTestUtilities",
+            dependencies: ["CoreNetworking"],
             path: "Sources/CoreNetworkingTestUtilities",
             resources: [
                 .copy("Resources/contract"),

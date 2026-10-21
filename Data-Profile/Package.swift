@@ -9,7 +9,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "12.0.0")),
-        .package(path: "../Core-Networking")
+        .package(path: "../Core-Networking"),
+        .package(path: "../Data-LoyaltyCard")
     ],
     targets: [
         .target(
@@ -24,6 +25,7 @@ let package = Package(
             name: "DataProfileTests",
             dependencies: [
                 "DataProfile",
+                .product(name: "DataLoyaltyCard", package: "Data-LoyaltyCard"),
                 .product(name: "CoreNetworking", package: "Core-Networking"),
                 .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
             ],
