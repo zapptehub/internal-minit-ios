@@ -15,7 +15,8 @@ let package = Package(
         .target(
             name: "DataLoyaltyCard",
             dependencies: [
-                .product(name: "FirebaseDatabase", package: "firebase-ios-sdk")
+                .product(name: "FirebaseDatabase", package: "firebase-ios-sdk"),
+                .product(name: "CoreNetworking", package: "Core-Networking")
             ],
             path: "Sources/DataLoyaltyCard"
         ),
@@ -23,6 +24,7 @@ let package = Package(
             name: "DataLoyaltyCardTests",
             dependencies: [
                 "DataLoyaltyCard",
+                .product(name: "CoreNetworking", package: "Core-Networking"),
                 .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
             ],
             path: "Tests/DataLoyaltyCardTests"

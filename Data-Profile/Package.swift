@@ -15,7 +15,8 @@ let package = Package(
         .target(
             name: "DataProfile",
             dependencies: [
-                .product(name: "FirebaseDatabase", package: "firebase-ios-sdk")
+                .product(name: "FirebaseDatabase", package: "firebase-ios-sdk"),
+                .product(name: "CoreNetworking", package: "Core-Networking")
             ],
             path: "Sources/DataProfile"
         ),
@@ -23,6 +24,7 @@ let package = Package(
             name: "DataProfileTests",
             dependencies: [
                 "DataProfile",
+                .product(name: "CoreNetworking", package: "Core-Networking"),
                 .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
             ],
             path: "Tests/DataProfileTests"

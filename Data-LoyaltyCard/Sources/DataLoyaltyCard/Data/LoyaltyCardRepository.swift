@@ -18,6 +18,23 @@ public protocol LoyaltyCardRepository: Sendable {
     /// when none is linked, the stored id cannot be a database key, or
     /// another user owns the record.
     func fetchLinkedCard(userId: String) async throws -> LoyaltyCardData?
+
+    /// One page of the caller's points ledger.
+    ///
+    /// Firebase and test fakes inherit an empty page (`nextCursor` nil).
+    /// `HttpLoyaltyCardRepository` reads `GET /v1/me/points-history`. A 404
+    /// `not_found` is that empty page. `cursor` is one encoded query value.
+    /// The HTTP implementation clamps `limit` to 1...50 before the request,
+    /// which is the range the route accepts. A caller that asks for 100 is
+    /// sent 50 and may still receive a `nextCursor`, with no separate signal
+    /// that the page is shorter than requested. No screen reads this.
+    func fetchPointsHistory(limit: Int, cursor: String?) async throws -> PointsHistoryPage
+}
+
+extension LoyaltyCardRepository {
+    public func fetchPointsHistory(limit _: Int, cursor _: String?) async throws -> PointsHistoryPage {
+        PointsHistoryPage(items: [], nextCursor: nil)
+    }
 }
 
 public final class LoyaltyCardRepositoryImpl: LoyaltyCardRepository {

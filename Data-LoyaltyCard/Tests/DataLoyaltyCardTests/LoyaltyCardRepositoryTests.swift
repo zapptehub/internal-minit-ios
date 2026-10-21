@@ -404,6 +404,29 @@ final class LoyaltyCardRepositoryTests: XCTestCase {
             XCTAssertEqual(api.fetchCardCalls, 0, linkedId.debugDescription)
         }
     }
+
+    func testFetchPointsHistoryDefaultsToAnEmptyPage() async throws {
+        let api = InMemoryLoyaltyCardApi()
+        let repository = LoyaltyCardRepositoryImpl(api: api)
+
+        let page = try await repository.fetchPointsHistory(limit: 20, cursor: "not-sent")
+
+        XCTAssertEqual(page, PointsHistoryPage(items: [], nextCursor: nil))
+        XCTAssertEqual(api.fetchLinkedCardIdCalls, 0)
+        XCTAssertEqual(api.fetchCardCalls, 0)
+        XCTAssertEqual(api.ensureCardOwnedCalls, 0)
+        XCTAssertEqual(api.claimCalls, 0)
+        XCTAssertEqual(api.claimAndLinkCalls, 0)
+    }
+
+    func testFakeThatDoesNotImplementFetchPointsHistoryReturnsAnEmptyPage() async throws {
+        let repository: LoyaltyCardRepository = EmptyPointsHistoryRepository()
+
+        let page = try await repository.fetchPointsHistory(limit: 1, cursor: nil)
+
+        XCTAssertTrue(page.items.isEmpty)
+        XCTAssertNil(page.nextCursor)
+    }
 }
 
 final class FirebaseLoyaltyCardCodeGuardTests: XCTestCase {
@@ -536,5 +559,21 @@ private final class InMemoryLoyaltyCardApi: LoyaltyCardApi, @unchecked Sendable 
         let claimed = LoyaltyCardDto(code: code, ownerUserId: userId, points: existing.points)
         cards[code] = claimed
         return claimed
+    }
+}
+
+/// Conforms without `fetchPointsHistory`, the same shape as the onboarding and
+/// app-flow fakes.
+private struct EmptyPointsHistoryRepository: LoyaltyCardRepository {
+    func createCard(userId: String) async throws -> LoyaltyCardData {
+        LoyaltyCardData(code: "unused", ownerUserId: userId)
+    }
+
+    func claimCard(userId: String, code: String) async throws -> LoyaltyCardData {
+        LoyaltyCardData(code: code, ownerUserId: userId)
+    }
+
+    func fetchLinkedCard(userId _: String) async throws -> LoyaltyCardData? {
+        nil
     }
 }

@@ -10,6 +10,7 @@ final class ProfileModelsTests: XCTestCase {
         XCTAssertEqual(model.name, "Iveta")
         XCTAssertEqual(model.surname, "Berzina")
         XCTAssertEqual(model.email, "iveta@minitbakery.com")
+        XCTAssertNil(model.avatarUrl)
         XCTAssertEqual(model.toDto(), dto)
     }
 

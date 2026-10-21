@@ -48,11 +48,19 @@ final class AppDependencies {
         self.networkClient = networkClient
         self.reachability = PathReachability()
 
-        let profileDataModule = ProfileDataModule()
+        let dataBackend = Self.dataBackend()
+
+        let profileDataModule = ProfileDataModule(
+            dataBackend: dataBackend,
+            networkClient: networkClient
+        )
         self.profileDataModule = profileDataModule
         self.profileRepository = profileDataModule.makeProfileRepository()
 
-        let loyaltyCardDataModule = LoyaltyCardDataModule()
+        let loyaltyCardDataModule = LoyaltyCardDataModule(
+            dataBackend: dataBackend,
+            networkClient: networkClient
+        )
         self.loyaltyCardDataModule = loyaltyCardDataModule
         self.loyaltyCardRepository = loyaltyCardDataModule.makeLoyaltyCardRepository()
 
@@ -89,6 +97,24 @@ final class AppDependencies {
             )
         }
         return trimmed
+    }
+
+    /// `MinitDataBackend` from Info.plist (`MINIT_DATA_BACKEND`).
+    ///
+    /// Committed configurations are `firebase`. An `http` build sets that id in
+    /// gitignored `Config/Local.xcconfig`. The data modules construct the HTTP
+    /// repositories only when the id is `http`.
+    ///
+    /// A missing or unexpanded value defaults to `firebase`, so a host plist
+    /// that never sets the key stays on Firebase. `http` is an explicit opt-in.
+    /// Any other id still fails when the data module builds the repository.
+    private static func dataBackend(bundle: Bundle = .main) -> String {
+        let value = plistString("MinitDataBackend", bundle: bundle)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty || value.hasPrefix("$(") {
+            return "firebase"
+        }
+        return value
     }
 
     private static func plistString(_ key: String, bundle: Bundle = .main) -> String {

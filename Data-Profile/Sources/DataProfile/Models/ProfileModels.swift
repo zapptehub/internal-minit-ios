@@ -1,12 +1,18 @@
+/// Profile fields the rest of the app reads.
+///
+/// `avatarUrl` is nil for a Firebase record. The HTTP repository sets it from
+/// `GET /v1/me`. Call sites that omit it keep compiling.
 public struct ProfileData: Equatable, Sendable {
     public let name: String
     public let surname: String
     public let email: String
+    public let avatarUrl: String?
 
-    public init(name: String, surname: String, email: String) {
+    public init(name: String, surname: String, email: String, avatarUrl: String? = nil) {
         self.name = name
         self.surname = surname
         self.email = email
+        self.avatarUrl = avatarUrl
     }
 }
 
@@ -39,7 +45,7 @@ public struct ProfileDto: Codable, Sendable {
 
 public extension ProfileDto {
     func toModel() -> ProfileData {
-        ProfileData(name: name, surname: surname, email: email)
+        ProfileData(name: name, surname: surname, email: email, avatarUrl: nil)
     }
 }
 
