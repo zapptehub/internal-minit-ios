@@ -35,13 +35,18 @@ final class AppDependencies {
     let onboardingAnalytics: OnboardingAnalyticsTracking
 
     private init() {
-        let networkClient = NetworkClientImpl(baseURL: Self.apiBaseURL())
-        self.networkClient = networkClient
-        self.reachability = PathReachability()
-
-        let authDataModule = AuthDataModule(networkClient: networkClient)
+        let authDataModule = AuthDataModule()
         self.authDataModule = authDataModule
         self.authRepository = authDataModule.makeAuthRepository()
+
+        let networkClient = NetworkClientImpl(
+            baseURL: Self.apiBaseURL(),
+            tokenProvider: authDataModule.tokenProvider,
+            accessClientId: Self.plistString("CFAccessClientId"),
+            accessClientSecret: Self.plistString("CFAccessClientSecret")
+        )
+        self.networkClient = networkClient
+        self.reachability = PathReachability()
 
         let profileDataModule = ProfileDataModule()
         self.profileDataModule = profileDataModule
@@ -84,5 +89,9 @@ final class AppDependencies {
             )
         }
         return trimmed
+    }
+
+    private static func plistString(_ key: String, bundle: Bundle = .main) -> String {
+        bundle.object(forInfoDictionaryKey: key) as? String ?? ""
     }
 }

@@ -173,6 +173,10 @@ private final class NoopNetworkClient: NetworkClient {
     func request<T: Decodable, B: Encodable>(_ path: String, method: HTTPMethod, body: B) async throws -> T {
         throw NSError(domain: "test", code: 0)
     }
+
+    func data(_ url: URL) async throws -> Data {
+        throw NSError(domain: "test", code: 0)
+    }
 }
 
 // MARK: - Mock

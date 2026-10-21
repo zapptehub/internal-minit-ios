@@ -1,7 +1,8 @@
 import Foundation
+import CoreNetworking
 import FirebaseAuth
 
-/// Real `AuthApi` implementation backed by Firebase Authentication (email/password only).
+/// Real `AuthApi` and `TokenProvider` implementation backed by Firebase Authentication (email/password only).
 /// This is the sole place in the app that imports `FirebaseAuth` — everything outside
 /// `Data-Auth` only ever sees the `AuthApi`/`AuthRepository` protocols, so swapping Firebase
 /// for the in-house backend later only touches this file (and `AuthDataModule`).
@@ -9,7 +10,7 @@ import FirebaseAuth
 /// `sendVerificationCode`/`confirmPasswordReset` stay mocked no-ops, matching the existing
 /// "OTP is always accepted" verification-code step — see `AuthApiImpl` and
 /// `plans/ios-auth-flow-multi-step.md`. Apple/Google sign-in remain out of scope.
-public final class FirebaseAuthApiImpl: AuthApi {
+public final class FirebaseAuthApiImpl: AuthApi, TokenProvider {
     public init() {}
 
     public func login(email: String, password: String) async throws -> AuthDto {
@@ -48,15 +49,16 @@ public final class FirebaseAuthApiImpl: AuthApi {
     /// of this package's own in-memory session cache. Restoring from it — rather than only
     /// trusting the in-memory cache — is what lets a relaunch resume an existing session.
     ///
-    /// `getIDToken()` returns the cached token when it isn't expired and only talks to the
-    /// network to refresh it when it is, so this is cheap on the common path.
+    /// `getIDToken(forcingRefresh: false)` returns the cached token when it isn't expired
+    /// and only talks to the network to refresh it when it is, so this is cheap on the
+    /// common path.
     public func restoreSession() async throws -> AuthDto? {
         guard let user = Auth.auth().currentUser else {
             return nil
         }
 
         do {
-            let idToken = try await user.getIDToken()
+            let idToken = try await user.getIDToken(forcingRefresh: false)
             return AuthDto(accessToken: idToken, userId: user.uid)
         } catch {
             guard AuthSessionErrorClassifier.isRevokedSessionError(error) else {
@@ -75,11 +77,21 @@ public final class FirebaseAuthApiImpl: AuthApi {
     public func signOut() async throws {
         try Auth.auth().signOut()
     }
+
+    /// Cached token when `forceRefresh` is false. The HTTP client passes `true` for the
+    /// single 401 retry. Firebase already coalesces `getIDToken`. The token is not logged.
+    public func currentToken(forceRefresh: Bool) async -> String? {
+        guard let user = Auth.auth().currentUser else { return nil }
+        guard let token = try? await user.getIDToken(forcingRefresh: forceRefresh) else {
+            return nil
+        }
+        return token.isEmpty ? nil : token
+    }
 }
 
 private extension AuthDataResult {
     func toDto() async throws -> AuthDto {
-        let idToken = try await user.getIDToken()
+        let idToken = try await user.getIDToken(forcingRefresh: false)
         return AuthDto(accessToken: idToken, userId: user.uid)
     }
 }

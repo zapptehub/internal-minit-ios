@@ -14,19 +14,32 @@ final class URLProtocolStub: URLProtocol {
     final class Context: @unchecked Sendable {
         private let identifier = UUID().uuidString
         private let lock = NSLock()
-        private var stubs: [String: Stub] = [:]
-        private var capturedRequest: URLRequest?
+        private var repeatingStubs: [String: Stub] = [:]
+        private var queuedStubs: [String: [Stub]] = [:]
+        private var capturedRequests: [URLRequest] = []
 
         var lastRequest: URLRequest? {
-            lock.withLock { capturedRequest }
+            lock.withLock { capturedRequests.last }
         }
 
-        func makeSession() -> URLSession {
+        var requests: [URLRequest] {
+            lock.withLock { capturedRequests }
+        }
+
+        func makeConfiguration(extraHeaders: [String: String] = [:]) -> URLSessionConfiguration {
             URLProtocolStub.register(self, identifier: identifier)
             let configuration = URLSessionConfiguration.ephemeral
             configuration.protocolClasses = [URLProtocolStub.self]
-            configuration.httpAdditionalHeaders = [URLProtocolStub.contextHeader: identifier]
-            return URLSession(configuration: configuration)
+            var headers = [URLProtocolStub.contextHeader: identifier]
+            for (key, value) in extraHeaders {
+                headers[key] = value
+            }
+            configuration.httpAdditionalHeaders = headers
+            return configuration
+        }
+
+        func makeSession() -> URLSession {
+            URLSession(configuration: makeConfiguration())
         }
 
         func stub(
@@ -42,23 +55,51 @@ final class URLProtocolStub: URLProtocol {
                 headerFields: headers
             )
             lock.withLock {
-                stubs[url.absoluteString] = Stub(data: data, response: response, error: nil)
+                repeatingStubs[url.absoluteString] = Stub(data: data, response: response, error: nil)
+            }
+        }
+
+        /// Responses are consumed in order. A repeating `stub` is used once the queue is empty.
+        func enqueue(
+            url: URL,
+            statusCode: Int,
+            data: Data? = nil,
+            headers: [String: String] = [:]
+        ) {
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: statusCode,
+                httpVersion: "HTTP/1.1",
+                headerFields: headers
+            )
+            lock.withLock {
+                queuedStubs[url.absoluteString, default: []].append(
+                    Stub(data: data, response: response, error: nil)
+                )
             }
         }
 
         func stub(url: URL, error: Error) {
             lock.withLock {
-                stubs[url.absoluteString] = Stub(data: nil, response: nil, error: error)
+                repeatingStubs[url.absoluteString] = Stub(data: nil, response: nil, error: error)
             }
         }
 
         fileprivate func stub(for url: URL) -> Stub? {
-            lock.withLock { stubs[url.absoluteString] }
+            lock.withLock {
+                let key = url.absoluteString
+                if var queue = queuedStubs[key], !queue.isEmpty {
+                    let next = queue.removeFirst()
+                    queuedStubs[key] = queue
+                    return next
+                }
+                return repeatingStubs[key]
+            }
         }
 
         fileprivate func capture(_ request: URLRequest) {
             lock.withLock {
-                capturedRequest = request
+                capturedRequests.append(request)
             }
         }
     }

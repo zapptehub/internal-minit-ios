@@ -1,15 +1,20 @@
 import CoreNetworking
 
 public final class AuthDataModule {
-    private let networkClient: NetworkClient
+    private let api: AuthApi
+    private let dataSource: AuthDataSource
+    private let repository: AuthRepository
+    /// The Firebase implementation. `PlaceholderAuthProvider` waits until phase 6.
+    public let tokenProvider: TokenProvider
 
-    public init(networkClient: NetworkClient) {
-        self.networkClient = networkClient
+    public init() {
+        let firebase = FirebaseAuthApiImpl()
+        self.api = firebase
+        self.tokenProvider = firebase
+        let dataSource = InMemoryAuthDataSource()
+        self.dataSource = dataSource
+        self.repository = AuthRepositoryImpl(api: firebase, dataSource: dataSource)
     }
-
-    private lazy var api: AuthApi = FirebaseAuthApiImpl()
-    private lazy var dataSource: AuthDataSource = InMemoryAuthDataSource()
-    private lazy var repository: AuthRepository = AuthRepositoryImpl(api: api, dataSource: dataSource)
 
     public func makeAuthRepository() -> AuthRepository { repository }
 }
