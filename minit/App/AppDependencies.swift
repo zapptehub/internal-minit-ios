@@ -1,3 +1,4 @@
+import Foundation
 import CoreLogging
 import CoreExtensions
 import CoreNetworking
@@ -34,7 +35,7 @@ final class AppDependencies {
     let onboardingAnalytics: OnboardingAnalyticsTracking
 
     private init() {
-        let networkClient = NetworkClientImpl(baseURL: "https://api.minit.app")
+        let networkClient = NetworkClientImpl(baseURL: Self.apiBaseURL())
         self.networkClient = networkClient
         self.reachability = PathReachability()
 
@@ -57,5 +58,31 @@ final class AppDependencies {
         self.loginAnalytics = ConsoleAnalyticsAdapter()
         self.startAnalytics = ConsoleStartAnalyticsAdapter()
         self.onboardingAnalytics = ConsoleOnboardingAnalyticsAdapter()
+    }
+
+    /// `MinitAPIBaseURL` from Info.plist (`MINIT_API_BASE_URL` in the configuration xcconfig).
+    /// Requires an absolute `http` or `https` URL with a host, no query or fragment, and no trailing slash.
+    /// xcconfig treats `//` as a comment, so overrides are written `https:/$()/`.
+    private static func apiBaseURL(bundle: Bundle = .main) -> String {
+        guard let value = bundle.object(forInfoDictionaryKey: "MinitAPIBaseURL") as? String else {
+            fatalError("MinitAPIBaseURL is missing from Info.plist")
+        }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed.hasPrefix("$(") {
+            fatalError("MinitAPIBaseURL is empty or unexpanded in Info.plist (value: \"\(trimmed)\")")
+        }
+        guard let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              let host = components.host,
+              !host.isEmpty,
+              components.query == nil,
+              components.fragment == nil,
+              !trimmed.hasSuffix("/") else {
+            fatalError(
+                "MinitAPIBaseURL must be an http or https URL with a host, no query or fragment, and no trailing slash (value: \"\(trimmed)\")"
+            )
+        }
+        return trimmed
     }
 }

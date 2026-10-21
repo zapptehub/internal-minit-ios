@@ -1,0 +1,12 @@
+// Copy to Config/Local.xcconfig. That file is gitignored.
+// Development.xcconfig and Internal.xcconfig include it. Release.xcconfig does not.
+//
+// xcconfig treats // as a comment. Write a base URL as https:/$()/host/path
+// (the same split Config/Sentry.xcconfig uses for the DSN). A value written
+// https://host is stored as "https:". Do not add a trailing slash.
+//
+// Leave Cloudflare Access credentials out of this file. They belong in
+// gitignored Config/Secrets.xcconfig.
+
+MINIT_DATA_BACKEND = http
+MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min

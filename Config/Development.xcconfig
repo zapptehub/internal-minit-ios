@@ -1,0 +1,21 @@
+// Base for the Debug configuration of the minit target.
+// Sentry.xcconfig remains the DSN include. This file sets the environment
+// after that include, so a value there cannot put another environment back.
+#include "Sentry.xcconfig"
+
+// xcconfig treats // as a comment, so the base URL is split the same way as SENTRY_DSN.
+MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min
+
+// Committed data backend stays firebase until phase 6. Gitignored Local.xcconfig
+// may set MINIT_DATA_BACKEND; that value is what a Debug build ships.
+MINIT_DATA_BACKEND = firebase
+
+// Empty unless gitignored Secrets.xcconfig supplies Cloudflare Access credentials.
+CF_ACCESS_CLIENT_ID =
+CF_ACCESS_CLIENT_SECRET =
+
+// A Local.xcconfig base URL must use https:/$()/ (a literal // is a comment) and no trailing slash.
+#include? "Local.xcconfig"
+#include? "Secrets.xcconfig"
+
+SENTRY_ENVIRONMENT = development

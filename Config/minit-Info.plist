@@ -6,5 +6,13 @@
 	<string>$(SENTRY_DSN)</string>
 	<key>SentryEnvironment</key>
 	<string>$(SENTRY_ENVIRONMENT)</string>
+	<key>MinitAPIBaseURL</key>
+	<string>$(MINIT_API_BASE_URL)</string>
+	<key>MinitDataBackend</key>
+	<string>$(MINIT_DATA_BACKEND)</string>
+	<key>CFAccessClientId</key>
+	<string>$(CF_ACCESS_CLIENT_ID)</string>
+	<key>CFAccessClientSecret</key>
+	<string>$(CF_ACCESS_CLIENT_SECRET)</string>
 </dict>
 </plist>

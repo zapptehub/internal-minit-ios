@@ -5,6 +5,11 @@
 ## User settings
 xcuserdata/
 
+## Local overrides. Local.xcconfig may set MINIT_DATA_BACKEND. Secrets.xcconfig
+## holds Cloudflare Access credentials. Never commit either file.
+Local.xcconfig
+Secrets.xcconfig
+
 ## macOS
 .DS_Store
 

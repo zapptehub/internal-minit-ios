@@ -1,0 +1,12 @@
+// Base for the Release configuration of the minit target.
+// Does not include Local.xcconfig or Secrets.xcconfig. Firebase and empty
+// Access values are hardcoded after the Sentry include.
+#include "Sentry.xcconfig"
+
+// xcconfig treats // as a comment, so the base URL is split the same way as SENTRY_DSN.
+MINIT_API_BASE_URL = https:/$()/api.minit.app
+
+SENTRY_ENVIRONMENT = release
+MINIT_DATA_BACKEND = firebase
+CF_ACCESS_CLIENT_ID =
+CF_ACCESS_CLIENT_SECRET =

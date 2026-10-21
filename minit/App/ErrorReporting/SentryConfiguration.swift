@@ -4,21 +4,30 @@ import Sentry
 
 /// Starts Sentry at launch and keeps its user in sync with Firebase Auth.
 ///
-/// DEBUG-ONLY PRIVACY POLICY — MUST BE REVISITED BEFORE ANY PRODUCTION ENVIRONMENT EXISTS.
-/// Only "development" and "internal" exist today, and both deliberately keep personal data
-/// and auth tokens: no client-side scrubbing of Authorization headers, cookies or Firebase
-/// ID tokens is added. Note: sentry-cocoa itself always strips Authorization/Cookie/
-/// Set-Cookie and similar headers from failed-request (HTTP client error) events; that
-/// filter is hard-coded with no option to disable it. Server-side Data Scrubber settings
-/// live in the Sentry project settings, not here.
+/// TODO(Armands, before first Release ship): Release still sends PII and email.
+/// WARNING: every environment, including "release", sets `sendDefaultPii = true`
+/// and `sentryUser.email = user.email`. A Release build therefore sends the
+/// customer's IP and Firebase email to Sentry. Whether a shipped Release build
+/// may keep doing that is an open question for Armands. Decide it before the
+/// first Release ship, and leave this behavior unchanged until that decision.
+///
+/// Environments are "development", "internal", and "release". Screen capture is
+/// decided in one place, `screenCaptureEnvironments`:
+/// - "internal" (Firebase App Distribution): screenshots, view hierarchy, and
+///   unmasked session replay (100%).
+/// - "development" and "release": no screenshots, view hierarchy, or replay.
+///
+/// When replay is on, personal data and auth tokens stay: no client-side scrubbing
+/// of Authorization headers, cookies, or Firebase ID tokens is added. sentry-cocoa
+/// itself always strips Authorization/Cookie/Set-Cookie and similar headers from
+/// failed-request (HTTP client error) events; that filter is hard-coded with no
+/// option to disable it. Server-side Data Scrubber settings live in the Sentry
+/// project settings, not here.
 ///
 /// All environments send default PII (e.g. IP) and set the user to Firebase uid + email.
-/// Screen capture is decided in one place, `screenCaptureEnvironments`:
-/// - "internal" (Firebase App Distribution testers): screenshots, view hierarchy and
-///   unmasked session replay (100%).
-/// - Every other environment ("development"): no screenshots, view hierarchy or replay.
-/// The DSN and environment come from Info.plist keys `SentryDSN` / `SentryEnvironment`,
-/// filled from `Config/Sentry.xcconfig` (`SENTRY_DSN` / `SENTRY_ENVIRONMENT`).
+/// The DSN and environment come from Info.plist keys `SentryDSN` / `SentryEnvironment`.
+/// `SENTRY_DSN` is in `Config/Sentry.xcconfig`. `SENTRY_ENVIRONMENT` is set by
+/// `Config/Development.xcconfig`, `Config/Internal.xcconfig`, and `Config/Release.xcconfig`.
 enum SentryConfiguration {
     private static var authListener: AuthStateDidChangeListenerHandle?
 
@@ -69,11 +78,17 @@ enum SentryConfiguration {
     /// unmasked session replay). The single switch: edit this set to change or rename it.
     static let screenCaptureEnvironments: Set<String> = ["internal"]
 
-    /// Fallback when the Info.plist value is missing or unexpanded.
+    /// Fallback when `SentryEnvironment` is missing or unexpanded.
+    /// "development" is only the Debug fallback. Release and Internal use
+    /// "unknown" so a failed expansion cannot be reported as development.
+    #if DEBUG
     static let defaultEnvironment = "development"
+    #else
+    static let defaultEnvironment = "unknown"
+    #endif
 
-    /// `SENTRY_ENVIRONMENT` build setting ("development" locally, "internal" for
-    /// Firebase App Distribution builds). Names live only in the xcconfig/build command.
+    /// `SentryEnvironment` from Info.plist, or `defaultEnvironment` when that
+    /// value is missing or still unexpanded.
     private static func environment(bundle: Bundle) -> String {
         guard let value = bundle.object(forInfoDictionaryKey: "SentryEnvironment") as? String,
               !value.isEmpty, !value.hasPrefix("$(") else {

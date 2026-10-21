@@ -1,0 +1,23 @@
+// Base for the Internal configuration of the minit target.
+// The Internal build configuration copies Release settings, so it does not
+// define DEBUG. Firebase App Distribution uses -configuration Internal and
+// does not pass SENTRY_ENVIRONMENT on the command line.
+#include "Sentry.xcconfig"
+
+// xcconfig treats // as a comment, so the base URL is split the same way as SENTRY_DSN.
+MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min
+
+// Committed data backend stays firebase until phase 6. Gitignored Local.xcconfig
+// may set MINIT_DATA_BACKEND; that value is what an Internal build ships.
+MINIT_DATA_BACKEND = firebase
+
+// Empty unless gitignored Secrets.xcconfig supplies Cloudflare Access credentials.
+// An Internal IPA carries those values in Info.plist when the file is present.
+CF_ACCESS_CLIENT_ID =
+CF_ACCESS_CLIENT_SECRET =
+
+// A Local.xcconfig base URL must use https:/$()/ (a literal // is a comment) and no trailing slash.
+#include? "Local.xcconfig"
+#include? "Secrets.xcconfig"
+
+SENTRY_ENVIRONMENT = internal
