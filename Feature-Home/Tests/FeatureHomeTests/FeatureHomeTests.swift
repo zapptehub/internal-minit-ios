@@ -1,3 +1,4 @@
+import CoreNetworking
 import DataProfile
 import SwiftUI
 import UIKit
@@ -10,6 +11,9 @@ final class FeatureHomeTests: XCTestCase {
         _ = FeatureHome.createScreen(
             userId: "user-1",
             profileRepository: StubProfileRepository(),
+            homeRepository: FirebaseHomeRepository(),
+            networkClient: UnusedHomeNetworkClient(),
+            apiBaseURL: "https://api.minit.app",
             onLogOut: {}
         )
     }
@@ -49,6 +53,24 @@ final class FeatureHomeTests: XCTestCase {
     func testNotificationsBannerHasItsOwnID() {
         // Home's daily offers are 0, 1 and 2; Android's fixture uses 3 too.
         XCTAssertEqual(NotificationsScreen.dailyOfferBannerID, 3)
+        XCTAssertEqual(Int(HomeCatalog.firebase.notificationBanner.id), NotificationsScreen.dailyOfferBannerID)
+    }
+
+    /// The firebase sample's notification banner is the same sentence the static helper locks.
+    func testFirebaseNotificationBannerMatchesTheStaticDailyOfferCopy() {
+        for identifier in ["en", "hu", "sk"] {
+            let locale = Locale(identifier: identifier)
+            XCTAssertEqual(
+                HomeCatalog.firebase.notificationBanner.plainTitle(locale: locale),
+                NotificationsScreen.dailyOfferPlainTitle(locale: locale),
+                identifier
+            )
+            XCTAssertEqual(
+                HomeCatalog.firebase.notificationBanner.badge.resolved(locale: locale),
+                HomeLocalizedString.string("home.notifications.a11y.dailyOffer", locale: locale),
+                identifier
+            )
+        }
     }
 
     func testNotificationsMetricsMatchFigma() {
@@ -80,10 +102,12 @@ final class FeatureHomeTests: XCTestCase {
     @MainActor
     func testNotificationRowIsFortyTallAtTheDefaultSize() {
         let row = NotificationRow(
-            item: NotificationRowData(
-                icon: .minitIcBaguette,
-                titleKey: "home.notifications.row.firstScan",
-                dateKey: "home.notifications.date.june12",
+            item: HomeNotificationItem(
+                id: "today-first-scan-june-12",
+                section: .today,
+                icon: .baguette,
+                title: .key("home.notifications.row.firstScan"),
+                date: .key("home.notifications.date.june12"),
                 points: 45
             ),
             pointsLabel: "+45 pts"
@@ -203,6 +227,20 @@ final class FeatureHomeTests: XCTestCase {
             + HomeHeaderMetrics.greetingTopPadding
         XCTAssertEqual(greetingTop - iconBottom, 16)
         XCTAssertEqual(HomeHeaderMetrics.loyaltyCardTopSpacing, 12)
+    }
+}
+
+private struct UnusedHomeNetworkClient: NetworkClient {
+    func request<T: Decodable>(_ path: String, method: HTTPMethod) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func request<T: Decodable, B: Encodable>(_ path: String, method: HTTPMethod, body: B) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func data(_ url: URL) async throws -> Data {
+        throw NetworkError.invalidURL
     }
 }
 

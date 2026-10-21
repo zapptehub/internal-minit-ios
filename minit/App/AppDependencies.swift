@@ -5,6 +5,7 @@ import CoreNetworking
 import DataAuth
 import DataProfile
 import DataLoyaltyCard
+import FeatureHome
 import FeatureLogin
 import FeatureStart
 import FeatureOnboarding
@@ -13,7 +14,9 @@ import FeatureOnboarding
 final class AppDependencies {
     static let shared = AppDependencies()
 
+    let apiBaseURL: String
     let networkClient: NetworkClientImpl
+    let homeRepository: any HomeRepository
     /// Live path reachability for Features to inject later (no UI wiring yet).
     let reachability: any Reachability
     let authDataModule: AuthDataModule
@@ -39,16 +42,21 @@ final class AppDependencies {
         self.authDataModule = authDataModule
         self.authRepository = authDataModule.makeAuthRepository()
 
+        let apiBaseURL = Self.apiBaseURL()
+        self.apiBaseURL = apiBaseURL
         let networkClient = NetworkClientImpl(
-            baseURL: Self.apiBaseURL(),
+            baseURL: apiBaseURL,
             tokenProvider: authDataModule.tokenProvider,
             accessClientId: Self.plistString("CFAccessClientId"),
             accessClientSecret: Self.plistString("CFAccessClientSecret")
         )
         self.networkClient = networkClient
-        self.reachability = PathReachability()
-
         let dataBackend = Self.dataBackend()
+        self.homeRepository = HomeRepositoryFactory.make(
+            dataBackend: dataBackend,
+            networkClient: networkClient
+        )
+        self.reachability = PathReachability()
 
         let profileDataModule = ProfileDataModule(
             dataBackend: dataBackend,

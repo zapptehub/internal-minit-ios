@@ -1,12 +1,15 @@
 import DesignSystem
 import SwiftUI
 
-/// Notifications list opened from Home's bell. All rows and the Daily Offer banner are
-/// hardcoded mocks until a real notifications feed and pressable banner land.
+/// Notifications list opened from Home's bell.
 ///
-/// Layout follows Figma "AMP / Notifications" (node 4088:1319); the values live in
+/// Rows and the Daily Offer banner come from the home catalog. The firebase
+/// sample is the bundled copy. HTTP keeps the JSON ids and the `{en,sk,hu}`
+/// objects, resolved here with the in-app locale. Layout follows Figma
+/// "AMP / Notifications" (node 4088:1319); the values live in
 /// `NotificationsScreenMetrics`.
 struct NotificationsScreen: View {
+    var catalog: HomeCatalog = .firebase
     let onBack: () -> Void
     /// Daily-offer banner tap. `nil` keeps `DSBannerCarousel`'s own alert, which
     /// is what the layout tests render. Home passes a closure and presents the
@@ -16,17 +19,6 @@ struct NotificationsScreen: View {
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .body) private var sectionTitleLineBox = NotificationsScreenMetrics.sectionTitleLineBox
-
-    private let todayItems: [NotificationRowData] = [
-        .init(icon: .minitIcBaguette, titleKey: "home.notifications.row.firstScan", dateKey: "home.notifications.date.june12", points: 45),
-        .init(icon: .minitIcBretzel, titleKey: "home.notifications.row.newProduct", dateKey: "home.notifications.date.june11", points: 45)
-    ]
-
-    private let historyItems: [NotificationRowData] = [
-        .init(icon: .minitIcBaguette, titleKey: "home.notifications.row.firstScan", dateKey: "home.notifications.date.june12", points: 45),
-        .init(icon: .minitIcBretzel, titleKey: "home.notifications.row.newProduct", dateKey: "home.notifications.date.june11", points: 45),
-        .init(icon: .minitIcBretzel, titleKey: "home.notifications.row.newProduct", dateKey: "home.notifications.date.june11", points: 45)
-    ]
 
     private typealias Metrics = NotificationsScreenMetrics
 
@@ -41,9 +33,9 @@ struct NotificationsScreen: View {
                     .padding(.horizontal, Metrics.horizontalInset)
                 VStack(alignment: .leading, spacing: Metrics.columnSpacing) {
                     dailyOfferBanner
-                    section(title: HomeLoyaltyCopy.sectionTitle("today", locale: locale), items: todayItems)
+                    section(title: catalog.sectionTitle("today", locale: locale), items: catalog.todayItems)
                     dashedDivider
-                    section(title: HomeLoyaltyCopy.sectionTitle("history", locale: locale), items: historyItems)
+                    section(title: catalog.sectionTitle("history", locale: locale), items: catalog.historyItems)
                 }
                 .padding(.top, Metrics.titleToBannerSpacing)
                 .padding(.horizontal, Metrics.horizontalInset)
@@ -76,7 +68,7 @@ struct NotificationsScreen: View {
     /// `headingH2` is that face and size with the 38pt line box.
     private var title: some View {
         DSGrowingText(
-            text: HomeLoyaltyCopy.sectionTitle("notifications", locale: locale),
+            text: catalog.sectionTitle("notifications", locale: locale),
             type: .headingH2,
             color: DSColor.Text.heading
         )
@@ -99,19 +91,23 @@ struct NotificationsScreen: View {
         }
     }
 
+    @ViewBuilder
     private var dailyOfferCarousel: some View {
-        DSBannerCarousel(
-            items: [
-                .init(
-                    id: Self.dailyOfferBannerID,
-                    backgroundColor: DSColor.Background.brown,
-                    image: .mockPasteryImage1,
-                    badgeText: HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale),
-                    title: dailyOfferTitle
-                )
-            ],
-            onBannerTap: onDailyOfferTap,
-            accessibilityLabel: Self.dailyOfferAccessibilityLabel(locale: locale)
+        if let item = catalog.notificationBannerItem(locale: locale) {
+            DSBannerCarousel(
+                items: [item],
+                onBannerTap: onDailyOfferTap,
+                accessibilityLabel: notificationBannerAccessibilityLabel
+            )
+        }
+    }
+
+    /// Badge plus the joined title runs. The firebase sample matches
+    /// `dailyOfferAccessibilityLabel`.
+    private var notificationBannerAccessibilityLabel: String {
+        NotificationsDailyOfferAccessibility.label(
+            offerName: catalog.notificationBanner.badge.resolved(locale: locale),
+            offerTitle: catalog.notificationBanner.plainTitle(locale: locale)
         )
     }
 
@@ -137,15 +133,9 @@ struct NotificationsScreen: View {
         HomeLocalizedString.string("home.notifications.dailyOfferBanner.title.suffix", locale: locale)
     }
 
-    private var dailyOfferTitle: Text {
-        Text(Self.dailyOfferPercent).foregroundColor(DSColor.Text.accent)
-        + Text(Self.dailyOfferTitleSuffix(locale: locale))
-            .foregroundColor(DSColor.Text.inverse)
-    }
-
     /// Figma "Recent Activity" (6078:4494): 18pt Sharp Grotesk title, 12 to the rows,
     /// rows 20 apart.
-    private func section(title: String, items: [NotificationRowData]) -> some View {
+    private func section(title: String, items: [HomeNotificationItem]) -> some View {
         VStack(alignment: .leading, spacing: Metrics.sectionTitleToRowsSpacing) {
             Text(title)
                 .typography(.headingSection)
@@ -157,15 +147,11 @@ struct NotificationsScreen: View {
                 ForEach(items) { item in
                     NotificationRow(
                         item: item,
-                        pointsLabel: pointsLabel(for: item.points)
+                        pointsLabel: HomeLoyaltyCopy.pointsBadge(item.points, locale: locale)
                     )
                 }
             }
         }
-    }
-
-    private func pointsLabel(for points: Int) -> String {
-        HomeLoyaltyCopy.pointsBadge(points, locale: locale)
     }
 
     /// Figma line 4088:1695, 24 above and below (the column spacing).
@@ -231,7 +217,7 @@ enum NotificationsScreenMetrics {
 /// (Body/Medium/md 16/20, `text/headings` #1A1A1A) over date (Body/Medium/label 12/20,
 /// `text/disabled` #B3B3B3), and the coin plus "+45 pts" (Body/Bold/label 12/20) 8 apart.
 struct NotificationRow: View {
-    let item: NotificationRowData
+    let item: HomeNotificationItem
     let pointsLabel: String
 
     @Environment(\.locale) private var locale
@@ -246,7 +232,7 @@ struct NotificationRow: View {
                 Circle()
                     .fill(DSColor.Background.Button.disabled)
                 DSIconView(
-                    icon: item.icon,
+                    icon: item.icon.dsIcon,
                     size: Metrics.iconSize,
                     color: DSColor.Background.Button.accent
                 )
@@ -254,11 +240,11 @@ struct NotificationRow: View {
             .frame(width: Metrics.iconCircleSize, height: Metrics.iconCircleSize)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(HomeLocalizedString.string(item.titleKey, locale: locale))
+                Text(item.title.resolved(locale: locale))
                     .font(.system(size: titlePointSize, weight: .medium))
                     .foregroundColor(DSColor.Text.primary)
                     .frame(minHeight: lineHeight)
-                Text(HomeLocalizedString.string(item.dateKey, locale: locale))
+                Text(item.date.resolved(locale: locale))
                     .typography(.uiCaptionMedium)
                     .foregroundColor(DSColor.Text.disabled)
                     .frame(minHeight: lineHeight)
@@ -279,14 +265,6 @@ struct NotificationRow: View {
         }
         .accessibilityElement(children: .combine)
     }
-}
-
-struct NotificationRowData: Identifiable {
-    let id = UUID()
-    let icon: DSIcon
-    let titleKey: String
-    let dateKey: String
-    let points: Int
 }
 
 #Preview("NotificationsScreen") {

@@ -1,3 +1,4 @@
+import CoreNetworking
 import DataProfile
 import DesignSystem
 import SwiftUI
@@ -7,6 +8,8 @@ import SwiftUI
 /// so loading and alert flags still reset.
 struct HomeScreen: View {
     private let onLogOut: () -> Void
+    private let networkClient: any NetworkClient
+    private let apiBaseURL: String
     @StateObject private var model: HomeScreenModel
 
     @Environment(\.locale) private var locale
@@ -16,13 +19,19 @@ struct HomeScreen: View {
     init(
         userId: String,
         profileRepository: ProfileRepository,
+        homeRepository: any HomeRepository,
+        networkClient: any NetworkClient,
+        apiBaseURL: String,
         onLogOut: @escaping () -> Void
     ) {
         self.onLogOut = onLogOut
+        self.networkClient = networkClient
+        self.apiBaseURL = apiBaseURL
         _model = StateObject(
             wrappedValue: HomeScreenModel(
                 userId: userId,
                 profileRepository: profileRepository,
+                homeRepository: homeRepository,
                 onLogOut: onLogOut
             )
         )
@@ -46,7 +55,7 @@ struct HomeScreen: View {
             }
         )
         .background(LinearGradient.minitBackground.ignoresSafeArea())
-        .task { await model.loadUserName() }
+        .task { await model.loadHome() }
         .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: logOutConfirmationPresented) {
             Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {
                 model.dismissLogOutConfirmation()
@@ -66,6 +75,7 @@ struct HomeScreen: View {
         }
         .fullScreenCover(isPresented: notificationsPresented) {
             NotificationsScreen(
+                catalog: model.catalog,
                 onBack: { model.closeNotifications() },
                 onDailyOfferTap: { model.showUnderConstruction(.notificationsDailyOffer) },
                 showsUnderConstructionAlert: notificationsUnderConstructionAlertPresented
@@ -188,10 +198,15 @@ struct HomeScreen: View {
         .accessibilityLabel("\(timeOfDayGreeting) \(model.userName)".trimmingCharacters(in: .whitespaces))
     }
 
-    /// Firebase sample. The formatter turns tier ids and numbers into the title,
-    /// the points-until line, the chip, and the ring.
+    /// Ids and numbers from the catalog, formatted for the in-app locale.
+    /// The firebase sample is what shows until HTTP succeeds, and again if it fails.
     private var loyaltyCard: some View {
-        let face = HomeFirebaseSample.face(locale: locale)
+        let face = HomeLoyaltyCopy.loyaltyCard(
+            loyalty: model.catalog.loyalty,
+            currentTier: model.catalog.currentTier,
+            tiers: model.catalog.tiers,
+            locale: locale
+        )
         return LoyaltyCard(
             rankTitle: face.rankTitle,
             rankSubtitle: face.rankSubtitle,
@@ -208,12 +223,11 @@ struct HomeScreen: View {
         Button {
             model.profileTapped()
         } label: {
-            DSImageView(
-                image: .mockUserProfile,
-                size: CGSize(width: HomeHeaderMetrics.iconSize, height: HomeHeaderMetrics.iconSize),
-                contentMode: .fill
+            AvatarImage(
+                avatarURL: model.avatarURL,
+                apiBaseURL: apiBaseURL,
+                client: networkClient
             )
-            .clipShape(Circle())
             .frame(width: HomeHeaderMetrics.tapTargetSize, height: HomeHeaderMetrics.tapTargetSize)
             .contentShape(Circle())
         }
@@ -260,208 +274,57 @@ struct HomeScreen: View {
         }
     }
 
-    /// Same "Daily Offer" mock badge/title/image across all three slots (per design), only
-    /// varying `backgroundColor` — each still just shows the shared under-construction
-    /// alert on tap until real per-banner destinations exist (see `DSBannerCarousel`).
-    /// (`DSBannerCarousel`'s "Daily Offer" badge is a fixed warm tan regardless of
-    /// `backgroundColor`. Every banner title uses white, `Text.inverse`.)
-    ///
-    /// The pink banner is a light fill; its title is still white (`Text.inverse`), the same
-    /// as the brown and green banners.
+    /// Daily Offer banners from the catalog. The firebase sample is the three
+    /// slots the screen used to hard-code, opening on the second one. Title runs
+    /// stay inverse and accent, resolved with the in-app locale.
+    /// `DSBannerCarousel` reads `initialIndex` only in `init`, so the carousel
+    /// is keyed by the catalog's banner ids and opening index. A new catalog
+    /// rebuilds it and applies that index.
     private var dailyOfferBanners: some View {
         DSBannerCarousel(
-            items: [
-                .init(
-                    id: 0,
-                    backgroundColor: DSColor.Background.pink,
-                    image: nil,
-                    badgeText: dailyOfferBadge,
-                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
-                ),
-                .init(
-                    id: 1,
-                    backgroundColor: DSColor.Background.brown,
-                    image: .mockPasteryImage1,
-                    badgeText: dailyOfferBadge,
-                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
-                ),
-                .init(
-                    id: 2,
-                    backgroundColor: DSColor.Background.green,
-                    image: .mockPasteryImage1,
-                    badgeText: dailyOfferBadge,
-                    title: dailyOfferTitle(textColor: DSColor.Text.inverse)
-                )
-            ],
-            // Opens on the brown (2nd) banner rather than the 1st, per design.
-            initialIndex: 1,
+            items: model.catalog.bannerItems(locale: locale),
+            initialIndex: model.catalog.dailyOfferInitialIndex,
             onBannerTap: { model.showUnderConstruction(.dailyOfferBanner) }
         )
+        .id(DailyOfferCarouselIdentity(
+            initialIndex: model.catalog.dailyOfferInitialIndex,
+            bannerIDs: model.catalog.banners.map(\.id)
+        ))
     }
 
-    /// Mock product categories for the sheet — labels come from `home.products.category.*`;
-    /// pastry art and which slots show a "%" badge match the Home mock. Tapping a circle
-    /// or the trailing chevron still just shows the shared under-construction alert
-    /// (see `DSCircleItemList`).
+    /// Product categories. A missing `products` section id leaves the title empty.
     private var productsSection: some View {
         DSCircleItemList(
-            title: HomeLoyaltyCopy.sectionTitle("products", locale: locale),
-            items: productCategories,
+            title: model.catalog.sectionTitle("products", locale: locale),
+            items: model.catalog.productItems(locale: locale),
             onItemTap: { model.showUnderConstruction(.product) },
             onSeeAllTap: { model.showUnderConstruction(.productsSeeAll) }
         )
     }
 
-    private var productCategories: [DSCircleItemList.Item] {
-        [
-            .init(
-                id: 0,
-                image: .mockPasteryImage5,
-                label: HomeLocalizedString.string("home.products.category.bread", locale: locale)
-            ),
-            .init(
-                id: 1,
-                image: .mockPasteryImage2,
-                label: HomeLocalizedString.string("home.products.category.bread", locale: locale),
-                showDiscount: true
-            ),
-            .init(
-                id: 2,
-                image: .mockPasteryImage3,
-                label: HomeLocalizedString.string("home.products.category.savoryScones", locale: locale)
-            ),
-            .init(
-                id: 3,
-                image: .mockPasteryImage4,
-                label: HomeLocalizedString.string("home.products.category.pizza", locale: locale),
-                showDiscount: true
-            ),
-            .init(
-                id: 4,
-                image: .mockPasteryImage1,
-                label: HomeLocalizedString.string("home.products.category.mini", locale: locale)
-            ),
-            .init(
-                id: 5,
-                image: .mockPasteryImage5,
-                label: HomeLocalizedString.string("home.products.category.bread", locale: locale)
-            ),
-            .init(
-                id: 6,
-                image: .mockPasteryImage2,
-                label: HomeLocalizedString.string("home.products.category.bread", locale: locale),
-                showDiscount: true
-            ),
-            .init(
-                id: 7,
-                image: .mockPasteryImage3,
-                label: HomeLocalizedString.string("home.products.category.savoryScones", locale: locale)
-            ),
-            .init(
-                id: 8,
-                image: .mockPasteryImage4,
-                label: HomeLocalizedString.string("home.products.category.pizza", locale: locale),
-                showDiscount: true
-            ),
-            .init(
-                id: 9,
-                image: .mockPasteryImage1,
-                label: HomeLocalizedString.string("home.products.category.mini", locale: locale)
-            )
-        ]
-    }
-
-    /// Mock challenges for the sheet — copy comes from `home.challenges.*`; colors, icons,
-    /// and repeat/progress counts match the Home mock (see `DSChallengesCardList`).
     private var challengesSection: some View {
         DSChallengesCardList(
-            title: HomeLoyaltyCopy.sectionTitle("challenges", locale: locale),
-            items: challengeItems,
+            title: model.catalog.sectionTitle("challenges", locale: locale),
+            items: model.catalog.challengeItems(locale: locale),
             onItemTap: { model.showUnderConstruction(.challenge) },
             onSeeAllTap: { model.showUnderConstruction(.challengesSeeAll) }
         )
     }
 
-    private var challengeItems: [DSChallengesCardList.Item] {
-        [
-            .init(
-                id: 0,
-                backgroundColor: DSColor.Background.orange,
-                icon: .qrScanLine,
-                badgeText: pointsLabel(for: 45),
-                title: HomeLocalizedString.string("home.challenges.item.loyaltyCard.title", locale: locale),
-                repeatCount: 4,
-                progress: 1
-            ),
-            .init(
-                id: 1,
-                backgroundColor: DSColor.Background.green,
-                icon: .croissant,
-                badgeText: pointsLabel(for: 45),
-                title: HomeLocalizedString.string("home.challenges.item.bakery.title", locale: locale)
-            ),
-            .init(
-                id: 2,
-                backgroundColor: DSColor.Background.pink,
-                icon: .coffeeCup,
-                badgeText: pointsLabel(for: 25),
-                title: HomeLocalizedString.string("home.challenges.item.coffee.title", locale: locale)
-            ),
-            .init(
-                id: 3,
-                backgroundColor: DSColor.Background.brown,
-                icon: .croissant,
-                badgeText: pointsLabel(for: 45),
-                title: HomeLocalizedString.string("home.challenges.item.bakeryTypes.title", locale: locale),
-                repeatCount: 4,
-                progress: 1
-            )
-        ]
-    }
-
-    /// Mock recipe cards for the sheet — copy comes from `home.newsAndRecipes.*`, titles are
-    /// Slovak recipe names kept as-is across locales (see `DSMediaCardList`).
     private var newsAndRecipesSection: some View {
         DSMediaCardList(
-            title: HomeLoyaltyCopy.sectionTitle("news", locale: locale),
-            items: [
-                .init(
-                    id: 0,
-                    image: .mockRecipe1,
-                    title: HomeLocalizedString.string("home.newsAndRecipes.item.gulas.title", locale: locale)
-                ),
-                .init(
-                    id: 1,
-                    image: .mockRecipe2,
-                    title: HomeLocalizedString.string("home.newsAndRecipes.item.pinsa.title", locale: locale)
-                )
-            ],
+            title: model.catalog.sectionTitle("news", locale: locale),
+            items: model.catalog.newsItems(locale: locale),
             onItemTap: { model.showUnderConstruction(.newsAndRecipe) },
             onSeeAllTap: { model.showUnderConstruction(.newsAndRecipesSeeAll) }
         )
     }
 
-    /// Same plural as `NotificationsScreen`'s point rows.
-    private func pointsLabel(for points: Int) -> String {
-        HomeLoyaltyCopy.pointsBadge(points, locale: locale)
-    }
-
-    private var dailyOfferBadge: String {
-        HomeLocalizedString.string("home.dailyOfferBanner.badge", locale: locale)
-    }
-
-    /// Two-tone title, same `Text` + `Text` concatenation idiom as `greeting` — the "1"/"2"
-    /// quantities always render in the shared brand-orange highlight color, while the rest
-    /// takes `textColor` (white on dark banners, brown on the light pink one).
-    private func dailyOfferTitle(textColor: Color) -> Text {
-        Text(HomeLocalizedString.string("home.dailyOfferBanner.title.buy", locale: locale))
-            .foregroundColor(textColor)
-        + Text("1").foregroundColor(DSColor.Text.accent)
-        + Text(HomeLocalizedString.string("home.dailyOfferBanner.title.get", locale: locale))
-            .foregroundColor(textColor)
-        + Text("2").foregroundColor(DSColor.Text.accent)
-        + Text(HomeLocalizedString.string("home.dailyOfferBanner.title.croissants", locale: locale))
-            .foregroundColor(textColor)
+    /// Banner ids plus the opening index. SwiftUI recreates the carousel when
+    /// this value changes, which is what makes a new `initialIndex` take effect.
+    private struct DailyOfferCarouselIdentity: Hashable {
+        var initialIndex: Int
+        var bannerIDs: [String]
     }
 
     /// Matches the mock's "Good Morning" copy; switches for afternoon/evening locally.
@@ -478,8 +341,25 @@ struct HomeScreen: View {
     HomeScreen(
         userId: "preview-user",
         profileRepository: PreviewHomeProfileRepository(name: "Iveta"),
+        homeRepository: FirebaseHomeRepository(),
+        networkClient: PreviewHomeNetworkClient(),
+        apiBaseURL: "https://api.minit.app",
         onLogOut: {}
     )
+}
+
+private struct PreviewHomeNetworkClient: NetworkClient {
+    func request<T: Decodable>(_ path: String, method: HTTPMethod) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func request<T: Decodable, B: Encodable>(_ path: String, method: HTTPMethod, body: B) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func data(_ url: URL) async throws -> Data {
+        throw NetworkError.invalidURL
+    }
 }
 
 private struct PreviewHomeProfileRepository: ProfileRepository {

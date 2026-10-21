@@ -1,4 +1,6 @@
+import CoreNetworking
 import DataProfile
+import FeatureHome
 import XCTest
 @testable import FeatureTabRoot
 
@@ -21,8 +23,25 @@ final class FeatureTabRootTests: XCTestCase {
         _ = FeatureTabRoot.createScreen(
             userId: "user-1",
             profileRepository: StubProfileRepository(),
+            homeRepository: FirebaseHomeRepository(),
+            networkClient: UnusedTabNetworkClient(),
+            apiBaseURL: "https://api.minit.app",
             onLogOut: {}
         )
+    }
+}
+
+private struct UnusedTabNetworkClient: NetworkClient {
+    func request<T: Decodable>(_ path: String, method: HTTPMethod) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func request<T: Decodable, B: Encodable>(_ path: String, method: HTTPMethod, body: B) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func data(_ url: URL) async throws -> Data {
+        throw NetworkError.invalidURL
     }
 }
 

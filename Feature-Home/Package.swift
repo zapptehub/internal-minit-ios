@@ -19,7 +19,8 @@ let package = Package(
             dependencies: [
                 .product(name: "DesignSystem", package: "Core-DesignSystem"),
                 .product(name: "CoreExtensions", package: "Core-Extensions"),
-                .product(name: "DataProfile", package: "Data-Profile")
+                .product(name: "DataProfile", package: "Data-Profile"),
+                .product(name: "CoreNetworking", package: "Core-Networking")
             ],
             path: "Sources/FeatureHome",
             resources: [.process("Resources")]
@@ -29,6 +30,7 @@ let package = Package(
             dependencies: [
                 "FeatureHome",
                 .product(name: "DataProfile", package: "Data-Profile"),
+                .product(name: "CoreNetworking", package: "Core-Networking"),
                 .product(name: "CoreNetworkingTestUtilities", package: "Core-Networking")
             ],
             path: "Tests/FeatureHomeTests"

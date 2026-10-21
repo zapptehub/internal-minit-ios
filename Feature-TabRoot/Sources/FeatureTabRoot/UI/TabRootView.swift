@@ -1,3 +1,4 @@
+import CoreNetworking
 import DataProfile
 import DesignSystem
 import FeatureCard
@@ -10,6 +11,9 @@ import SwiftUI
 struct TabRootView: View {
     let userId: String
     let profileRepository: ProfileRepository
+    let homeRepository: any HomeRepository
+    let networkClient: any NetworkClient
+    let apiBaseURL: String
     let onLogOut: () -> Void
     @State private var selectedTab: AppTab = .home
 
@@ -20,6 +24,9 @@ struct TabRootView: View {
             FeatureHome.createScreen(
                 userId: userId,
                 profileRepository: profileRepository,
+                homeRepository: homeRepository,
+                networkClient: networkClient,
+                apiBaseURL: apiBaseURL,
                 onLogOut: onLogOut
             )
                 .tabItem { tabLabel(for: .home) }

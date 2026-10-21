@@ -27,6 +27,12 @@ enum HomeUnderConstructionAction: CaseIterable {
 @MainActor
 final class HomeScreenModel: ObservableObject {
     @Published private(set) var userName = ""
+    /// Profile `avatarUrl`. Nil on the firebase backend, and nil again when the
+    /// profile load fails. The header loads bytes only when this is a URL on the
+    /// API origin.
+    @Published private(set) var avatarURL: String?
+    /// Firebase sample until an HTTP catalog arrives. A failed load puts the sample back.
+    @Published private(set) var catalog: HomeCatalog = .firebase
     @Published private(set) var showsLogOutConfirmation = false
     @Published private(set) var showsLoyaltyCardDetail = false
     @Published private(set) var showsNotifications = false
@@ -36,6 +42,7 @@ final class HomeScreenModel: ObservableObject {
 
     private let userId: String
     private let profileRepository: ProfileRepository
+    private let homeRepository: any HomeRepository
     /// Latest log-out callback. The confirm button assigns the view's current
     /// closure before calling `confirmLogOut`, matching the old button body.
     var onLogOut: () -> Void
@@ -47,22 +54,67 @@ final class HomeScreenModel: ObservableObject {
     init(
         userId: String,
         profileRepository: ProfileRepository,
+        homeRepository: any HomeRepository,
         onLogOut: @escaping () -> Void
     ) {
         self.userId = userId
         self.profileRepository = profileRepository
+        self.homeRepository = homeRepository
         self.onLogOut = onLogOut
     }
 
-    /// Trimmed profile name. A missing profile or any error, including
-    /// cancellation, clears the name — the same `do/catch` the view had.
+    /// Profile name and the home catalog. The catalog starts as the firebase
+    /// sample, so that face stays up while HTTP is in flight.
+    func loadHome() async {
+        async let profile: Void = loadUserName()
+        async let home: Void = loadCatalog()
+        _ = await (profile, home)
+    }
+
+    /// Trimmed profile name. A missing profile or a failed load clears the name
+    /// and the avatar URL. Cancellation is not a failure: the name and avatar
+    /// stay as they were. A firebase profile leaves the avatar nil.
     func loadUserName() async {
         do {
             let profile = try await profileRepository.fetchProfile(userId: userId)
+            guard !Task.isCancelled else { return }
             userName = profile?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            avatarURL = profile?.avatarUrl
         } catch {
+            guard !isCancellation(error) else { return }
             userName = ""
+            avatarURL = nil
         }
+    }
+
+    /// HTTP replaces the sample only after a successful decode. A failure, and a
+    /// result that arrives after log-out has started, leaves the sample in place.
+    /// Cancellation leaves the catalog already on screen. An equal value is not
+    /// assigned again, so a firebase load does not publish a second time.
+    /// There is no error screen and no disk cache.
+    func loadCatalog() async {
+        do {
+            let loaded = try await homeRepository.load()
+            guard !isLoggingOut, !Task.isCancelled else { return }
+            if catalog != loaded {
+                catalog = loaded
+            }
+        } catch {
+            guard !isLoggingOut, !isCancellation(error) else { return }
+            if catalog != .firebase {
+                catalog = .firebase
+            }
+        }
+    }
+
+    /// `client.request` throws `CancellationError` or `URLError.cancelled` when
+    /// the screen's `.task` is cancelled. Either one, or a task that is already
+    /// cancelled when the error arrives, must not be reported as a failed load.
+    private func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError || Task.isCancelled {
+            return true
+        }
+        return (error as? URLError)?.code == .cancelled
     }
 
     func profileTapped() {

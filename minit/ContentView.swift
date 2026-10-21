@@ -8,6 +8,8 @@
 import SwiftUI
 import DesignSystem
 import CoreExtensions
+import CoreNetworking
+import FeatureHome
 import FeatureLogin
 import FeatureStart
 import FeatureOnboarding
@@ -81,6 +83,9 @@ struct ContentView: View {
             FeatureTabRoot.createScreen(
                 userId: userId,
                 profileRepository: AppDependencies.shared.profileRepository,
+                homeRepository: AppDependencies.shared.homeRepository,
+                networkClient: AppDependencies.shared.networkClient,
+                apiBaseURL: AppDependencies.shared.apiBaseURL,
                 onLogOut: appFlow.logOut
             )
         }

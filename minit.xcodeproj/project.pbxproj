@@ -28,6 +28,7 @@
 		FAA3D0D9300A874B00181699 /* FeatureOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0D8300A874B00181699 /* FeatureOnboarding */; };
 		FAA3D0DB300A874B00181699 /* OnboardingTestUtilities in Frameworks */ = {isa = PBXBuildFile; productRef = FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */; };
 		FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */ = {isa = PBXBuildFile; productRef = FAC0E116300B010100181707 /* FeatureTabRoot */; };
+		FA4400012FF44A440032754F /* FeatureHome in Frameworks */ = {isa = PBXBuildFile; productRef = FA4400022FF44A440032754F /* FeatureHome */; };
 		FAE5E0032FFA000100000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = FAE5E0022FFA000100000001 /* Sentry */; };
 /* End PBXBuildFile section */
 
@@ -96,6 +97,7 @@
 				FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */,
 				FA7F73B02FF42D590032754F /* LoginTestUtilities in Frameworks */,
 				FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */,
+				FA4400012FF44A440032754F /* FeatureHome in Frameworks */,
 				FAE5E0032FFA000100000001 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -174,6 +176,7 @@
 				FAA3D0D8300A874B00181699 /* FeatureOnboarding */,
 				FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */,
 				FAC0E116300B010100181707 /* FeatureTabRoot */,
+				FA4400022FF44A440032754F /* FeatureHome */,
 				FAE5E0022FFA000100000001 /* Sentry */,
 			);
 			productName = minit;
@@ -898,6 +901,10 @@
 		FAC0E116300B010100181707 /* FeatureTabRoot */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FeatureTabRoot;
+		};
+		FA4400022FF44A440032754F /* FeatureHome */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FeatureHome;
 		};
 		FAE5E0022FFA000100000001 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -11,6 +11,7 @@ let package = Package(
         .package(path: "../Core-DesignSystem"),
         .package(path: "../Core-Extensions"),
         .package(path: "../Data-Profile"),
+        .package(path: "../Core-Networking"),
         .package(path: "../Feature-Home"),
         .package(path: "../Feature-Offers"),
         .package(path: "../Feature-Map"),
@@ -24,6 +25,7 @@ let package = Package(
                 .product(name: "DesignSystem", package: "Core-DesignSystem"),
                 .product(name: "CoreExtensions", package: "Core-Extensions"),
                 .product(name: "DataProfile", package: "Data-Profile"),
+                .product(name: "CoreNetworking", package: "Core-Networking"),
                 .product(name: "FeatureHome", package: "Feature-Home"),
                 .product(name: "FeatureOffers", package: "Feature-Offers"),
                 .product(name: "FeatureMap", package: "Feature-Map"),
@@ -36,7 +38,9 @@ let package = Package(
             name: "FeatureTabRootTests",
             dependencies: [
                 "FeatureTabRoot",
-                .product(name: "DataProfile", package: "Data-Profile")
+                .product(name: "DataProfile", package: "Data-Profile"),
+                .product(name: "CoreNetworking", package: "Core-Networking"),
+                .product(name: "FeatureHome", package: "Feature-Home")
             ],
             path: "Tests/FeatureTabRootTests"
         )
