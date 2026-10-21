@@ -257,7 +257,7 @@ final class HomeCatalogTests: XCTestCase {
         XCTAssertTrue(sampleClient.paths.isEmpty)
     }
 
-    func testAvatarRequestSkipsNilEmptyAndForeignHosts() async {
+    func testAvatarRequestSkipsBlankNonHTTPAndForeignNonMedia() async {
         let api = "https://api.zappte.eu/mock/min"
         let client = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
         let skipped = [
@@ -265,26 +265,266 @@ final class HomeCatalogTests: XCTestCase {
             "",
             "   ",
             "file:///tmp/avatar.webp",
-            "https://cdn.example/v1/media/avatars/default.webp",
-            "http://127.0.0.1:8080/v1/media/avatars/default.webp",
-            "http://api.zappte.eu/v1/media/avatars/default.webp",
+            "file:///v1/media/avatars/default.webp",
+            "javascript:alert(1)",
+            "https://cdn.example/avatars/default.webp",
+            "http://10.0.2.2:8080/healthz",
+            "https://api.minit.app:8443/healthz",
         ]
         for avatarURL in skipped {
+            XCTAssertNil(
+                AvatarRequestURL.resolved(avatarURL: avatarURL, apiBaseURL: api),
+                avatarURL ?? "nil"
+            )
             let image = await AvatarImageLoader.load(avatarURL: avatarURL, apiBaseURL: api, client: client)
             XCTAssertNil(image, avatarURL ?? "nil")
         }
+        let loopback = "http://127.0.0.1:8080/v1/media/avatars/default.webp"
+        XCTAssertNil(AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: ""))
+        XCTAssertNil(AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: "not a url"))
+        let missingBase = await AvatarImageLoader.load(avatarURL: loopback, apiBaseURL: "", client: client)
+        XCTAssertNil(missingBase)
+        XCTAssertNil(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.minit.app:8443/healthz",
+                apiBaseURL: "https://api.minit.app"
+            )
+        )
         XCTAssertTrue(client.dataURLs.isEmpty)
+    }
 
-        let match = AvatarRequestURL.resolved(
-            avatarURL: "https://api.zappte.eu/v1/media/avatars/default.webp",
-            apiBaseURL: api
+    func testAvatarMediaPathRewritesOntoAPIBase() async {
+        let zappte = "https://api.zappte.eu/mock/min"
+        let loopback = "http://127.0.0.1:8080/v1/media/avatars/default.webp"
+        let rewritten = "https://api.zappte.eu/mock/min/v1/media/avatars/default.webp"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: zappte)?.absoluteString,
+            rewritten
         )
-        XCTAssertEqual(match?.host, "api.zappte.eu")
-        let explicitPort = AvatarRequestURL.resolved(
-            avatarURL: "https://api.minit.app:8443/v1/media/avatars/default.webp",
-            apiBaseURL: "https://api.minit.app"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: zappte + "/")?.absoluteString,
+            rewritten
         )
-        XCTAssertNil(explicitPort)
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: "  \(loopback)  ", apiBaseURL: "  \(zappte)  ")?.absoluteString,
+            rewritten
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.zappte.eu/v1/media/avatars/default.webp",
+                apiBaseURL: zappte
+            )?.absoluteString,
+            rewritten
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "http://api.zappte.eu/v1/media/avatars/default.webp",
+                apiBaseURL: zappte
+            )?.absoluteString,
+            rewritten
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://cdn.example/v1/media/avatars/default.webp",
+                apiBaseURL: zappte
+            )?.absoluteString,
+            rewritten
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: loopback + "?v=2#face",
+                apiBaseURL: zappte
+            )?.absoluteString,
+            rewritten + "?v=2"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: loopback + "?v=2%20x",
+                apiBaseURL: zappte
+            )?.absoluteString,
+            rewritten + "?v=2%20x"
+        )
+
+        let root = "https://api.minit.app/v1/media/avatars/default.webp"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: root, apiBaseURL: "https://api.minit.app")?.absoluteString,
+            root
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: root, apiBaseURL: "https://api.minit.app/")?.absoluteString,
+            root
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.minit.app:8443/v1/media/avatars/default.webp",
+                apiBaseURL: "https://api.minit.app"
+            )?.absoluteString,
+            root
+        )
+
+        let already = rewritten
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: already, apiBaseURL: zappte)?.absoluteString,
+            already
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: already + "?v=2", apiBaseURL: zappte)?.absoluteString,
+            already + "?v=2"
+        )
+
+        let client = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
+        let image = await AvatarImageLoader.load(avatarURL: loopback, apiBaseURL: zappte, client: client)
+        XCTAssertNil(image)
+        let foreign = await AvatarImageLoader.load(
+            avatarURL: "https://cdn.example/avatars/default.webp",
+            apiBaseURL: zappte,
+            client: client
+        )
+        XCTAssertNil(foreign)
+        let prefixed = await AvatarImageLoader.load(avatarURL: already, apiBaseURL: zappte, client: client)
+        XCTAssertNil(prefixed)
+        XCTAssertEqual(client.dataURLs.map(\.absoluteString), [rewritten, already])
+    }
+
+    func testAvatarDotSegmentsAreRejectedBeforeTheMediaPrefix() async {
+        let api = "https://api.zappte.eu/mock/min"
+        let rejected = [
+            "http://127.0.0.1:8080/v1/media/../../admin",
+            "https://api.zappte.eu/v1/media/../../admin",
+            "https://cdn.example/v1/media/../../admin",
+            "http://127.0.0.1:8080/v1/media/%2e%2e/%2e%2e/admin",
+            "http://127.0.0.1:8080/v1/media/%2E%2E/admin",
+            "http://127.0.0.1:8080/v1/media/%2e%2E/%2E%2e/admin",
+            "http://127.0.0.1:8080/v1/media/.%2e/admin",
+            "http://127.0.0.1:8080/v1/media/%2e./admin",
+            "http://127.0.0.1:8080/v1/media/./avatars/default.webp",
+            "http://127.0.0.1:8080/v1/media/%2e/avatars/default.webp",
+            "http://127.0.0.1:8080/v1/media/%2E/avatars/default.webp",
+            "https://cdn.example/mock/min/v1/media/..",
+            "https://api.zappte.eu/mock/min/../admin",
+        ]
+        let client = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
+        for avatarURL in rejected {
+            XCTAssertNil(
+                AvatarRequestURL.resolved(avatarURL: avatarURL, apiBaseURL: api),
+                avatarURL
+            )
+            let image = await AvatarImageLoader.load(avatarURL: avatarURL, apiBaseURL: api, client: client)
+            XCTAssertNil(image, avatarURL)
+        }
+        XCTAssertTrue(client.dataURLs.isEmpty)
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "http://127.0.0.1:8080/v1/media/avatars/default%2ewebp",
+                apiBaseURL: api
+            )?.absoluteString,
+            api + "/v1/media/avatars/default%2ewebp"
+        )
+    }
+
+    func testAvatarSameOriginDropsFragmentAndRejectsUserinfo() async {
+        let api = "https://api.zappte.eu/mock/min"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.zappte.eu/mock/min/healthz",
+                apiBaseURL: api
+            )?.absoluteString,
+            "https://api.zappte.eu/mock/min/healthz"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.zappte.eu/mock/min/healthz#face",
+                apiBaseURL: api
+            )?.absoluteString,
+            "https://api.zappte.eu/mock/min/healthz"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://api.zappte.eu/healthz?x=1#face",
+                apiBaseURL: api
+            )?.absoluteString,
+            "https://api.zappte.eu/healthz?x=1"
+        )
+        let client = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
+        let userinfo = [
+            "https://user:pass@api.zappte.eu/healthz",
+            "https://user@api.zappte.eu/healthz",
+            "https://:pass@api.zappte.eu/healthz",
+        ]
+        for avatarURL in userinfo {
+            XCTAssertNil(
+                AvatarRequestURL.resolved(avatarURL: avatarURL, apiBaseURL: api),
+                avatarURL
+            )
+            let image = await AvatarImageLoader.load(avatarURL: avatarURL, apiBaseURL: api, client: client)
+            XCTAssertNil(image, avatarURL)
+        }
+        XCTAssertTrue(client.dataURLs.isEmpty)
+    }
+
+    func testAvatarSpaceAndNonASCIIPathsStayPercentEncoded() {
+        let api = "https://api.zappte.eu/mock/min"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "http://127.0.0.1:8080/v1/media/a b.webp",
+                apiBaseURL: api
+            )?.absoluteString,
+            api + "/v1/media/a%20b.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "http://127.0.0.1:8080/v1/media/avatars/caf\u{00e9}.webp",
+                apiBaseURL: api
+            )?.absoluteString,
+            api + "/v1/media/avatars/caf%C3%A9.webp"
+        )
+    }
+
+    func testAvatarBasePortHttpSlashesSchemeAndBareMediaPath() {
+        let loopback = "http://127.0.0.1:8080/v1/media/avatars/default.webp"
+        let emulator = "http://10.0.2.2:8080"
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: emulator)?.absoluteString,
+            emulator + "/v1/media/avatars/default.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(avatarURL: loopback, apiBaseURL: emulator + "///")?.absoluteString,
+            emulator + "/v1/media/avatars/default.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: loopback,
+                apiBaseURL: "https://api.zappte.eu:8443/mock/min"
+            )?.absoluteString,
+            "https://api.zappte.eu:8443/mock/min/v1/media/avatars/default.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: loopback,
+                apiBaseURL: "https://api.zappte.eu/mock/min///"
+            )?.absoluteString,
+            "https://api.zappte.eu/mock/min/v1/media/avatars/default.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "HTTP://127.0.0.1:8080/v1/media/avatars/default.webp",
+                apiBaseURL: "HTTPS://API.ZAPPTE.EU/mock/min"
+            )?.absoluteString,
+            "HTTPS://API.ZAPPTE.EU/mock/min/v1/media/avatars/default.webp"
+        )
+        XCTAssertEqual(
+            AvatarRequestURL.resolved(
+                avatarURL: "http://127.0.0.1:8080/v1/media/",
+                apiBaseURL: "https://api.zappte.eu/mock/min"
+            )?.absoluteString,
+            "https://api.zappte.eu/mock/min/v1/media/"
+        )
+        XCTAssertNil(
+            AvatarRequestURL.resolved(
+                avatarURL: "https://cdn.example/mock/min/v1/media/..",
+                apiBaseURL: "https://api.zappte.eu/mock/min"
+            )
+        )
     }
 
     func testAvatarLoadDecodesBytesAndDropsHTTPAndDecodeErrors() async {

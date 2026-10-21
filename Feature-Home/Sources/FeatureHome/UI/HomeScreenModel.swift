@@ -28,8 +28,10 @@ enum HomeUnderConstructionAction: CaseIterable {
 final class HomeScreenModel: ObservableObject {
     @Published private(set) var userName = ""
     /// Profile `avatarUrl`. Nil on the firebase backend, and nil again when the
-    /// profile load fails. The header loads bytes only when this is a URL on the
-    /// API origin.
+    /// profile load fails. The header rewrites a `/v1/media/` path onto the API
+    /// base, and fetches a same-origin URL outside that path as-is. A blank
+    /// URL, a non-http scheme, a `.` or `..` path segment, and a foreign URL
+    /// outside that path stay on the placeholder.
     @Published private(set) var avatarURL: String?
     /// Firebase sample until an HTTP catalog arrives. A failed load puts the sample back.
     @Published private(set) var catalog: HomeCatalog = .firebase
