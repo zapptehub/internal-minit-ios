@@ -64,6 +64,10 @@ final class AppFlowViewModel {
     private let loyaltyCardRepository: LoyaltyCardRepository
     private let onboardingProgressStore: any OnboardingProgressStoring
     private let restoreTimeout: Duration
+    /// Drops avatar responses stored on the network session. The app passes
+    /// `NetworkClientImpl.clearCachedResponses()`. That cache is the session's
+    /// own, not `URLCache.shared`.
+    private let clearAvatarURLCache: @MainActor () -> Void
     /// Identifies the newest bootstrap, login, logout, or retry. An older attempt
     /// applies a result — including after cancellation — only while this still matches.
     private var launchAttempt = 0
@@ -72,12 +76,14 @@ final class AppFlowViewModel {
         authRepository: AuthRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
         onboardingProgressStore: any OnboardingProgressStoring,
-        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout
+        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
+        clearAvatarURLCache: @escaping @MainActor () -> Void = {}
     ) {
         self.authRepository = authRepository
         self.loyaltyCardRepository = loyaltyCardRepository
         self.onboardingProgressStore = onboardingProgressStore
         self.restoreTimeout = restoreTimeout
+        self.clearAvatarURLCache = clearAvatarURLCache
     }
 
     /// Called once from `ContentView`'s `.task { }`.
@@ -136,11 +142,21 @@ final class AppFlowViewModel {
 
     /// Signs the user out and returns them to the unauthenticated flow (e.g. from the
     /// dashboard-under-construction placeholder's Log Out button).
+    ///
+    /// Clears the session URL cache before the auth call, the same moment Home
+    /// confirms logout, and again after `logout()` returns. A load in flight can
+    /// refill the cache during that call. A later account must not reuse a private
+    /// avatar response. Every account still receives `avatars/default.webp`.
     func logOut() {
         let attempt = beginLaunchAttempt()
+        clearAvatarURLCache()
         Task {
             await authRepository.logout()
             guard isCurrentLaunchAttempt(attempt) else { return }
+            // Inside the guard, before `.unauthenticated` is published. A newer
+            // launch owns the cache once this attempt is stale. A load can refill
+            // it during logout(), after the clear above.
+            clearAvatarURLCache()
             restoredLocale = nil
             state = .unauthenticated
         }

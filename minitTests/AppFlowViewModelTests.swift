@@ -10,18 +10,16 @@ final class AppFlowViewModelTests: XCTestCase {
         auth: FakeAuthRepository = FakeAuthRepository(),
         loyalty: FakeLoyaltyCardRepository = FakeLoyaltyCardRepository(),
         progress: FakeOnboardingProgressStore? = nil,
-        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout
+        restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
+        clearAvatarURLCache: @escaping @MainActor () -> Void = {}
     ) -> AppFlowViewModel {
         AppFlowViewModel(
             authRepository: auth,
             loyaltyCardRepository: loyalty,
             onboardingProgressStore: progress ?? FakeOnboardingProgressStore(),
-            restoreTimeout: restoreTimeout
+            restoreTimeout: restoreTimeout,
+            clearAvatarURLCache: clearAvatarURLCache
         )
-    }
-
-    private func settle() async {
-        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 
     /// Polls until `viewModel.state` equals `expected`, or until `timeout` elapses.
@@ -109,7 +107,7 @@ final class AppFlowViewModelTests: XCTestCase {
         auth.errorToThrow = nil
         auth.sessionToReturn = AuthData(token: "t", userId: "user-1")
         vm.retryBootstrap()
-        await settle()
+        await waitForState(vm, .onboarding(userId: "user-1"))
 
         XCTAssertEqual(vm.state, .onboarding(userId: "user-1"))
     }
@@ -212,7 +210,7 @@ final class AppFlowViewModelTests: XCTestCase {
         loyalty.fetchLinkedCardErrorToThrow = nil
         loyalty.linkedCard = LoyaltyCardData(code: "MINIT-1", ownerUserId: "user-1", points: 0)
         vm.retryBootstrap()
-        await settle()
+        await waitForState(vm, .authenticated(userId: "user-1"))
 
         XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
         XCTAssertEqual(auth.currentSessionCallCount, 1, "Retry should not re-hit session restore")
@@ -226,7 +224,7 @@ final class AppFlowViewModelTests: XCTestCase {
         let vm = makeViewModel(loyalty: loyalty)
 
         vm.didLogIn(AuthData(token: "t", userId: "user-1"))
-        await settle()
+        await waitForState(vm, .authenticated(userId: "user-1"))
 
         XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
     }
@@ -235,7 +233,7 @@ final class AppFlowViewModelTests: XCTestCase {
         let vm = makeViewModel()
 
         vm.didLogIn(AuthData(token: "t", userId: "user-2"))
-        await settle()
+        await waitForState(vm, .onboarding(userId: "user-2"))
 
         XCTAssertEqual(vm.state, .onboarding(userId: "user-2"))
     }
@@ -247,7 +245,7 @@ final class AppFlowViewModelTests: XCTestCase {
         let vm = makeViewModel(auth: auth, loyalty: loyalty)
 
         vm.didLogIn(AuthData(token: "t", userId: "user-2"))
-        await settle()
+        await waitForState(vm, .onboardingStatusFailed(userId: "user-2"))
 
         XCTAssertEqual(vm.state, .onboardingStatusFailed(userId: "user-2"))
         XCTAssertEqual(
@@ -271,11 +269,65 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
 
         vm.logOut()
-        await settle()
+        await waitForState(vm, .unauthenticated)
 
         XCTAssertEqual(vm.state, .unauthenticated)
         XCTAssertEqual(auth.logoutCallCount, 1)
         XCTAssertNil(vm.restoredLocale)
+    }
+
+    func testLogOutClearsTheSessionURLCache() async throws {
+        let client = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil)
+        )
+        let cache = try XCTUnwrap(client.sessionURLCache)
+        let url = URL(string: "https://api.minit.test/v1/media/avatars/logout.webp")!
+        let request = storeCachedAvatar("avatar-bytes", url: url, cache: cache)
+        XCTAssertNotNil(cache.cachedResponse(for: request))
+
+        let auth = FakeAuthRepository()
+        let vm = makeViewModel(auth: auth) {
+            client.clearCachedResponses()
+        }
+        vm.didCompleteOnboarding(userId: "user-1")
+        vm.logOut()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertNil(cache.cachedResponse(for: request))
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(vm.state, .unauthenticated)
+    }
+
+    /// An avatar store that lands inside `logout()` is after the early clear and
+    /// must be gone once that call returns.
+    func testLogOutDropsAvatarStoredDuringLogout() async throws {
+        let client = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil)
+        )
+        let cache = try XCTUnwrap(client.sessionURLCache)
+        let url = URL(string: "https://api.minit.test/v1/media/avatars/during-logout.webp")!
+        let auth = FakeAuthRepository()
+        let probe = LogoutCacheProbe()
+        auth.onLogout = {
+            let request = storeCachedAvatar("during-logout", url: url, cache: cache)
+            probe.request = request
+            probe.wasStored = cache.cachedResponse(for: request) != nil
+        }
+        let vm = makeViewModel(auth: auth) {
+            client.clearCachedResponses()
+        }
+        vm.didCompleteOnboarding(userId: "user-1")
+
+        vm.logOut()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertTrue(probe.wasStored)
+        let request = try XCTUnwrap(probe.request)
+        XCTAssertNil(cache.cachedResponse(for: request))
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(vm.state, .unauthenticated)
     }
 
     // MARK: Cancellation
@@ -432,6 +484,7 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
     var hangCurrentSession = false
     private(set) var currentSessionCallCount = 0
     private(set) var logoutCallCount = 0
+    var onLogout: (() -> Void)?
 
     func login(email: String, password: String) async throws -> AuthData {
         AuthData(token: "t", userId: "user")
@@ -439,6 +492,7 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
 
     func logout() async {
         logoutCallCount += 1
+        onLogout?()
     }
 
     func currentSession() async throws -> AuthData? {
@@ -497,6 +551,12 @@ private final class FakeOnboardingProgressStore: OnboardingProgressStoring {
     func clear(userId: String) {
         progressByUserId[userId] = nil
     }
+}
+
+/// Records an avatar response stored from inside `FakeAuthRepository.logout()`.
+private final class LogoutCacheProbe {
+    var request: URLRequest?
+    var wasStored = false
 }
 
 /// Set on the main actor when a launch task's `bootstrap()` call has returned,

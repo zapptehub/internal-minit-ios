@@ -32,7 +32,10 @@ struct ContentView: View {
     @State private var appFlow = AppFlowViewModel(
         authRepository: AppDependencies.shared.authRepository,
         loyaltyCardRepository: AppDependencies.shared.loyaltyCardRepository,
-        onboardingProgressStore: AppDependencies.shared.onboardingProgressStore
+        onboardingProgressStore: AppDependencies.shared.onboardingProgressStore,
+        clearAvatarURLCache: {
+            AppDependencies.shared.networkClient.clearCachedResponses()
+        }
     )
     @State private var activeSheet: AuthSheet?
     /// Set right before dismissing the login sheet on password-reset success; consumed in

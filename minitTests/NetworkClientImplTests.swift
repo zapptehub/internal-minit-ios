@@ -554,6 +554,79 @@ final class NetworkClientImplTests: XCTestCase {
         XCTAssertEqual(stubContext.requests[0].value(forHTTPHeaderField: "Authorization"), "Bearer fake-token")
     }
 
+    func testClearCachedResponsesDoesNotTouchSharedURLCache() throws {
+        let client = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil)
+        )
+        let sessionCache = try XCTUnwrap(client.sessionURLCache)
+        XCTAssertFalse(sessionCache === URLCache.shared)
+        XCTAssertTrue(URLSessionConfiguration.default.urlCache === URLCache.shared)
+
+        let ephemeral = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil),
+            sessionConfiguration: .ephemeral
+        )
+        let ephemeralCache = try XCTUnwrap(ephemeral.sessionURLCache)
+        XCTAssertFalse(ephemeralCache === URLCache.shared)
+        XCTAssertFalse(ephemeralCache === sessionCache)
+
+        let sharedURL = URL(string: "https://api.minit.test/shared-cache-probe")!
+        let sessionURL = URL(string: "https://api.minit.test/v1/media/avatars/default.webp")!
+        let sharedRequest = storeCachedAvatar("shared-bytes", url: sharedURL, cache: URLCache.shared)
+        defer { URLCache.shared.removeCachedResponse(for: sharedRequest) }
+        let sessionRequest = storeCachedAvatar("avatar-bytes", url: sessionURL, cache: sessionCache)
+        XCTAssertEqual(URLCache.shared.cachedResponse(for: sharedRequest)?.data, Data("shared-bytes".utf8))
+        XCTAssertEqual(sessionCache.cachedResponse(for: sessionRequest)?.data, Data("avatar-bytes".utf8))
+
+        client.clearCachedResponses()
+
+        XCTAssertNil(sessionCache.cachedResponse(for: sessionRequest))
+        XCTAssertEqual(URLCache.shared.cachedResponse(for: sharedRequest)?.data, Data("shared-bytes".utf8))
+    }
+
+    func testNilURLCacheStaysNil() {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        let client = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil),
+            sessionConfiguration: configuration
+        )
+
+        XCTAssertNil(configuration.urlCache)
+        XCTAssertNil(client.sessionURLCache)
+        client.clearCachedResponses()
+        XCTAssertNil(client.sessionURLCache)
+    }
+
+    /// `.allowed` is the disk policy. `URLCache` can finish deleting that file
+    /// after `removeAllCachedResponses()` returns, so this waits briefly.
+    func testClearCachedResponsesRemovesDiskBackedAvatar() async throws {
+        let client = NetworkClientImpl(
+            baseURL: "https://api.minit.test",
+            tokenProvider: StaticTokenProvider(token: nil)
+        )
+        let cache = try XCTUnwrap(client.sessionURLCache)
+        XCTAssertGreaterThan(cache.diskCapacity, 0)
+        let byteCount = cache.memoryCapacity + 65_536
+        XCTAssertLessThan(byteCount, cache.diskCapacity / 5)
+        let body = Data(repeating: 0xAB, count: byteCount)
+        let url = URL(string: "https://api.minit.test/v1/media/avatars/disk.webp")!
+        let request = storeCachedAvatar(body, url: url, cache: cache, storagePolicy: .allowed)
+        XCTAssertEqual(cache.cachedResponse(for: request)?.data, body)
+
+        client.clearCachedResponses()
+
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while cache.cachedResponse(for: request) != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        XCTAssertNil(cache.cachedResponse(for: request))
+    }
+
     func testDataReturnsBytes() async throws {
         let url = URL(string: "https://api.minit.test/v1/media/avatars/default.webp")!
         let bytes = Data([0x00, 0x01, 0x02, 0xFF])
@@ -640,6 +713,51 @@ nonisolated final class RecordingTokenProvider: TokenProvider, @unchecked Sendab
             return forceRefresh ? (refreshed ?? initial) : initial
         }
     }
+}
+
+/// Stores an avatar response the way `data(_:)` would cache one.
+/// `Date` is now so `max-age` is still fresh when the test reads it back.
+/// The default policy is memory only; `.allowed` also writes disk.
+func storeCachedAvatar(
+    _ body: String,
+    url: URL,
+    cache: URLCache,
+    storagePolicy: URLCache.StoragePolicy = .allowedInMemoryOnly
+) -> URLRequest {
+    storeCachedAvatar(Data(body.utf8), url: url, cache: cache, storagePolicy: storagePolicy)
+}
+
+func storeCachedAvatar(
+    _ body: Data,
+    url: URL,
+    cache: URLCache,
+    storagePolicy: URLCache.StoragePolicy = .allowedInMemoryOnly
+) -> URLRequest {
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+    let response = HTTPURLResponse(
+        url: url,
+        statusCode: 200,
+        httpVersion: "HTTP/1.1",
+        headerFields: [
+            "Cache-Control": "private, max-age=86400",
+            "Content-Type": "image/webp",
+            "Date": formatter.string(from: Date())
+        ]
+    )!
+    cache.storeCachedResponse(
+        CachedURLResponse(
+            response: response,
+            data: body,
+            storagePolicy: storagePolicy
+        ),
+        for: request
+    )
+    return request
 }
 
 private extension URLRequest {

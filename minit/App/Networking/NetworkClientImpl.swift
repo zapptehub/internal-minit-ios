@@ -6,12 +6,29 @@ final class NetworkClientImpl: NetworkClient {
     private let session: URLSession
     private let sessionDelegate: HostScopedSessionDelegate
 
-    /// `sessionConfiguration` defaults to `.default`, whose `URLCache` stores responses
-    /// that send `Cache-Control`. `data(_:)` may use that cache (avatar bytes).
-    /// `request(...)` sets `.reloadIgnoringLocalCacheData` so authenticated JSON is not
-    /// served from that URL-keyed cache after a different user signs in. Tests pass an
-    /// ephemeral configuration. The delegate is retained here as well as by the session.
-    /// Parallel 401s are not coalesced; Firebase already coalesces `getIDToken`.
+    /// Cache this session stores avatar responses in.
+    ///
+    /// `.default` would use `URLCache.shared`. A session built that way gets
+    /// `ownedURLCache` instead, so logout can drop avatar bytes without clearing
+    /// the process cache. A nil cache stays nil. An ephemeral configuration, and
+    /// any other cache that is already not shared, is kept. `data(_:)` uses this
+    /// cache. `request(...)` sets `.reloadIgnoringLocalCacheData`, so authenticated
+    /// JSON is not served from it. The delegate is retained here as well as by the
+    /// session. Parallel 401s are not coalesced; Firebase already coalesces `getIDToken`.
+    private let urlCache: URLCache?
+
+    /// One disk cache for every session that would otherwise have used
+    /// `URLCache.shared`. The directory is this app's, so
+    /// `clearCachedResponses()` does not delete the process cache. Logout is
+    /// the hook for a later per-user avatar; every account still receives
+    /// `avatars/default.webp`.
+    private static let ownedURLCache: URLCache = {
+        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("minit-session-url-cache", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return URLCache(memoryCapacity: 512_000, diskCapacity: 20_000_000, directory: directory)
+    }()
+
     init(
         baseURL: String,
         tokenProvider: TokenProvider,
@@ -27,17 +44,46 @@ final class NetworkClientImpl: NetworkClient {
             accessClientSecret: accessClientSecret
         )
         self.sessionDelegate = sessionDelegate
+        let configuration = Self.configurationWithoutCredentialDefaults(sessionConfiguration)
+        let cache = Self.urlCache(for: configuration)
+        configuration.urlCache = cache
+        self.urlCache = cache
         self.session = URLSession(
-            configuration: Self.configurationWithoutCredentialDefaults(sessionConfiguration),
+            configuration: configuration,
             delegate: sessionDelegate,
             delegateQueue: nil
         )
+    }
+
+    /// The `URLCache` installed on this session. Avatar `data(_:)` responses
+    /// are stored here. It is never `URLCache.shared`. Nil means the session
+    /// was configured without a cache.
+    var sessionURLCache: URLCache? { urlCache }
+
+    /// Drops memory and disk entries in this session's `URLCache`.
+    ///
+    /// Logout calls this so a later account does not reuse a private avatar
+    /// response. `URLCache.shared` is not the cache this clears.
+    func clearCachedResponses() {
+        guard let urlCache else { return }
+        assert(urlCache !== URLCache.shared)
+        urlCache.removeAllCachedResponses()
     }
 
     /// `URLSession` retains the delegate until the session is invalidated. Each test
     /// builds its own client; cancelling here releases that session.
     deinit {
         session.invalidateAndCancel()
+    }
+
+    /// Replaces only `URLCache.shared`. Nil stays nil, and any other cache is
+    /// already private, so it is kept. `.default` arrives here still pointing
+    /// at `URLCache.shared`.
+    private static func urlCache(for configuration: URLSessionConfiguration) -> URLCache? {
+        guard configuration.urlCache === URLCache.shared else {
+            return configuration.urlCache
+        }
+        return ownedURLCache
     }
 
     /// `httpAdditionalHeaders` are applied to every request the session sends, including
