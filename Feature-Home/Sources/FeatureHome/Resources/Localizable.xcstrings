@@ -67,6 +67,72 @@
         }
       }
     },
+    "home.loadFailed.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to load Home"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült betölteni a kezdőlapot"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domovskú stránku sa nepodarilo načítať"
+          }
+        }
+      }
+    },
+    "home.loadFailed.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't load Home. Check your connection and try again."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült betöltenünk a kezdőlapot. Ellenőrizd az internetkapcsolatodat, majd próbáld újra."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa načítať domovskú stránku. Skontrolujte pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
+    "home.loadFailed.retry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Újrapróbálás"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skúsiť znova"
+          }
+        }
+      }
+    },
     "home.greeting.morning": {
       "localizations": {
         "en": {

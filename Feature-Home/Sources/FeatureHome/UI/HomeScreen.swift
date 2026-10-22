@@ -10,6 +10,7 @@ struct HomeScreen: View {
     private let onLogOut: () -> Void
     private let networkClient: any NetworkClient
     private let apiBaseURL: String
+    private let failureHooks: HomeScreenFailureHooks?
     @StateObject private var model: HomeScreenModel
 
     @Environment(\.locale) private var locale
@@ -22,11 +23,13 @@ struct HomeScreen: View {
         homeRepository: any HomeRepository,
         networkClient: any NetworkClient,
         apiBaseURL: String,
-        onLogOut: @escaping () -> Void
+        onLogOut: @escaping () -> Void,
+        failureHooks: HomeScreenFailureHooks? = nil
     ) {
         self.onLogOut = onLogOut
         self.networkClient = networkClient
         self.apiBaseURL = apiBaseURL
+        self.failureHooks = failureHooks
         _model = StateObject(
             wrappedValue: HomeScreenModel(
                 userId: userId,
@@ -38,22 +41,14 @@ struct HomeScreen: View {
     }
 
     var body: some View {
-        DSPinnedHeaderSheet(
-            header: { pinnedHeader },
-            sheet: {
-                VStack(spacing: 0) {
-                    productsSection
-                        // Matches Figma's 14pt gap between the sheet's drag handle and the
-                        // products section's title/"see all" row.
-                        .padding(.top, HomeSheetMetrics.productsTopSpacing)
-                    challengesSection
-                        .padding(.top, HomeSheetMetrics.sectionSpacing)
-                    newsAndRecipesSection
-                        .padding(.top, HomeSheetMetrics.sectionSpacing)
-                        .padding(.bottom, HomeSheetMetrics.bottomSpacing)
-                }
+        // Stays mounted when the failure flag flips, so `.task` is not restarted.
+        ZStack {
+            if model.showsHomeLoadFailure {
+                homeLoadFailureChrome
+            } else {
+                catalogChrome
             }
-        )
+        }
         .background(LinearGradient.minitBackground.ignoresSafeArea())
         .task { await model.loadHome() }
         .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: logOutConfirmationPresented) {
@@ -112,7 +107,7 @@ struct HomeScreen: View {
 
     private var notificationsPresented: Binding<Bool> {
         Binding(
-            get: { model.showsNotifications },
+            get: { model.showsNotifications && !model.showsHomeLoadFailure },
             set: { isPresented in
                 if isPresented {
                     model.openNotifications()
@@ -147,12 +142,60 @@ struct HomeScreen: View {
         )
     }
 
+    /// Catalog chrome. The firebase sample is this catalog for a firebase
+    /// build and while an HTTP request is in flight.
+    private var catalogChrome: some View {
+        failureHooks?.showsFailure = false
+        return DSPinnedHeaderSheet(
+            header: { pinnedHeader },
+            sheet: {
+                VStack(spacing: 0) {
+                    productsSection
+                        // Matches Figma's 14pt gap between the sheet's drag handle and the
+                        // products section's title/"see all" row.
+                        .padding(.top, HomeSheetMetrics.productsTopSpacing)
+                    challengesSection
+                        .padding(.top, HomeSheetMetrics.sectionSpacing)
+                    newsAndRecipesSection
+                        .padding(.top, HomeSheetMetrics.sectionSpacing)
+                        .padding(.bottom, HomeSheetMetrics.bottomSpacing)
+                }
+            }
+        )
+    }
+
+    /// Profile, greeting, and the failure. The catalog and the bell are not
+    /// in this tree, so a dead API cannot be read as the firebase sample.
+    private var homeLoadFailureChrome: some View {
+        let model = model
+        let retryEnabled = !model.isLoggingOut
+        let retry: () -> Void = {
+            Task { await model.loadCatalog() }
+        }
+        failureHooks?.showsFailure = true
+        failureHooks?.isRetryEnabled = retryEnabled
+        failureHooks?.retry = retry
+        failureHooks?.logOut = {
+            model.profileTapped()
+            model.confirmLogOut()
+        }
+        return VStack(alignment: .leading, spacing: 0) {
+            headerBar(showsBell: false)
+            greeting
+                .padding(.top, HomeHeaderMetrics.greetingTopPadding)
+            HomeLoadFailureView(isRetryEnabled: retryEnabled) {
+                retry()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
     /// Everything above the scrolling sheet: profile/bell bar, greeting, loyalty card, and
     /// the Daily Offer banners. Stays visually pinned as the sheet below scrolls up over it
     /// (see `DSPinnedHeaderSheet`).
     private var pinnedHeader: some View {
         VStack(alignment: .leading, spacing: 0) {
-            headerBar
+            headerBar(showsBell: true)
             greeting
                 .padding(.top, HomeHeaderMetrics.greetingTopPadding)
             loyaltyCard
@@ -167,11 +210,14 @@ struct HomeScreen: View {
     /// Leading profile + trailing bell, matching standard navigation-bar item placement.
     /// Figma draws both at 40pt, 10pt under the status bar and 20pt from the screen edges;
     /// each sits centred in a 44pt tap area (see `HomeHeaderMetrics`).
-    private var headerBar: some View {
-        HStack {
+    private func headerBar(showsBell: Bool) -> some View {
+        failureHooks?.bellShown = showsBell
+        return HStack {
             profileButton
             Spacer()
-            bellButton
+            if showsBell {
+                bellButton
+            }
         }
         .padding(.horizontal, HomeHeaderMetrics.headerHorizontalPadding)
         .frame(height: HomeHeaderMetrics.tapTargetSize)
@@ -199,7 +245,8 @@ struct HomeScreen: View {
     }
 
     /// Ids and numbers from the catalog, formatted for the in-app locale.
-    /// The firebase sample is what shows until HTTP succeeds, and again if it fails.
+    /// The firebase sample shows for a firebase build and while HTTP is in
+    /// flight. A failed first load shows `HomeLoadFailureView` instead.
     private var loyaltyCard: some View {
         let face = HomeLoyaltyCopy.loyaltyCard(
             loyalty: model.catalog.loyalty,
@@ -370,6 +417,15 @@ private struct PreviewHomeProfileRepository: ProfileRepository {
     func fetchProfile(userId: String) async throws -> ProfileData? {
         ProfileData(name: name, surname: "", email: "")
     }
+}
+
+/// Reads the failure chrome from a hosted `HomeScreen`. Production passes nil.
+final class HomeScreenFailureHooks {
+    var showsFailure = false
+    var isRetryEnabled = true
+    var bellShown = false
+    var retry: () -> Void = {}
+    var logOut: () -> Void = {}
 }
 
 /// Header and greeting placement from Figma "AMP / Dashboard" (node 6093:5981).

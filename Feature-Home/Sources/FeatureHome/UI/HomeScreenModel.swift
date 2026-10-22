@@ -33,8 +33,17 @@ final class HomeScreenModel: ObservableObject {
     /// URL, a non-http scheme, a `.` or `..` path segment, and a foreign URL
     /// outside that path stay on the placeholder.
     @Published private(set) var avatarURL: String?
-    /// Firebase sample until an HTTP catalog arrives. A failed load puts the sample back.
+    /// Firebase sample until an HTTP catalog arrives. The sample stays here
+    /// while a request is in flight, including a retry. A failed first load
+    /// leaves it here and sets `showsHomeLoadFailure`, so the screen does not
+    /// present the sample as a healthy Home. A failure after a successful
+    /// load does not replace this catalog.
     @Published private(set) var catalog: HomeCatalog = .firebase
+    /// The first HTTP load failed and no successful catalog is on screen.
+    /// False for a firebase build, while a request is in flight, and after a
+    /// successful load. The screen shows the failure and a retry instead of
+    /// `catalog` while this is true.
+    @Published private(set) var showsHomeLoadFailure = false
     @Published private(set) var showsLogOutConfirmation = false
     @Published private(set) var showsLoyaltyCardDetail = false
     @Published private(set) var showsNotifications = false
@@ -52,6 +61,14 @@ final class HomeScreenModel: ObservableObject {
     /// it so a system binding update that hides the alert first cannot drop
     /// the log-out.
     private var logOutConfirmationArmed = false
+    /// True after `load()` has returned a catalog the screen should keep.
+    /// A later failure does not replace that catalog or show the failure.
+    private var hasLoadedCatalog = false
+    /// Catalog load whose result may be published. A newer load bumps this
+    /// and cancels `catalogLoadTask`, so a double tap cannot apply the older
+    /// failure while the newer request is still running.
+    private var catalogLoadID = 0
+    private var catalogLoadTask: Task<Void, Never>?
 
     init(
         userId: String,
@@ -89,23 +106,70 @@ final class HomeScreenModel: ObservableObject {
         }
     }
 
-    /// HTTP replaces the sample only after a successful decode. A failure, and a
-    /// result that arrives after log-out has started, leaves the sample in place.
-    /// Cancellation leaves the catalog already on screen. An equal value is not
-    /// assigned again, so a firebase load does not publish a second time.
-    /// There is no error screen and no disk cache.
+    /// Runs one catalog load. A newer call cancels the in-flight task and
+    /// retires its id, which drops a stale success or failure. Cancelling the
+    /// current load is not a failure: a cancelled retry puts the failure back
+    /// when it was showing. Logout drops the result. An equal catalog is not
+    /// assigned again. There is no disk cache.
     func loadCatalog() async {
+        guard !isLoggingOut else { return }
+        catalogLoadID += 1
+        let loadID = catalogLoadID
+        catalogLoadTask?.cancel()
+        let task = Task { await self.performCatalogLoad(loadID: loadID) }
+        catalogLoadTask = task
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    private func performCatalogLoad(loadID: Int) async {
+        guard loadID == catalogLoadID, !Task.isCancelled else { return }
+        let failureWasVisible = showsHomeLoadFailure
+        if failureWasVisible {
+            showsHomeLoadFailure = false
+        }
         do {
             let loaded = try await homeRepository.load()
-            guard !isLoggingOut, !Task.isCancelled else { return }
+            guard loadID == catalogLoadID else { return }
+            guard !isLoggingOut else { return }
+            guard !Task.isCancelled else {
+                restoreHomeLoadFailure(failureWasVisible)
+                return
+            }
             if catalog != loaded {
                 catalog = loaded
             }
-        } catch {
-            guard !isLoggingOut, !isCancellation(error) else { return }
-            if catalog != .firebase {
-                catalog = .firebase
+            hasLoadedCatalog = true
+            if showsHomeLoadFailure {
+                showsHomeLoadFailure = false
             }
+        } catch {
+            guard loadID == catalogLoadID else { return }
+            guard !isLoggingOut else { return }
+            guard !isCancellation(error) else {
+                restoreHomeLoadFailure(failureWasVisible)
+                return
+            }
+            guard !hasLoadedCatalog else { return }
+            showHomeLoadFailure()
+        }
+    }
+
+    /// Puts the failure back when a retry is cancelled before a catalog arrives.
+    private func restoreHomeLoadFailure(_ failureWasVisible: Bool) {
+        guard failureWasVisible, !hasLoadedCatalog, !showsHomeLoadFailure else { return }
+        showHomeLoadFailure()
+    }
+
+    /// The failure replaces the catalog. The bell's sample cover is closed
+    /// with it, so a cover opened on the in-flight sample does not stay up.
+    private func showHomeLoadFailure() {
+        showsHomeLoadFailure = true
+        if showsNotifications {
+            showsNotifications = false
         }
     }
 
@@ -146,7 +210,7 @@ final class HomeScreenModel: ObservableObject {
     }
 
     func openNotifications() {
-        guard !isLoggingOut else { return }
+        guard !isLoggingOut, !showsHomeLoadFailure else { return }
         showsNotifications = true
     }
 

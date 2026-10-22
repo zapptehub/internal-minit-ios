@@ -263,6 +263,7 @@ final class HomeScreenModelTests: XCTestCase {
 
         XCTAssertEqual(model.userName, "Iveta")
         XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertFalse(model.showsHomeLoadFailure)
         XCTAssertNil(model.avatarURL)
         XCTAssertEqual(repository.fetchedUserIds, ["user-1"])
     }
@@ -303,9 +304,11 @@ final class HomeScreenModelTests: XCTestCase {
         XCTAssertEqual(model.catalog, loaded)
         await model.loadCatalog()
         XCTAssertEqual(model.catalog, loaded)
+        XCTAssertFalse(model.showsHomeLoadFailure)
 
         await model.loadCatalog()
-        XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertEqual(model.catalog, loaded)
+        XCTAssertFalse(model.showsHomeLoadFailure)
     }
 
     func testCancellationLeavesTheNameAndAvatarUntouched() async {
@@ -356,7 +359,7 @@ final class HomeScreenModelTests: XCTestCase {
         XCTAssertNil(model.avatarURL)
     }
 
-    func testCatalogStaysOnTheFirebaseSampleWhileHTTPIsInFlightAndAfterFailure() async throws {
+    func testSampleStaysWhileHTTPIsInFlightAndTheFirstFailureIsVisible() async throws {
         let document = try JSONDecoder().decode(HomeDocument.self, from: ContractFixtures.bytes("home.json"))
         let pause = Pause(started: expectation(description: "home request paused"))
         let client = PausingHomeClient(pause: pause, result: .success(document))
@@ -370,6 +373,7 @@ final class HomeScreenModelTests: XCTestCase {
         let task = Task { await model.loadCatalog() }
         await fulfillment(of: [pause.started], timeout: 2)
         XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertFalse(model.showsHomeLoadFailure)
         pause.resume()
         await task.value
 
@@ -387,7 +391,187 @@ final class HomeScreenModelTests: XCTestCase {
         )
         await failing.loadCatalog()
         XCTAssertEqual(failing.catalog, .firebase)
+        XCTAssertTrue(failing.showsHomeLoadFailure)
         XCTAssertFalse(failing.showsUnderConstructionAlert)
+    }
+
+    func testRetryShowsTheSampleUntilTheNextResultAndALaterFailureKeepsTheCatalog() async throws {
+        let document = try JSONDecoder().decode(HomeDocument.self, from: ContractFixtures.bytes("home.json"))
+        let pause = Pause(started: expectation(description: "home retry paused"))
+        let client = SequencedHomeClient(
+            pause: pause,
+            steps: [
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: false),
+                .init(result: .success(document), pauses: true),
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: false),
+            ]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: HttpHomeRepository(client: client),
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+
+        let task = Task { await model.loadCatalog() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+        pause.resume()
+        await task.value
+
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertNotEqual(model.catalog, .firebase)
+        let loaded = model.catalog
+
+        await model.loadCatalog()
+        XCTAssertEqual(model.catalog, loaded)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+    }
+
+    func testRetryFailureShowsTheErrorAgain() async {
+        let pause = Pause(started: expectation(description: "failed home retry paused"))
+        let client = SequencedHomeClient(
+            pause: pause,
+            steps: [
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: false),
+                .init(result: .failure(NetworkError.statusCode(502, Data())), pauses: true),
+            ]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: HttpHomeRepository(client: client),
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+
+        let task = Task { await model.loadCatalog() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+        pause.resume()
+        await task.value
+
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+    }
+
+    func testCancelledRetryKeepsTheHomeFailure() async {
+        let pause = Pause(started: expectation(description: "cancelled home retry paused"))
+        let client = SequencedHomeClient(
+            pause: pause,
+            steps: [
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: false),
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: true),
+            ]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: HttpHomeRepository(client: client),
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+
+        let task = Task { await model.loadCatalog() }
+        defer { pause.resume() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        task.cancel()
+        pause.resume()
+        await task.value
+
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+    }
+
+    func testCancelledFirstLoadDoesNotShowTheHomeFailure() async {
+        let pause = Pause(started: expectation(description: "cancelled first home load paused"))
+        let client = SequencedHomeClient(
+            pause: pause,
+            steps: [
+                .init(result: .failure(NetworkError.statusCode(503, Data())), pauses: true),
+            ]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: HttpHomeRepository(client: client),
+            onLogOut: {}
+        )
+
+        let task = Task { await model.loadCatalog() }
+        defer { pause.resume() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        task.cancel()
+        pause.resume()
+        await task.value
+
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+    }
+
+    func testANewerRetryDropsTheOlderFailureWhileItIsInFlight() async {
+        let repository = GatedHomeRepository()
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 1)
+
+        let first = Task { await model.loadCatalog() }
+        let firstStarted = await repository.waitUntilLoads(atLeast: 2)
+        XCTAssertTrue(firstStarted)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+
+        let second = Task { await model.loadCatalog() }
+        let secondStarted = await repository.waitUntilLoads(atLeast: 3)
+        XCTAssertTrue(secondStarted)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+
+        repository.releaseOne()
+        await first.value
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 3)
+
+        repository.releaseOne()
+        await second.value
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+    }
+
+    func testHomeLoadFailureClosesNotificationsAndIgnoresTheBell() async {
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: HttpHomeRepository(client: ThrowingHomeClient()),
+            onLogOut: {}
+        )
+
+        model.openNotifications()
+        XCTAssertTrue(model.showsNotifications)
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsNotifications)
+
+        model.openNotifications()
+        XCTAssertFalse(model.showsNotifications)
     }
 
     func testCatalogResultAfterLogOutIsDropped() async throws {
@@ -408,6 +592,7 @@ final class HomeScreenModelTests: XCTestCase {
         await task.value
         XCTAssertTrue(model.isLoggingOut)
         XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertFalse(model.showsHomeLoadFailure)
     }
 
     private func makeModel() -> HomeScreenModel {
@@ -417,6 +602,51 @@ final class HomeScreenModelTests: XCTestCase {
             homeRepository: FirebaseHomeRepository(),
             onLogOut: {}
         )
+    }
+}
+
+/// Holds every load after the first so two retries can overlap.
+private final class GatedHomeRepository: HomeRepository, @unchecked Sendable {
+    private let lock = NSLock()
+    private var started = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    var loads: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return started
+    }
+
+    func load() async throws -> HomeCatalog {
+        let index: Int
+        lock.lock()
+        index = started
+        started += 1
+        lock.unlock()
+        if index > 0 {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                lock.lock()
+                waiters.append(continuation)
+                lock.unlock()
+            }
+            try Task.checkCancellation()
+        }
+        throw NetworkError.statusCode(503, Data())
+    }
+
+    func releaseOne() {
+        lock.lock()
+        let continuation = waiters.isEmpty ? nil : waiters.removeFirst()
+        lock.unlock()
+        continuation?.resume()
+    }
+
+    func waitUntilLoads(atLeast count: Int) async -> Bool {
+        let deadline = Date().addingTimeInterval(2)
+        while loads < count, Date() < deadline {
+            await Task.yield()
+        }
+        return loads >= count
     }
 }
 
