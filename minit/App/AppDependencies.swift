@@ -109,12 +109,12 @@ final class AppDependencies {
 
     /// `MinitDataBackend` from Info.plist (`MINIT_DATA_BACKEND`).
     ///
-    /// Committed configurations are `firebase`. An `http` build sets that id in
-    /// gitignored `Config/Local.xcconfig`. The data modules construct the HTTP
-    /// repositories only when the id is `http`.
+    /// Debug and Internal commit `http`. Release commits `firebase`. Gitignored
+    /// `Config/Local.xcconfig` may override Debug or Internal. The data modules
+    /// construct the HTTP repositories only when the id is `http`.
     ///
     /// A missing or unexpanded value defaults to `firebase`, so a host plist
-    /// that never sets the key stays on Firebase. `http` is an explicit opt-in.
+    /// that never sets the key stays on Firebase.
     /// Any other id still fails when the data module builds the repository.
     private static func dataBackend(bundle: Bundle = .main) -> String {
         let value = plistString("MinitDataBackend", bundle: bundle)

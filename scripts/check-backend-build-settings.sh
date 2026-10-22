@@ -129,14 +129,14 @@ expect_empty_committed() {
 }
 
 expect Debug SENTRY_ENVIRONMENT development
-expect_committed Debug MINIT_DATA_BACKEND firebase
+expect_committed Debug MINIT_DATA_BACKEND http
 expect_committed Debug MINIT_API_BASE_URL "https://api.zappte.eu/mock/min"
 expect_empty_committed Debug CF_ACCESS_CLIENT_ID
 expect_empty_committed Debug CF_ACCESS_CLIENT_SECRET
 expect Debug PRODUCT_BUNDLE_IDENTIFIER saleseverest.minit
 
 expect Internal SENTRY_ENVIRONMENT internal
-expect_committed Internal MINIT_DATA_BACKEND firebase
+expect_committed Internal MINIT_DATA_BACKEND http
 expect_committed Internal MINIT_API_BASE_URL "https://api.zappte.eu/mock/min"
 expect_empty_committed Internal CF_ACCESS_CLIENT_ID
 expect_empty_committed Internal CF_ACCESS_CLIENT_SECRET
@@ -225,6 +225,55 @@ case $tests_release_flags in
     ;;
 esac
 echo "OK minitTests Internal matches Release: DEBUG is not defined"
+
+# Committed source lines. Resolved Debug and Internal settings can still be
+# overridden by gitignored Local.xcconfig, which is why expect_committed skips
+# when that file or Secrets.xcconfig is present. These lines always run.
+expect_exact_line() {
+  file=$1
+  line=$2
+  if ! grep -F -x -e "$line" "$file" >/dev/null; then
+    echo "FAIL $file is missing the committed setting: $line" >&2
+    exit 1
+  fi
+  echo "OK committed $line in $(basename "$file")"
+}
+
+expect_exact_line "$root/Config/Development.xcconfig" "MINIT_DATA_BACKEND = http"
+expect_exact_line "$root/Config/Internal.xcconfig" "MINIT_DATA_BACKEND = http"
+expect_exact_line "$root/Config/Release.xcconfig" "MINIT_DATA_BACKEND = firebase"
+
+# The http assignment has to precede the optional Local include, so Local can
+# still override it. An exact-line check does not prove that order.
+line_number() {
+  file=$1
+  text=$2
+  grep -n -F -x -e "$text" "$file" | head -n 1 | cut -d: -f1
+}
+
+expect_http_before_local_include() {
+  file=$1
+  setting_line=$(line_number "$file" "MINIT_DATA_BACKEND = http")
+  include_line=$(line_number "$file" '#include? "Local.xcconfig"')
+  if [ -z "$setting_line" ] || [ -z "$include_line" ]; then
+    echo "FAIL $(basename "$file") is missing MINIT_DATA_BACKEND = http or #include? \"Local.xcconfig\"" >&2
+    exit 1
+  fi
+  if [ "$setting_line" -ge "$include_line" ]; then
+    echo "FAIL $(basename "$file") MINIT_DATA_BACKEND = http is not before #include? \"Local.xcconfig\"" >&2
+    exit 1
+  fi
+  echo "OK $(basename "$file") MINIT_DATA_BACKEND = http comes before #include? \"Local.xcconfig\""
+}
+
+expect_http_before_local_include "$root/Config/Development.xcconfig"
+expect_http_before_local_include "$root/Config/Internal.xcconfig"
+
+if grep -E '#include\??[[:space:]]+"*(Local|Secrets)\.xcconfig"' "$root/Config/Release.xcconfig" >/dev/null; then
+  echo "FAIL Release.xcconfig includes Local.xcconfig or Secrets.xcconfig" >&2
+  exit 1
+fi
+echo "OK Release.xcconfig does not include Local.xcconfig or Secrets.xcconfig"
 
 # Committed xcconfigs must not carry an Access secret. Gitignored Local and
 # Secrets files are not part of this scan.

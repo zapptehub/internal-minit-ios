@@ -7,6 +7,11 @@
 //
 // Leave Cloudflare Access credentials out of this file. They belong in
 // gitignored Config/Secrets.xcconfig.
+//
+// Debug and Internal already commit MINIT_DATA_BACKEND = http. The firebase
+// line below is the opt-out: copy it into gitignored Local.xcconfig to build
+// one archive against firebase. Remove that leftover firebase line from
+// Local.xcconfig before a soak archive, so the committed http default ships.
 
-MINIT_DATA_BACKEND = http
+MINIT_DATA_BACKEND = firebase
 MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min

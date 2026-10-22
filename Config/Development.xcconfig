@@ -6,9 +6,9 @@
 // xcconfig treats // as a comment, so the base URL is split the same way as SENTRY_DSN.
 MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min
 
-// Committed data backend stays firebase until phase 6. Gitignored Local.xcconfig
-// may set MINIT_DATA_BACKEND; that value is what a Debug build ships.
-MINIT_DATA_BACKEND = firebase
+// Committed data backend for Debug. Gitignored Local.xcconfig may set
+// MINIT_DATA_BACKEND after this line; that value is what a Debug build ships.
+MINIT_DATA_BACKEND = http
 
 // Empty unless gitignored Secrets.xcconfig supplies Cloudflare Access credentials.
 CF_ACCESS_CLIENT_ID =
