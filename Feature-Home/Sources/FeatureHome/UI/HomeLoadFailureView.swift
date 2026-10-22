@@ -42,10 +42,13 @@ enum HomeLoadFailureAnnouncement {
 /// announces the title and message assertively. Retry is a tertiary button.
 /// The column scrolls so a large text size can reach the button under the
 /// header. `isRetryEnabled` is false while Home is logging out.
+///
+/// The header trait and the hidden warning icon are covered only by code
+/// review. The package test host has no window scene, and a key
+/// `UIHostingController` does not publish those traits.
 struct HomeLoadFailureView: View {
     var isRetryEnabled: Bool
     var announce: (String, String) -> Void
-    var accessibilityProbe: HomeLoadFailureAccessibilityProbe?
     let onRetry: () -> Void
     @Environment(\.locale) private var locale
 
@@ -54,12 +57,10 @@ struct HomeLoadFailureView: View {
         announce: @escaping (String, String) -> Void = { title, message in
             HomeLoadFailureAnnouncement.post(title: title, message: message)
         },
-        accessibilityProbe: HomeLoadFailureAccessibilityProbe? = nil,
         onRetry: @escaping () -> Void
     ) {
         self.isRetryEnabled = isRetryEnabled
         self.announce = announce
-        self.accessibilityProbe = accessibilityProbe
         self.onRetry = onRetry
     }
 
@@ -69,12 +70,12 @@ struct HomeLoadFailureView: View {
             ScrollView {
                 VStack(spacing: DSConstant.medium.value) {
                     HomeLoadFailureStatusIcon()
-                        .modifier(HomeFailureHiddenIcon(probe: accessibilityProbe))
+                        .accessibilityHidden(true)
                     Text(copy.title)
                         .typography(.headingMediumBold)
                         .foregroundColor(DSColor.Text.heading)
                         .multilineTextAlignment(.center)
-                        .modifier(HomeFailureTitleTrait(probe: accessibilityProbe))
+                        .accessibilityAddTraits(.isHeader)
                     Text(copy.message)
                         .typography(.paragraphRegular)
                         .foregroundColor(DSColor.Text.secondary)
@@ -87,7 +88,6 @@ struct HomeLoadFailureView: View {
                     ) {
                         onRetry()
                     }
-                    .modifier(HomeFailureRetryMark(probe: accessibilityProbe))
                 }
                 .padding(DSConstant.large.value)
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
@@ -97,46 +97,6 @@ struct HomeLoadFailureView: View {
         .onAppear {
             announce(copy.title, copy.message)
         }
-    }
-}
-
-/// Set from the modifiers that apply the failure view's accessibility.
-///
-/// A package-test host that never publishes accessibility elements can still
-/// see that these modifiers ran. The flags are not VoiceOver's resolved traits.
-final class HomeLoadFailureAccessibilityProbe {
-    var titleIsHeader = false
-    var retryIsButton = false
-    var iconIsHidden = false
-}
-
-private struct HomeFailureTitleTrait: ViewModifier {
-    var probe: HomeLoadFailureAccessibilityProbe?
-
-    func body(content: Content) -> some View {
-        content
-            .accessibilityAddTraits(.isHeader)
-            .onAppear { probe?.titleIsHeader = true }
-    }
-}
-
-private struct HomeFailureHiddenIcon: ViewModifier {
-    var probe: HomeLoadFailureAccessibilityProbe?
-
-    func body(content: Content) -> some View {
-        content
-            .accessibilityHidden(true)
-            .onAppear { probe?.iconIsHidden = true }
-    }
-}
-
-/// Marks the retry control. `DSButton` is a SwiftUI `Button`, which carries
-/// the button trait; this modifier does not add a second one.
-private struct HomeFailureRetryMark: ViewModifier {
-    var probe: HomeLoadFailureAccessibilityProbe?
-
-    func body(content: Content) -> some View {
-        content.onAppear { probe?.retryIsButton = true }
     }
 }
 

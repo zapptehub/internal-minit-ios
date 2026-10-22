@@ -10,13 +10,16 @@ struct HomeScreen: View {
     private let onLogOut: () -> Void
     private let networkClient: any NetworkClient
     private let apiBaseURL: String
+    #if DEBUG
     private let failureHooks: HomeScreenFailureHooks?
+    #endif
     @StateObject private var model: HomeScreenModel
 
     @Environment(\.locale) private var locale
 
     private static let bellIconSize: CGFloat = 16
 
+    #if DEBUG
     init(
         userId: String,
         profileRepository: ProfileRepository,
@@ -26,10 +29,10 @@ struct HomeScreen: View {
         onLogOut: @escaping () -> Void,
         failureHooks: HomeScreenFailureHooks? = nil
     ) {
+        self.failureHooks = failureHooks
         self.onLogOut = onLogOut
         self.networkClient = networkClient
         self.apiBaseURL = apiBaseURL
-        self.failureHooks = failureHooks
         _model = StateObject(
             wrappedValue: HomeScreenModel(
                 userId: userId,
@@ -39,6 +42,28 @@ struct HomeScreen: View {
             )
         )
     }
+    #else
+    init(
+        userId: String,
+        profileRepository: ProfileRepository,
+        homeRepository: any HomeRepository,
+        networkClient: any NetworkClient,
+        apiBaseURL: String,
+        onLogOut: @escaping () -> Void
+    ) {
+        self.onLogOut = onLogOut
+        self.networkClient = networkClient
+        self.apiBaseURL = apiBaseURL
+        _model = StateObject(
+            wrappedValue: HomeScreenModel(
+                userId: userId,
+                profileRepository: profileRepository,
+                homeRepository: homeRepository,
+                onLogOut: onLogOut
+            )
+        )
+    }
+    #endif
 
     var body: some View {
         // Stays mounted when the failure flag flips, so `.task` is not restarted.
@@ -145,8 +170,7 @@ struct HomeScreen: View {
     /// Catalog chrome. The firebase sample is this catalog for a firebase
     /// build and while an HTTP request is in flight.
     private var catalogChrome: some View {
-        failureHooks?.showsFailure = false
-        return DSPinnedHeaderSheet(
+        let sheet = DSPinnedHeaderSheet(
             header: { pinnedHeader },
             sheet: {
                 VStack(spacing: 0) {
@@ -162,6 +186,16 @@ struct HomeScreen: View {
                 }
             }
         )
+        #if DEBUG
+        return sheet.onAppear {
+            // Appearance, not body: a body write records the last evaluation,
+            // which can run for a chrome that is not the one on screen.
+            failureHooks?.showsFailure = false
+            failureHooks?.bellShown = true
+        }
+        #else
+        return sheet
+        #endif
     }
 
     /// Profile, greeting, and the failure. The catalog and the bell are not
@@ -172,14 +206,7 @@ struct HomeScreen: View {
         let retry: () -> Void = {
             Task { await model.loadCatalog() }
         }
-        failureHooks?.showsFailure = true
-        failureHooks?.isRetryEnabled = retryEnabled
-        failureHooks?.retry = retry
-        failureHooks?.logOut = {
-            model.profileTapped()
-            model.confirmLogOut()
-        }
-        return VStack(alignment: .leading, spacing: 0) {
+        let column = VStack(alignment: .leading, spacing: 0) {
             headerBar(showsBell: false)
             greeting
                 .padding(.top, HomeHeaderMetrics.greetingTopPadding)
@@ -188,6 +215,24 @@ struct HomeScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        #if DEBUG
+        return column
+            .onAppear {
+                failureHooks?.showsFailure = true
+                failureHooks?.isRetryEnabled = retryEnabled
+                failureHooks?.bellShown = false
+                failureHooks?.retry = retry
+                failureHooks?.logOut = {
+                    model.profileTapped()
+                    model.confirmLogOut()
+                }
+            }
+            .onChange(of: retryEnabled) { _, enabled in
+                failureHooks?.isRetryEnabled = enabled
+            }
+        #else
+        return column
+        #endif
     }
 
     /// Everything above the scrolling sheet: profile/bell bar, greeting, loyalty card, and
@@ -211,8 +256,7 @@ struct HomeScreen: View {
     /// Figma draws both at 40pt, 10pt under the status bar and 20pt from the screen edges;
     /// each sits centred in a 44pt tap area (see `HomeHeaderMetrics`).
     private func headerBar(showsBell: Bool) -> some View {
-        failureHooks?.bellShown = showsBell
-        return HStack {
+        HStack {
             profileButton
             Spacer()
             if showsBell {
@@ -419,7 +463,9 @@ private struct PreviewHomeProfileRepository: ProfileRepository {
     }
 }
 
-/// Reads the failure chrome from a hosted `HomeScreen`. Production passes nil.
+#if DEBUG
+/// Reads the failure chrome from a hosted `HomeScreen`. Debug tests only.
+/// Updated from `onAppear` and `onChange`, after the chrome is on screen.
 final class HomeScreenFailureHooks {
     var showsFailure = false
     var isRetryEnabled = true
@@ -427,6 +473,7 @@ final class HomeScreenFailureHooks {
     var retry: () -> Void = {}
     var logOut: () -> Void = {}
 }
+#endif
 
 /// Header and greeting placement from Figma "AMP / Dashboard" (node 6093:5981).
 ///

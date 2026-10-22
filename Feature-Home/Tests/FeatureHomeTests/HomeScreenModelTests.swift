@@ -555,6 +555,43 @@ final class HomeScreenModelTests: XCTestCase {
         XCTAssertEqual(model.catalog, .firebase)
     }
 
+    /// The second retry starts after the first has already hidden the failure.
+    /// Cancelling that second retry must put the failure back. The older
+    /// retry is stale and must not clear it.
+    func testCancelledOverlappingRetryRestoresTheHomeFailure() async {
+        let repository = GatedHomeRepository()
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 1)
+
+        let first = Task { await model.loadCatalog() }
+        let firstStarted = await repository.waitUntilLoads(atLeast: 2)
+        XCTAssertTrue(firstStarted)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+
+        let second = Task { await model.loadCatalog() }
+        let secondStarted = await repository.waitUntilLoads(atLeast: 3)
+        XCTAssertTrue(secondStarted)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+
+        second.cancel()
+        repository.releaseOne()
+        await first.value
+        repository.releaseOne()
+        await second.value
+
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertEqual(repository.loads, 3)
+    }
+
     func testHomeLoadFailureClosesNotificationsAndIgnoresTheBell() async {
         let model = HomeScreenModel(
             userId: "user-1",

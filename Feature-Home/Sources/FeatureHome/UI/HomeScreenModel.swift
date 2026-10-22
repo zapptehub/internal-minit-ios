@@ -64,6 +64,11 @@ final class HomeScreenModel: ObservableObject {
     /// True after `load()` has returned a catalog the screen should keep.
     /// A later failure does not replace that catalog or show the failure.
     private var hasLoadedCatalog = false
+    /// A retry set this when it hid the failure. It stays set until that
+    /// generation of loads publishes a catalog or a real failure. Cancelling
+    /// the current load restores the failure from this flag, including when
+    /// an overlapping retry already saw `showsHomeLoadFailure` as false.
+    private var homeLoadFailureHiddenForRetry = false
     /// Catalog load whose result may be published. A newer load bumps this
     /// and cancels `catalogLoadTask`, so a double tap cannot apply the older
     /// failure while the newer request is still running.
@@ -109,8 +114,10 @@ final class HomeScreenModel: ObservableObject {
     /// Runs one catalog load. A newer call cancels the in-flight task and
     /// retires its id, which drops a stale success or failure. Cancelling the
     /// current load is not a failure: a cancelled retry puts the failure back
-    /// when it was showing. Logout drops the result. An equal catalog is not
-    /// assigned again. There is no disk cache.
+    /// when a retry had hidden it. A second retry starts after that hide, so
+    /// it must not treat `showsHomeLoadFailure == false` as "nothing to
+    /// restore". Logout drops the result. An equal catalog is not assigned
+    /// again. There is no disk cache.
     func loadCatalog() async {
         guard !isLoggingOut else { return }
         catalogLoadID += 1
@@ -126,23 +133,31 @@ final class HomeScreenModel: ObservableObject {
     }
 
     private func performCatalogLoad(loadID: Int) async {
-        guard loadID == catalogLoadID, !Task.isCancelled else { return }
-        let failureWasVisible = showsHomeLoadFailure
-        if failureWasVisible {
+        // A superseded load must not restore or clear the flag. The current
+        // id owns that, so a cancelled older retry cannot drop the failure
+        // the newer retry is still responsible for.
+        guard loadID == catalogLoadID else { return }
+        if Task.isCancelled {
+            restoreHiddenHomeLoadFailure()
+            return
+        }
+        if showsHomeLoadFailure {
             showsHomeLoadFailure = false
+            homeLoadFailureHiddenForRetry = true
         }
         do {
             let loaded = try await homeRepository.load()
             guard loadID == catalogLoadID else { return }
             guard !isLoggingOut else { return }
             guard !Task.isCancelled else {
-                restoreHomeLoadFailure(failureWasVisible)
+                restoreHiddenHomeLoadFailure()
                 return
             }
             if catalog != loaded {
                 catalog = loaded
             }
             hasLoadedCatalog = true
+            homeLoadFailureHiddenForRetry = false
             if showsHomeLoadFailure {
                 showsHomeLoadFailure = false
             }
@@ -150,18 +165,24 @@ final class HomeScreenModel: ObservableObject {
             guard loadID == catalogLoadID else { return }
             guard !isLoggingOut else { return }
             guard !isCancellation(error) else {
-                restoreHomeLoadFailure(failureWasVisible)
+                restoreHiddenHomeLoadFailure()
                 return
             }
+            homeLoadFailureHiddenForRetry = false
             guard !hasLoadedCatalog else { return }
             showHomeLoadFailure()
         }
     }
 
-    /// Puts the failure back when a retry is cancelled before a catalog arrives.
-    private func restoreHomeLoadFailure(_ failureWasVisible: Bool) {
-        guard failureWasVisible, !hasLoadedCatalog, !showsHomeLoadFailure else { return }
-        showHomeLoadFailure()
+    /// Puts the failure back when the current retry is cancelled before a
+    /// catalog arrives. No-op for a first load, a load that already kept a
+    /// catalog, and logout.
+    private func restoreHiddenHomeLoadFailure() {
+        guard homeLoadFailureHiddenForRetry, !hasLoadedCatalog, !isLoggingOut else { return }
+        homeLoadFailureHiddenForRetry = false
+        if !showsHomeLoadFailure {
+            showHomeLoadFailure()
+        }
     }
 
     /// The failure replaces the catalog. The bell's sample cover is closed
