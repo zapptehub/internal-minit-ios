@@ -75,6 +75,18 @@ struct HomeScreen: View {
             }
         }
         .background(LinearGradient.minitBackground.ignoresSafeArea())
+        .overlay(alignment: .bottom) {
+            if model.showsRefreshError, !model.showsHomeLoadFailure {
+                refreshFailureBanner
+                    .id(model.refreshErrorGeneration)
+            }
+        }
+        .task(id: model.refreshErrorGeneration) {
+            guard model.showsRefreshError else { return }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, model.showsRefreshError else { return }
+            model.dismissRefreshError()
+        }
         .task { await model.loadHome() }
         .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: logOutConfirmationPresented) {
             Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {
@@ -185,7 +197,9 @@ struct HomeScreen: View {
                         .padding(.bottom, HomeSheetMetrics.bottomSpacing)
                 }
             }
-        )
+        ).refreshable {
+            await model.refreshFromPull()
+        }
         #if DEBUG
         return sheet.onAppear {
             // Appearance, not body: a body write records the last evaluation,
@@ -210,7 +224,10 @@ struct HomeScreen: View {
             headerBar(showsBell: false)
             greeting
                 .padding(.top, HomeHeaderMetrics.greetingTopPadding)
-            HomeLoadFailureView(isRetryEnabled: retryEnabled) {
+            HomeLoadFailureView(
+                isRetryEnabled: retryEnabled,
+                onRefresh: { await model.refreshFromPull() }
+            ) {
                 retry()
             }
         }
@@ -291,6 +308,7 @@ struct HomeScreen: View {
     /// Ids and numbers from the catalog, formatted for the in-app locale.
     /// The firebase sample shows for a firebase build and while HTTP is in
     /// flight. A failed first load shows `HomeLoadFailureView` instead.
+    /// A failed pull keeps this card and shows the refresh banner.
     private var loyaltyCard: some View {
         let face = HomeLoyaltyCopy.loyaltyCard(
             loyalty: model.catalog.loyalty,
@@ -416,6 +434,28 @@ struct HomeScreen: View {
     private struct DailyOfferCarouselIdentity: Hashable {
         var initialIndex: Int
         var bannerIDs: [String]
+    }
+
+    /// Transient pull-failure message. Hits pass through to the catalog.
+    /// VoiceOver hears the sentence at the default priority, not the assertive
+    /// first-load announcement.
+    private var refreshFailureBanner: some View {
+        let message = HomeRefreshFailureCopy(locale: locale).message
+        return Text(message)
+            .typography(.paragraphRegular)
+            .foregroundColor(DSColor.Text.heading)
+            .multilineTextAlignment(.center)
+            .padding(DSConstant.medium.value)
+            .frame(maxWidth: .infinity)
+            .background(DSColor.Background.Layer.level1)
+            .clipShape(RoundedRectangle(cornerRadius: DSConstant.cardCornerRadius.value, style: .continuous))
+            .padding(.horizontal, DSConstant.medium.value)
+            .padding(.bottom, DSConstant.medium.value)
+            .allowsHitTesting(false)
+            .accessibilityLabel(message)
+            .onAppear {
+                AccessibilityNotification.Announcement(message).post()
+            }
     }
 
     /// Matches the mock's "Good Morning" copy; switches for afternoon/evening locally.

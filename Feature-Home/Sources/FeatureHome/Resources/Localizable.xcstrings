@@ -111,6 +111,28 @@
         }
       }
     },
+    "home.refreshFailed.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't refresh Home. Check your connection and try again."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem sikerült frissítenünk a kezdőlapot. Ellenőrizd az internetkapcsolatodat, majd próbáld újra."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa obnoviť domovskú stránku. Skontrolujte pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
     "home.loadFailed.retry": {
       "localizations": {
         "en": {

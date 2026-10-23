@@ -17,6 +17,17 @@ struct HomeLoadFailureCopy: Equatable {
     }
 }
 
+/// Message for a pull that fails after Home has already loaded.
+///
+/// English, Hungarian, and Slovak match Android `home_refresh_failed_message`.
+struct HomeRefreshFailureCopy: Equatable {
+    let message: String
+
+    init(locale: Locale, bundle: Bundle = .module) {
+        message = HomeLocalizedString.string("home.refreshFailed.message", locale: locale, bundle: bundle)
+    }
+}
+
 /// Assertive VoiceOver announcement for the Home failure, matching the launch
 /// failure screen's `AccessibilitySpeechAnnouncementPriority.high`.
 enum HomeLoadFailureAnnouncement {
@@ -49,6 +60,7 @@ enum HomeLoadFailureAnnouncement {
 struct HomeLoadFailureView: View {
     var isRetryEnabled: Bool
     var announce: (String, String) -> Void
+    var onRefresh: () async -> Void
     let onRetry: () -> Void
     @Environment(\.locale) private var locale
 
@@ -57,10 +69,12 @@ struct HomeLoadFailureView: View {
         announce: @escaping (String, String) -> Void = { title, message in
             HomeLoadFailureAnnouncement.post(title: title, message: message)
         },
+        onRefresh: @escaping () async -> Void = {},
         onRetry: @escaping () -> Void
     ) {
         self.isRetryEnabled = isRetryEnabled
         self.announce = announce
+        self.onRefresh = onRefresh
         self.onRetry = onRetry
     }
 
@@ -91,6 +105,9 @@ struct HomeLoadFailureView: View {
                 }
                 .padding(DSConstant.large.value)
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            .refreshable {
+                await onRefresh()
             }
         }
         .background(DSColor.Background.Layer.level0)

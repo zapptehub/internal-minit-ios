@@ -37,13 +37,26 @@ final class HomeScreenModel: ObservableObject {
     /// while a request is in flight, including a retry. A failed first load
     /// leaves it here and sets `showsHomeLoadFailure`, so the screen does not
     /// present the sample as a healthy Home. A failure after a successful
-    /// load does not replace this catalog.
+    /// load does not replace this catalog. A failed pull sets
+    /// `showsRefreshError` and leaves this catalog on screen.
     @Published private(set) var catalog: HomeCatalog = .firebase
     /// The first HTTP load failed and no successful catalog is on screen.
     /// False for a firebase build, while a request is in flight, and after a
     /// successful load. The screen shows the failure and a retry instead of
-    /// `catalog` while this is true.
+    /// `catalog` while this is true. A pull that fails after a successful
+    /// load leaves this false.
     @Published private(set) var showsHomeLoadFailure = false
+    /// True while a pull-to-refresh is waiting on a home load, including a
+    /// pull that joined a load already running. Initial load and Retry leave
+    /// it false. The system refresh indicator is driven by `.refreshable`;
+    /// this flag is the same interval for tests and for logout.
+    @Published private(set) var isRefreshing = false
+    /// A pull failed after a catalog was already on screen. The catalog stays,
+    /// and the screen shows a transient message instead of the first-load failure.
+    @Published private(set) var showsRefreshError = false
+    /// Bumps on every pull failure that sets `showsRefreshError`, so a second
+    /// failure can present the message again while the flag is already true.
+    @Published private(set) var refreshErrorGeneration = 0
     @Published private(set) var showsLogOutConfirmation = false
     @Published private(set) var showsLoyaltyCardDetail = false
     @Published private(set) var showsNotifications = false
@@ -62,7 +75,8 @@ final class HomeScreenModel: ObservableObject {
     /// the log-out.
     private var logOutConfirmationArmed = false
     /// True after `load()` has returned a catalog the screen should keep.
-    /// A later failure does not replace that catalog or show the failure.
+    /// A later failure does not replace that catalog or show the first-load
+    /// failure. A pull failure sets `showsRefreshError` instead.
     private var hasLoadedCatalog = false
     /// A retry set this when it hid the failure. It stays set until that
     /// generation of loads publishes a catalog or a real failure. Cancelling
@@ -73,7 +87,13 @@ final class HomeScreenModel: ObservableObject {
     /// and cancels `catalogLoadTask`, so a double tap cannot apply the older
     /// failure while the newer request is still running.
     private var catalogLoadID = 0
+    /// Cleared at the end of that load, before the task is complete, so a
+    /// pull cannot join a load that has already finished.
     private var catalogLoadTask: Task<Void, Never>?
+    /// Pulls waiting on a home load. A failure while this is positive is a
+    /// pull failure, including when the pull joined a load Retry later
+    /// replaced. The indicator stays up until the last waiter leaves.
+    private var pullWaiters = 0
 
     init(
         userId: String,
@@ -117,22 +137,91 @@ final class HomeScreenModel: ObservableObject {
     /// when a retry had hidden it. A second retry starts after that hide, so
     /// it must not treat `showsHomeLoadFailure == false` as "nothing to
     /// restore". Logout drops the result. An equal catalog is not assigned
-    /// again. There is no disk cache.
+    /// again. There is no disk cache. Pull-to-refresh does not call this while
+    /// a load is already running.
     func loadCatalog() async {
+        await loadCatalog(origin: .initialOrRetry)
+    }
+
+    /// Reloads the home document from a pull.
+    ///
+    /// Joins a load that is already running and does not call `load()` again.
+    /// Does not cancel that load. If Retry replaces the joined load, this
+    /// waits for the replacement as well, and the indicator stays up until
+    /// that load is idle. A finished load is not treated as something to
+    /// join. Retry still goes through `loadCatalog()` and may cancel. A
+    /// failure after a catalog is on screen keeps the catalog and sets
+    /// `showsRefreshError`, including when this pull only joined the load.
+    /// A failure with nothing loaded shows the first-load failure and leaves
+    /// the refresh message clear. Profile is not loaded again.
+    func refreshFromPull() async {
+        guard !isLoggingOut else { return }
+        pullWaiters += 1
+        isRefreshing = true
+        defer {
+            pullWaiters -= 1
+            if pullWaiters == 0 {
+                isRefreshing = false
+            }
+        }
+        if showsRefreshError {
+            showsRefreshError = false
+        }
+        while !isLoggingOut, !Task.isCancelled {
+            if let existing = catalogLoadTask {
+                let joinedID = catalogLoadID
+                await existing.value
+                if isLoggingOut || Task.isCancelled { return }
+                if catalogLoadTask != nil, catalogLoadID != joinedID {
+                    continue
+                }
+                return
+            }
+            await loadCatalog(origin: .pull)
+            if isLoggingOut || Task.isCancelled { return }
+            if catalogLoadTask != nil {
+                continue
+            }
+            return
+        }
+    }
+
+    /// Clears the transient pull-failure message. The generation stays so the
+    /// next failure still changes it.
+    func dismissRefreshError() {
+        showsRefreshError = false
+    }
+
+    private enum CatalogLoadOrigin {
+        case initialOrRetry
+        case pull
+    }
+
+    private func loadCatalog(origin: CatalogLoadOrigin) async {
         guard !isLoggingOut else { return }
         catalogLoadID += 1
         let loadID = catalogLoadID
         catalogLoadTask?.cancel()
-        let task = Task { await self.performCatalogLoad(loadID: loadID) }
+        let task = Task { await self.performCatalogLoad(loadID: loadID, origin: origin) }
         catalogLoadTask = task
         await withTaskCancellationHandler {
             await task.value
         } onCancel: {
             task.cancel()
         }
+        if catalogLoadID == loadID {
+            catalogLoadTask = nil
+        }
     }
 
-    private func performCatalogLoad(loadID: Int) async {
+    private func performCatalogLoad(loadID: Int, origin: CatalogLoadOrigin) async {
+        // Nil the task before it completes. A pull that runs after this load
+        // has finished must start its own load, not join this one.
+        defer {
+            if catalogLoadID == loadID {
+                catalogLoadTask = nil
+            }
+        }
         // A superseded load must not restore or clear the flag. The current
         // id owns that, so a cancelled older retry cannot drop the failure
         // the newer retry is still responsible for.
@@ -141,7 +230,9 @@ final class HomeScreenModel: ObservableObject {
             restoreHiddenHomeLoadFailure()
             return
         }
-        if showsHomeLoadFailure {
+        // Pull keeps the first-load failure on screen until this load ends.
+        // Retry hides it at the start so the sample shows while the request runs.
+        if origin == .initialOrRetry, showsHomeLoadFailure {
             showsHomeLoadFailure = false
             homeLoadFailureHiddenForRetry = true
         }
@@ -161,6 +252,9 @@ final class HomeScreenModel: ObservableObject {
             if showsHomeLoadFailure {
                 showsHomeLoadFailure = false
             }
+            if showsRefreshError {
+                showsRefreshError = false
+            }
         } catch {
             guard loadID == catalogLoadID else { return }
             guard !isLoggingOut else { return }
@@ -169,7 +263,13 @@ final class HomeScreenModel: ObservableObject {
                 return
             }
             homeLoadFailureHiddenForRetry = false
-            guard !hasLoadedCatalog else { return }
+            guard !hasLoadedCatalog else {
+                if origin == .pull || pullWaiters > 0 {
+                    showsRefreshError = true
+                    refreshErrorGeneration += 1
+                }
+                return
+            }
             showHomeLoadFailure()
         }
     }
@@ -227,6 +327,8 @@ final class HomeScreenModel: ObservableObject {
         logOutConfirmationArmed = false
         showsLogOutConfirmation = false
         isLoggingOut = true
+        isRefreshing = false
+        showsRefreshError = false
         onLogOut()
     }
 

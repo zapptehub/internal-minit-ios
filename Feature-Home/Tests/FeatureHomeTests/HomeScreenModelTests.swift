@@ -431,6 +431,9 @@ final class HomeScreenModelTests: XCTestCase {
         await model.loadCatalog()
         XCTAssertEqual(model.catalog, loaded)
         XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(model.refreshErrorGeneration, 0)
+        XCTAssertFalse(model.isRefreshing)
     }
 
     func testRetryFailureShowsTheErrorAgain() async {
@@ -632,6 +635,455 @@ final class HomeScreenModelTests: XCTestCase {
         XCTAssertFalse(model.showsHomeLoadFailure)
     }
 
+    func testPullRefreshReplacesTheCatalogAndLeavesTheProfileAlone() async {
+        let repository = QueuedHomeRepository(results: [
+            .success(homeCatalog(points: 111)),
+            .success(homeCatalog(points: 222)),
+        ])
+        let profile = ScriptedProfileRepository(results: [
+            .success(ProfileData(name: "Iveta", surname: "", email: "")),
+        ])
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: profile,
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadUserName()
+        await model.loadCatalog()
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+
+        let pause = Pause(started: expectation(description: "pull success paused"))
+        repository.pause = pause
+        repository.pauseOn = [2]
+        let task = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertTrue(model.isRefreshing)
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 2)
+        pause.resume()
+        await task.value
+
+        XCTAssertEqual(model.catalog.loyalty.points, 222)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 2)
+        XCTAssertEqual(profile.fetchedUserIds, ["user-1"])
+    }
+
+    func testPullRefreshOnFirebaseLoadsTheFixtureAgain() async {
+        let repository = CountingHomeRepository(inner: FirebaseHomeRepository())
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        await model.refreshFromPull()
+
+        XCTAssertEqual(repository.loads, 2)
+        XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testPullRefreshFailureKeepsTheCatalogAndShowsTheError() async {
+        let loaded = homeCatalog(points: 111)
+        let repository = QueuedHomeRepository(results: [
+            .success(loaded),
+            .failure(NetworkError.statusCode(503, Data())),
+            .failure(NetworkError.statusCode(502, Data())),
+        ])
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let catalog = model.catalog
+        XCTAssertEqual(catalog.loyalty.points, 111)
+
+        await model.refreshFromPull()
+        XCTAssertEqual(model.catalog, catalog)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertTrue(model.showsRefreshError)
+        XCTAssertEqual(model.refreshErrorGeneration, 1)
+        XCTAssertFalse(model.isRefreshing)
+
+        model.dismissRefreshError()
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(model.catalog, catalog)
+        XCTAssertEqual(model.refreshErrorGeneration, 1)
+
+        await model.refreshFromPull()
+        XCTAssertEqual(model.catalog, catalog)
+        XCTAssertTrue(model.showsRefreshError)
+        XCTAssertEqual(model.refreshErrorGeneration, 2)
+        XCTAssertEqual(repository.loads, 3)
+    }
+
+    func testPullDuringAnInFlightLoadDoesNotStartAnother() async {
+        let pause = Pause(started: expectation(description: "in flight home paused"))
+        let repository = QueuedHomeRepository(
+            results: [.success(homeCatalog(points: 111))],
+            pause: pause,
+            pauseOn: [1]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        let initial = Task { await model.loadCatalog() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertEqual(repository.loads, 1)
+
+        let firstPull = Task { await model.refreshFromPull() }
+        await waitUntil("pull is refreshing") { model.isRefreshing }
+        let secondPull = Task { await model.refreshFromPull() }
+        await yieldTurns(20)
+        XCTAssertEqual(repository.loads, 1)
+
+        pause.resume()
+        await initial.value
+        await firstPull.value
+        await secondPull.value
+
+        XCTAssertEqual(repository.loads, 1)
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+    }
+
+    func testSecondPullDuringAPullDoesNotStartAnother() async {
+        let pause = Pause(started: expectation(description: "second pull paused"))
+        let repository = QueuedHomeRepository(
+            results: [
+                .success(homeCatalog(points: 111)),
+                .success(homeCatalog(points: 222)),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let firstPull = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        let secondPull = Task { await model.refreshFromPull() }
+        await yieldTurns(20)
+        XCTAssertEqual(repository.loads, 2)
+
+        pause.resume()
+        await firstPull.value
+        await secondPull.value
+
+        XCTAssertEqual(repository.loads, 2)
+        XCTAssertEqual(model.catalog.loyalty.points, 222)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testPullOnTheFailureScreenKeepsItUntilSuccess() async {
+        let pause = Pause(started: expectation(description: "failure pull paused"))
+        let repository = QueuedHomeRepository(
+            results: [
+                .failure(NetworkError.statusCode(503, Data())),
+                .success(homeCatalog(points: 333)),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsRefreshError)
+
+        let task = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertTrue(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertEqual(repository.loads, 2)
+
+        pause.resume()
+        await task.value
+
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(model.catalog.loyalty.points, 333)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testPullFailureOnTheFailureScreenStaysThereWithoutTheBanner() async {
+        let repository = QueuedHomeRepository(results: [
+            .failure(NetworkError.statusCode(503, Data())),
+            .failure(NetworkError.statusCode(502, Data())),
+        ])
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        await model.refreshFromPull()
+
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(model.refreshErrorGeneration, 0)
+        XCTAssertEqual(model.catalog, .firebase)
+        XCTAssertEqual(repository.loads, 2)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testPullDuringAnInFlightRetryDoesNotStartAnother() async {
+        let pause = Pause(started: expectation(description: "retry pull paused"))
+        let repository = QueuedHomeRepository(
+            results: [
+                .failure(NetworkError.statusCode(503, Data())),
+                .failure(NetworkError.statusCode(502, Data())),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        XCTAssertTrue(model.showsHomeLoadFailure)
+
+        let retry = Task { await model.loadCatalog() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        let pull = Task { await model.refreshFromPull() }
+        await waitUntil("pull joined the retry") { model.isRefreshing }
+        await yieldTurns(20)
+        XCTAssertEqual(repository.loads, 2)
+
+        pause.resume()
+        await retry.value
+        await pull.value
+
+        XCTAssertEqual(repository.loads, 2)
+        XCTAssertTrue(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testPullJoiningAFailingLoadShowsTheRefreshError() async {
+        let pause = Pause(started: expectation(description: "joined failure paused"))
+        let repository = QueuedHomeRepository(
+            results: [
+                .success(homeCatalog(points: 111)),
+                .failure(NetworkError.statusCode(503, Data())),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let catalog = model.catalog
+        let retry = Task { await model.loadCatalog() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+
+        let pull = Task { await model.refreshFromPull() }
+        await waitUntil("pull joined the failing load") { model.isRefreshing }
+        XCTAssertEqual(repository.loads, 2)
+
+        pause.resume()
+        await retry.value
+        await pull.value
+
+        XCTAssertEqual(model.catalog, catalog)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertTrue(model.showsRefreshError)
+        XCTAssertEqual(model.refreshErrorGeneration, 1)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertEqual(repository.loads, 2)
+    }
+
+    func testRetryReplacingAPullKeepsTheIndicatorUntilTheNewLoadFinishes() async {
+        let pullPause = Pause(started: expectation(description: "replaced pull paused"))
+        let retryPause = Pause(started: expectation(description: "replacement retry paused"))
+        let repository = QueuedHomeRepository(results: [
+            .success(homeCatalog(points: 111)),
+            .failure(NetworkError.statusCode(503, Data())),
+            .success(homeCatalog(points: 333)),
+        ])
+        repository.pauseLoad(pullPause, on: 2)
+        repository.pauseLoad(retryPause, on: 3)
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let pull = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pullPause.started], timeout: 2)
+        XCTAssertTrue(model.isRefreshing)
+        XCTAssertEqual(repository.loads, 2)
+
+        let retry = Task { await model.loadCatalog() }
+        await fulfillment(of: [retryPause.started], timeout: 2)
+        XCTAssertEqual(repository.loads, 3)
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertTrue(model.isRefreshing)
+
+        pullPause.resume()
+        await waitUntil("cancelled pull load finished") { repository.completedLoads >= 2 }
+        await yieldTurns(20)
+
+        XCTAssertTrue(model.isRefreshing)
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertEqual(repository.loads, 3)
+
+        retryPause.resume()
+        await pull.value
+        await retry.value
+
+        XCTAssertEqual(model.catalog.loyalty.points, 333)
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertEqual(repository.loads, 3)
+    }
+
+    func testLogoutDuringAPullDropsTheResultAndClearsTheIndicator() async {
+        let pause = Pause(started: expectation(description: "logout pull paused"))
+        let loaded = homeCatalog(points: 111)
+        let repository = QueuedHomeRepository(
+            results: [
+                .success(loaded),
+                .success(homeCatalog(points: 999)),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let task = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        XCTAssertTrue(model.isRefreshing)
+
+        model.profileTapped()
+        model.confirmLogOut()
+        XCTAssertFalse(model.isRefreshing)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertTrue(model.isLoggingOut)
+
+        pause.resume()
+        await task.value
+
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    func testCancelledPullDoesNotShowTheRefreshError() async {
+        let pause = Pause(started: expectation(description: "cancelled pull paused"))
+        let loaded = homeCatalog(points: 111)
+        let repository = QueuedHomeRepository(
+            results: [
+                .success(loaded),
+                .failure(NetworkError.statusCode(503, Data())),
+            ],
+            pause: pause,
+            pauseOn: [2]
+        )
+        let model = HomeScreenModel(
+            userId: "user-1",
+            profileRepository: ScriptedProfileRepository(results: []),
+            homeRepository: repository,
+            onLogOut: {}
+        )
+
+        await model.loadCatalog()
+        let task = Task { await model.refreshFromPull() }
+        await fulfillment(of: [pause.started], timeout: 2)
+        task.cancel()
+        pause.resume()
+        await task.value
+
+        XCTAssertEqual(model.catalog.loyalty.points, 111)
+        XCTAssertFalse(model.showsRefreshError)
+        XCTAssertFalse(model.showsHomeLoadFailure)
+        XCTAssertFalse(model.isRefreshing)
+    }
+
+    private func waitUntil(
+        _ description: String,
+        condition: @escaping @MainActor () -> Bool
+    ) async {
+        if condition() { return }
+        let ready = expectation(description: description)
+        let watcher = Task { @MainActor in
+            while !condition() {
+                await Task.yield()
+            }
+            ready.fulfill()
+        }
+        await fulfillment(of: [ready], timeout: 2)
+        watcher.cancel()
+    }
+
+    private func yieldTurns(_ count: Int) async {
+        for _ in 0..<count {
+            await Task.yield()
+        }
+    }
+
     private func makeModel() -> HomeScreenModel {
         HomeScreenModel(
             userId: "user-1",
@@ -639,6 +1091,98 @@ final class HomeScreenModelTests: XCTestCase {
             homeRepository: FirebaseHomeRepository(),
             onLogOut: {}
         )
+    }
+}
+
+private func homeCatalog(points: Int) -> HomeCatalog {
+    var catalog = HomeCatalog.firebase
+    catalog.loyalty.points = points
+    return catalog
+}
+
+private final class CountingHomeRepository: HomeRepository, @unchecked Sendable {
+    private let inner: any HomeRepository
+    private let lock = NSLock()
+    private var started = 0
+
+    var loads: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return started
+    }
+
+    init(inner: any HomeRepository) {
+        self.inner = inner
+    }
+
+    func load() async throws -> HomeCatalog {
+        lock.lock()
+        started += 1
+        lock.unlock()
+        return try await inner.load()
+    }
+}
+
+/// Results are consumed in order. `pauseOn` holds 1-based load numbers.
+private final class QueuedHomeRepository: HomeRepository, @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [Result<HomeCatalog, Error>]
+    private var started = 0
+    private var completed = 0
+    private var pauseByLoad: [Int: Pause] = [:]
+    var pause: Pause?
+    var pauseOn: Set<Int>
+
+    var loads: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return started
+    }
+
+    var completedLoads: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return completed
+    }
+
+    func pauseLoad(_ pause: Pause, on loadNumber: Int) {
+        lock.lock()
+        pauseByLoad[loadNumber] = pause
+        lock.unlock()
+    }
+
+    init(
+        results: [Result<HomeCatalog, Error>],
+        pause: Pause? = nil,
+        pauseOn: Set<Int> = []
+    ) {
+        self.results = results
+        self.pause = pause
+        self.pauseOn = pauseOn
+    }
+
+    func load() async throws -> HomeCatalog {
+        let result: Result<HomeCatalog, Error>
+        let gate: Pause?
+        lock.lock()
+        started += 1
+        gate = pauseByLoad[started] ?? (pauseOn.contains(started) ? pause : nil)
+        if results.isEmpty {
+            result = .failure(NetworkError.statusCode(500, Data()))
+        } else {
+            result = results.removeFirst()
+        }
+        lock.unlock()
+        defer {
+            lock.lock()
+            completed += 1
+            lock.unlock()
+        }
+        if let gate {
+            await gate.pause()
+        }
+        try Task.checkCancellation()
+        return try result.get()
     }
 }
 

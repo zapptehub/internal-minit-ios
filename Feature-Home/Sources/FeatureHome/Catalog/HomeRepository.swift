@@ -6,7 +6,8 @@ import Foundation
 /// Firebase returns the sample catalog and does not call the network. HTTP
 /// decodes `GET /v1/home`. The screen shows the sample while that load is in
 /// flight. The first failure is a visible retry. A later failure keeps the
-/// catalog already on screen.
+/// catalog already on screen. A pull-to-refresh failure also keeps that
+/// catalog and surfaces a non-blocking error.
 public protocol HomeRepository: Sendable {
     func load() async throws -> HomeCatalog
 }

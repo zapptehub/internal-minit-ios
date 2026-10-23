@@ -34,6 +34,19 @@ final class HomeLoadFailureTests: XCTestCase {
         }
     }
 
+    func testRefreshFailureCopyMatchesEnglishHungarianAndSlovak() {
+        let expected = [
+            "en": "We couldn't refresh Home. Check your connection and try again.",
+            "hu": "Nem sikerült frissítenünk a kezdőlapot. Ellenőrizd az internetkapcsolatodat, majd próbáld újra.",
+            "sk": "Nepodarilo sa obnoviť domovskú stránku. Skontrolujte pripojenie a skúste to znova.",
+        ]
+
+        for (language, message) in expected {
+            let resolved = HomeRefreshFailureCopy(locale: Locale(identifier: language))
+            XCTAssertEqual(resolved.message, message, language)
+        }
+    }
+
     func testAnnouncementIsAssertive() {
         let title = "Unable to load Home"
         let message = "We couldn't load Home. Check your connection and try again."
