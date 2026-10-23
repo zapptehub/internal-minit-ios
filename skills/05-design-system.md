@@ -61,7 +61,7 @@ DSColor.Icon.*           primary, secondary, active, disabled
 DSColor.Border.*         default, active, error, success, disabled
 ```
 
-Dark mode is handled automatically — `ThemeManager` returns the correct `Theme` for the active color scheme. Never branch on `colorScheme` to pick colors manually.
+The app forces light mode with `UIUserInterfaceStyle` = `Light` in `Config/minit-Info.plist`. There is no `.preferredColorScheme` at the app root. Never branch on `colorScheme` to pick colors manually.
 
 ---
 
@@ -260,9 +260,8 @@ struct SupportItemCard: View {
 
 ## Theming and dark mode
 
-- `ThemeManager.shared.currentTheme` returns the active `Theme` based on user preference
-- `DSColor` uses `@dynamicMemberLookup` to proxy into the current theme automatically
-- Set the preferred color scheme once at the app root: `.preferredColorScheme(appSettings.theme.colorScheme)`
+- The app forces light mode with `UIUserInterfaceStyle` = `Light` in `Config/minit-Info.plist`
+- There is no `.preferredColorScheme` at the app root
 - Never conditionally pick colors based on `@Environment(\.colorScheme)`
 - Screens must respect safe areas by default — use SwiftUI's built-in safe area handling (`.safeAreaInset`, `ignoresSafeArea` only where intentional). Never add manual bottom padding to compensate for safe area.
 
