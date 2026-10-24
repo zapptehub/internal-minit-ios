@@ -4,9 +4,30 @@ import DesignSystem
 
 struct StartScreen: View {
     let analytics: StartAnalyticsTracking?
+    /// Gates the secondary "Try Minit in Demo mode" button — `true` only on http-backend
+    /// builds (`AppDependencies.showsDemo`; see `MinitDemoEnabled` in Info.plist).
+    let showsDemo: Bool
     let onGetStarted: () -> Void
+    /// Fired by the demo confirmation alert's Continue button. The actual
+    /// `POST /v1/demo/session` call and post-login routing happen outside this module
+    /// (`AppFlowViewModel.startDemo()`) — `Core-Networking` isn't a `FeatureStart`
+    /// dependency. Cancel does nothing.
+    let onDemoContinue: () -> Void
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var showsDemoConfirmation = false
+
+    init(
+        analytics: StartAnalyticsTracking?,
+        showsDemo: Bool = false,
+        onGetStarted: @escaping () -> Void,
+        onDemoContinue: @escaping () -> Void = {}
+    ) {
+        self.analytics = analytics
+        self.showsDemo = showsDemo
+        self.onGetStarted = onGetStarted
+        self.onDemoContinue = onDemoContinue
+    }
 
     /// Matches the Figma frame's fixed top offset before the centered logo/headline group.
     /// Not a reusable DSConstant — it's a one-off screen offset, not a spacing-scale token in Figma either.
@@ -42,6 +63,17 @@ struct StartScreen: View {
         }
         .onAppear {
             analytics?.trackScreenOpened(file: #fileID)
+        }
+        .alert(
+            StartLocalizedString.string("start.demo.alert.title", locale: locale),
+            isPresented: $showsDemoConfirmation
+        ) {
+            Button(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale), role: .cancel) {}
+            Button(DesignSystemLocalizedString.string("common.alert.continue", locale: locale)) {
+                onDemoContinue()
+            }
+        } message: {
+            Text(StartLocalizedString.string("start.demo.alert.message", locale: locale))
         }
     }
 
@@ -97,6 +129,15 @@ struct StartScreen: View {
                 onGetStarted()
             }
 
+            if showsDemo {
+                DSButton(
+                    title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
+                    type: .secondary
+                ) {
+                    showsDemoConfirmation = true
+                }
+            }
+
             Text(legalAttributedString)
                 .typography(.paragraphRegular)
                 .foregroundColor(DSColor.Text.inverse)
@@ -129,4 +170,8 @@ struct StartScreen: View {
 
 #Preview {
     StartScreen(analytics: nil, onGetStarted: {})
+}
+
+#Preview("Demo mode") {
+    StartScreen(analytics: nil, showsDemo: true, onGetStarted: {})
 }

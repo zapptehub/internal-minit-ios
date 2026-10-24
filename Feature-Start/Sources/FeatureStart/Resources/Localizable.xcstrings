@@ -23,6 +23,72 @@
         }
       }
     },
+    "start.button.tryDemo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Minit in Demo mode"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit kipróbálása demó módban"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyskúšať Minit v demo režime"
+          }
+        }
+      }
+    },
+    "start.demo.alert.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo mode"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demó mód"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo režim"
+          }
+        }
+      }
+    },
+    "start.demo.alert.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo mode lets you try the app without logging in or onboarding – you go straight to Home. Changes aren't saved, and logging out ends the demo."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A demó módban kipróbálhatod az alkalmazást bejelentkezés és regisztráció nélkül – rögtön a Kezdőlapra jutsz. A módosításaid nem mentődnek, a kijelentkezéssel pedig véget ér a demó."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo režim vám umožní vyskúšať aplikáciu bez prihlásenia a registrácie – hneď sa dostanete na Domov. Zmeny sa neukladajú a odhlásením sa demo skončí."
+          }
+        }
+      }
+    },
     "start.headline" : {
       "localizations" : {
         "en" : {

@@ -8,5 +8,7 @@ MINIT_API_BASE_URL = https:/$()/api.minit.app
 
 SENTRY_ENVIRONMENT = release
 MINIT_DATA_BACKEND = firebase
+// Demo mode never ships in Release — Firebase stays the only sign-in path.
+MINIT_DEMO_ENABLED = NO
 CF_ACCESS_CLIENT_ID =
 CF_ACCESS_CLIENT_SECRET =

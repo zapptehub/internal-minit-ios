@@ -10,6 +10,8 @@
 	<string>$(MINIT_API_BASE_URL)</string>
 	<key>MinitDataBackend</key>
 	<string>$(MINIT_DATA_BACKEND)</string>
+	<key>MinitDemoEnabled</key>
+	<string>$(MINIT_DEMO_ENABLED)</string>
 	<key>CFAccessClientId</key>
 	<string>$(CF_ACCESS_CLIENT_ID)</string>
 	<key>CFAccessClientSecret</key>

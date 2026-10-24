@@ -1,4 +1,5 @@
 import XCTest
+import CoreNetworking
 import DataAuth
 import DataLoyaltyCard
 import FeatureOnboarding
@@ -10,6 +11,8 @@ final class AppFlowViewModelTests: XCTestCase {
         auth: FakeAuthRepository = FakeAuthRepository(),
         loyalty: FakeLoyaltyCardRepository = FakeLoyaltyCardRepository(),
         progress: FakeOnboardingProgressStore? = nil,
+        networkClient: NetworkClient = FakeDemoNetworkClient(),
+        demoSessionStore: DemoSessionTokenStore = DemoSessionTokenStore(),
         restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
         clearAvatarURLCache: @escaping @MainActor () -> Void = {}
     ) -> AppFlowViewModel {
@@ -17,6 +20,8 @@ final class AppFlowViewModelTests: XCTestCase {
             authRepository: auth,
             loyaltyCardRepository: loyalty,
             onboardingProgressStore: progress ?? FakeOnboardingProgressStore(),
+            networkClient: networkClient,
+            demoSessionStore: demoSessionStore,
             restoreTimeout: restoreTimeout,
             clearAvatarURLCache: clearAvatarURLCache
         )
@@ -330,6 +335,77 @@ final class AppFlowViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .unauthenticated)
     }
 
+    // MARK: Demo mode
+
+    /// (a) Continue starts demo: token slot set, flow lands authenticated, mocked client.
+    func testStartDemoSetsTokenSlotAndEntersAuthenticated() async {
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.linkedCard = LoyaltyCardData(code: "MINIT-1", ownerUserId: "demo-iveta", points: 3210)
+        let client = FakeDemoNetworkClient(
+            result: .success(FakeDemoNetworkClient.jsonBody(accessToken: "demo-token", userId: "demo-iveta"))
+        )
+        let demoSessionStore = DemoSessionTokenStore()
+        let vm = makeViewModel(loyalty: loyalty, networkClient: client, demoSessionStore: demoSessionStore)
+
+        vm.startDemo()
+        await waitForState(vm, .authenticated(userId: "demo-iveta"))
+
+        XCTAssertEqual(vm.state, .authenticated(userId: "demo-iveta"))
+        XCTAssertEqual(client.lastPath, "/v1/demo/session")
+        XCTAssertEqual(client.lastMethod, .POST)
+        let storedToken = await demoSessionStore.current()
+        XCTAssertEqual(storedToken, "demo-token")
+        XCTAssertNil(vm.demoStartErrorMessage)
+    }
+
+    func testStartDemoFailureShowsErrorAndLeavesTokenSlotEmpty() async {
+        let client = FakeDemoNetworkClient(result: .failure(NetworkError.statusCode(503, Data())))
+        let demoSessionStore = DemoSessionTokenStore()
+        let vm = makeViewModel(networkClient: client, demoSessionStore: demoSessionStore)
+
+        vm.startDemo()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertNotNil(vm.demoStartErrorMessage)
+        let storedToken = await demoSessionStore.current()
+        XCTAssertNil(storedToken)
+    }
+
+    /// (b) Cancel does nothing — no demo API call. `startDemo()` is only ever reached
+    /// from the alert's Continue button, so this asserts the client is simply never hit
+    /// absent a call to `startDemo()`.
+    func testCancelDoesNotCallDemoAPI() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = nil
+        let client = FakeDemoNetworkClient()
+        let demoSessionStore = DemoSessionTokenStore()
+        let vm = makeViewModel(auth: auth, networkClient: client, demoSessionStore: demoSessionStore)
+
+        await vm.bootstrap()
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertNil(client.lastPath)
+        let storedToken = await demoSessionStore.current()
+        XCTAssertNil(storedToken)
+    }
+
+    /// (c) Logout clears the token slot.
+    func testLogOutClearsTheDemoTokenSlot() async {
+        let auth = FakeAuthRepository()
+        let demoSessionStore = DemoSessionTokenStore()
+        await demoSessionStore.set("demo-token")
+        let vm = makeViewModel(auth: auth, demoSessionStore: demoSessionStore)
+        vm.didCompleteOnboarding(userId: "user-1")
+
+        vm.logOut()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        let storedToken = await demoSessionStore.current()
+        XCTAssertNil(storedToken)
+    }
+
     // MARK: Cancellation
 
     func testCancelledBootstrapGoesSessionRestoreFailed() async {
@@ -533,6 +609,47 @@ private final class FakeLoyaltyCardRepository: LoyaltyCardRepository, @unchecked
         }
         if let fetchLinkedCardErrorToThrow { throw fetchLinkedCardErrorToThrow }
         return linkedCard
+    }
+}
+
+/// Scripts a single result for `startDemo()`'s `POST /v1/demo/session`. Decodes JSON like
+/// the real `NetworkClientImpl` would — `AuthDto`'s memberwise init isn't `public` (only
+/// `Codable` is), so a scripted success is built from the same `{accessToken, userId}`
+/// payload shape the real endpoint returns rather than constructing `AuthDto` directly.
+private final class FakeDemoNetworkClient: NetworkClient, @unchecked Sendable {
+    private let result: Result<Data, Error>
+    private(set) var lastPath: String?
+    private(set) var lastMethod: HTTPMethod?
+
+    init(
+        result: Result<Data, Error> = .success(
+            FakeDemoNetworkClient.jsonBody(accessToken: "demo-token", userId: "demo-iveta")
+        )
+    ) {
+        self.result = result
+    }
+
+    static func jsonBody(accessToken: String, userId: String) -> Data {
+        Data(#"{"accessToken":"\#(accessToken)","userId":"\#(userId)"}"#.utf8)
+    }
+
+    func request<T: Decodable>(_ path: String, method: HTTPMethod) async throws -> T {
+        lastPath = path
+        lastMethod = method
+        switch result {
+        case .success(let data):
+            return try JSONDecoder().decode(T.self, from: data)
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func request<T: Decodable, B: Encodable>(_ path: String, method: HTTPMethod, body: B) async throws -> T {
+        throw NetworkError.invalidURL
+    }
+
+    func data(_ url: URL) async throws -> Data {
+        throw NetworkError.invalidURL
     }
 }
 

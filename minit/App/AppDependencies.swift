@@ -36,6 +36,10 @@ final class AppDependencies {
     let loginAnalytics: LoginAnalyticsTracking
     let startAnalytics: StartAnalyticsTracking
     let onboardingAnalytics: OnboardingAnalyticsTracking
+    /// Gates Start's "Try Minit in Demo mode" button: `MinitDemoEnabled` (Debug/Internal
+    /// only, `NO` in Release) *and* the data backend is `http` — a gitignored
+    /// `Local.xcconfig` override to `firebase` hides the button even with the flag on.
+    let showsDemo: Bool
 
     private init() {
         let authDataModule = AuthDataModule()
@@ -79,6 +83,7 @@ final class AppDependencies {
         self.loginAnalytics = ConsoleAnalyticsAdapter()
         self.startAnalytics = ConsoleStartAnalyticsAdapter()
         self.onboardingAnalytics = ConsoleOnboardingAnalyticsAdapter()
+        self.showsDemo = Self.demoEnabled() && dataBackend == "http"
     }
 
     /// `MinitAPIBaseURL` from Info.plist (`MINIT_API_BASE_URL` in the configuration xcconfig).
@@ -123,6 +128,13 @@ final class AppDependencies {
             return "firebase"
         }
         return value
+    }
+
+    /// `MinitDemoEnabled` from Info.plist (`MINIT_DEMO_ENABLED`, `YES` in Debug/Internal,
+    /// `NO` in Release). A missing, unexpanded, or non-`YES` value is treated as off, so a
+    /// host plist that never sets the key stays hidden.
+    private static func demoEnabled(bundle: Bundle = .main) -> Bool {
+        plistString("MinitDemoEnabled", bundle: bundle).trimmingCharacters(in: .whitespacesAndNewlines) == "YES"
     }
 
     private static func plistString(_ key: String, bundle: Bundle = .main) -> String {

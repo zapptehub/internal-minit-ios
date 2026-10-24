@@ -33,6 +33,8 @@ struct ContentView: View {
         authRepository: AppDependencies.shared.authRepository,
         loyaltyCardRepository: AppDependencies.shared.loyaltyCardRepository,
         onboardingProgressStore: AppDependencies.shared.onboardingProgressStore,
+        networkClient: AppDependencies.shared.networkClient,
+        demoSessionStore: AppDependencies.shared.authDataModule.demoSessionStore,
         clearAvatarURLCache: {
             AppDependencies.shared.networkClient.clearCachedResponses()
         }
@@ -102,9 +104,26 @@ struct ContentView: View {
 
     private var unauthenticatedFlow: some View {
         FeatureStart.createScreen(
-            analytics: AppDependencies.shared.startAnalytics
+            analytics: AppDependencies.shared.startAnalytics,
+            showsDemo: AppDependencies.shared.showsDemo,
+            onGetStarted: {
+                // A prior demo attempt must not outlive an email login that follows it.
+                appFlow.clearDemoSession()
+                activeSheet = .login
+            },
+            onDemoContinue: {
+                appFlow.startDemo()
+            }
+        )
+        .alert(
+            AppLocalizedString.string("appFlow.demoStart.error.title", locale: currentLocale),
+            isPresented: demoStartErrorPresented
         ) {
-            activeSheet = .login
+            Button(DesignSystemLocalizedString.string("common.alert.ok", locale: currentLocale)) {
+                appFlow.clearDemoStartError()
+            }
+        } message: {
+            Text(AppLocalizedString.string("appFlow.demoStart.error.message", locale: currentLocale))
         }
         .sheet(item: $activeSheet, onDismiss: {
             if pendingPasswordChanged {
@@ -138,6 +157,15 @@ struct ContentView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+    }
+
+    private var demoStartErrorPresented: Binding<Bool> {
+        Binding(
+            get: { appFlow.demoStartErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented { appFlow.clearDemoStartError() }
+            }
+        )
     }
 
     private func onboardingFlow(userId: String) -> some View {

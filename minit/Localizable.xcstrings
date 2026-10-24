@@ -89,6 +89,50 @@
         }
       }
     },
+    "appFlow.demoStart.error.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't start demo mode"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült elindítani a demó módot"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo režim sa nepodarilo spustiť"
+          }
+        }
+      }
+    },
+    "appFlow.demoStart.error.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ellenőrizd az internetkapcsolatodat, majd próbáld újra."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skontrolujte pripojenie a skúste to znova."
+          }
+        }
+      }
+    },
     "appFlow.retry" : {
       "extractionState" : "manual",
       "localizations" : {

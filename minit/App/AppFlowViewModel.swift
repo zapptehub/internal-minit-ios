@@ -1,5 +1,6 @@
 import Observation
 import Foundation
+import CoreNetworking
 import DataAuth
 import DataLoyaltyCard
 import FeatureOnboarding
@@ -39,6 +40,7 @@ import FeatureOnboarding
 @Observable
 final class AppFlowViewModel {
     static let defaultRestoreTimeout: Duration = .seconds(15)
+    private static let demoSessionPath = "/v1/demo/session"
     enum State: Equatable {
         case loading
         /// `currentSession()` threw — validity couldn't be determined (e.g. offline),
@@ -59,10 +61,19 @@ final class AppFlowViewModel {
     /// last-selected in-progress language immediately. `nil` on first launch, when
     /// already complete (progress was cleared), or when nothing was stored yet.
     private(set) var restoredLocale: Locale?
+    /// Set when `startDemo()`'s `POST /v1/demo/session` fails (network, 503, other) — the
+    /// Start screen's normal error-alert style, not a new mechanism. `nil` otherwise.
+    private(set) var demoStartErrorMessage: String?
 
     private let authRepository: AuthRepository
     private let loyaltyCardRepository: LoyaltyCardRepository
     private let onboardingProgressStore: any OnboardingProgressStoring
+    /// POSTs `/v1/demo/session` directly from the App target — `NetworkClient` is not a
+    /// `Data-Auth` dependency (see `AuthDataModule`'s doc comment on `demoSessionStore`).
+    private let networkClient: NetworkClient
+    /// In-memory-only demo bearer; `AuthDataModule.tokenProvider` reads it before
+    /// Firebase on every request. Never persisted (see `DemoSessionTokenStore`).
+    private let demoSessionStore: DemoSessionTokenStore
     private let restoreTimeout: Duration
     /// Drops avatar responses stored on the network session. The app passes
     /// `NetworkClientImpl.clearCachedResponses()`. That cache is the session's
@@ -76,12 +87,16 @@ final class AppFlowViewModel {
         authRepository: AuthRepository,
         loyaltyCardRepository: LoyaltyCardRepository,
         onboardingProgressStore: any OnboardingProgressStoring,
+        networkClient: NetworkClient,
+        demoSessionStore: DemoSessionTokenStore,
         restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
         clearAvatarURLCache: @escaping @MainActor () -> Void = {}
     ) {
         self.authRepository = authRepository
         self.loyaltyCardRepository = loyaltyCardRepository
         self.onboardingProgressStore = onboardingProgressStore
+        self.networkClient = networkClient
+        self.demoSessionStore = demoSessionStore
         self.restoreTimeout = restoreTimeout
         self.clearAvatarURLCache = clearAvatarURLCache
     }
@@ -132,6 +147,48 @@ final class AppFlowViewModel {
         Task { await resolvePostAuthDestination(userId: session.userId, attempt: attempt) }
     }
 
+    /// Start's "Try Minit in Demo mode" alert's Continue button. `POST /v1/demo/session`
+    /// carries no `Authorization` header (no session is active yet), and returns the same
+    /// `{accessToken, userId}` shape as a real login. The token goes into the in-memory
+    /// demo slot before the normal post-login routing runs, so the seeded linked card
+    /// skips onboarding straight to Home as Iveta.
+    func startDemo() {
+        demoStartErrorMessage = nil
+        let attempt = beginLaunchAttempt()
+        state = .loading
+        Task {
+            do {
+                let session: AuthDto = try await networkClient.request(
+                    Self.demoSessionPath,
+                    method: .POST
+                )
+                guard isCurrentLaunchAttempt(attempt) else { return }
+                await demoSessionStore.set(session.accessToken)
+                guard isCurrentLaunchAttempt(attempt) else {
+                    await demoSessionStore.set(nil)
+                    return
+                }
+                await resolvePostAuthDestination(userId: session.userId, attempt: attempt)
+            } catch {
+                guard isCurrentLaunchAttempt(attempt) else { return }
+                demoStartErrorMessage = error.localizedDescription
+                restoredLocale = nil
+                state = .unauthenticated
+            }
+        }
+    }
+
+    /// Dismisses the demo-start failure alert without retrying.
+    func clearDemoStartError() {
+        demoStartErrorMessage = nil
+    }
+
+    /// Clears a stale demo token before the login sheet opens, so a prior demo attempt
+    /// never outlives an actual Firebase email login that follows it.
+    func clearDemoSession() {
+        Task { await demoSessionStore.set(nil) }
+    }
+
     /// `FeatureOnboarding`'s `onCompleted` callback — fires only after the terminal
     /// primary is tapped with a confirmed linked card (Create Card's Continue, or
     /// processing scan's Enter Minit), never from bootstrap.
@@ -152,6 +209,7 @@ final class AppFlowViewModel {
         clearAvatarURLCache()
         Task {
             await authRepository.logout()
+            await demoSessionStore.set(nil)
             guard isCurrentLaunchAttempt(attempt) else { return }
             // Inside the guard, before `.unauthenticated` is published. A newer
             // launch owns the cache once this attempt is stale. A load can refill
