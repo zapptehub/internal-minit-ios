@@ -130,9 +130,11 @@ struct StartScreen: View {
             }
 
             if showsDemo {
+                // Unfilled text action so the orange primary pill stays the visual CTA.
+                // Inverse matches the headline and legal copy already on this hero.
                 DSButton(
                     title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
-                    type: .secondary
+                    type: .textStyle(textColor: DSColor.Text.inverse, typography: .uiLargeRegular)
                 ) {
                     showsDemoConfirmation = true
                 }
