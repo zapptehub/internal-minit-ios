@@ -130,13 +130,20 @@ struct StartScreen: View {
             }
 
             if showsDemo {
-                // Unfilled text action so the orange primary pill stays the visual CTA.
-                // Inverse matches the headline and legal copy already on this hero.
+                // Quiet outline so the orange primary pill stays the visual CTA.
+                // Same capsule and height as Get started; inverse matches the hero copy.
+                // 1pt is a literal — border-width tokens are internal to DesignSystem.
                 DSButton(
                     title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
                     type: .textStyle(textColor: DSColor.Text.inverse, typography: .uiLargeRegular)
                 ) {
                     showsDemoConfirmation = true
+                }
+                .overlay {
+                    Capsule()
+                        .strokeBorder(DSColor.Text.inverse, lineWidth: 1)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
             }
 
