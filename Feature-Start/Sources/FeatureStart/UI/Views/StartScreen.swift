@@ -130,20 +130,14 @@ struct StartScreen: View {
             }
 
             if showsDemo {
-                // Quiet outline so the orange primary pill stays the visual CTA.
-                // Same capsule and height as Get started; inverse matches the hero copy.
-                // 1pt is a literal — border-width tokens are internal to DesignSystem.
+                // Solid neutral pill, same size as Get started, quieter than the orange
+                // primary. `.social` is the existing light surface (`Background.Button.disabled`,
+                // grey 50) with a dark label (`Text.primary`).
                 DSButton(
                     title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
-                    type: .textStyle(textColor: DSColor.Text.inverse, typography: .uiLargeRegular)
+                    type: .social
                 ) {
                     showsDemoConfirmation = true
-                }
-                .overlay {
-                    Capsule()
-                        .strokeBorder(DSColor.Text.inverse, lineWidth: 1)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
                 }
             }
 
