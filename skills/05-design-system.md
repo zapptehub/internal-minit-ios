@@ -160,7 +160,7 @@ DSButton(title: "", type: .primary, icon: .storefront, widthStyle: .icon) { view
 DSButton(title: "Continue", type: .primary, isLoading: viewModel.isSubmitting) { viewModel.continue() }
 ```
 
-`DSButtonType` values: `.primary`, `.secondary`, `.tertiary`, `.textStyle(textColor:typography:)` — all solid types render white text (`DSColor.Text.onColorButton`) and always render as a pill (`Capsule()`), regardless of height.
+`DSButtonType` values: `.primary`, `.secondary`, `.tertiary`, `.textStyle(textColor:typography:)` — those solid types render white text (`DSColor.Text.onColorButton`) and always render as a pill (`Capsule()`), regardless of height. `.darkOrange` is the same pill and the same black fill as `.tertiary` (`Background.Button.tertiary`, `#000000`), with label `DSPlatformColorExtension.darkOrangeButtonLabel` (`Minit.tone600`, `#CE6900`) for the Start screen demo button. Other one-off types (`.social`, `.loyaltyCard`, `.glass`) are documented on `DSButtonType`.
 
 ### `DSInputField` usage
 

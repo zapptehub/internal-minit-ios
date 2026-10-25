@@ -101,6 +101,11 @@ final class DSSemanticColorTests: XCTestCase {
             DSPlatformColorExtension.loyaltyButtonBorder.sourceID,
             "platform:legacy:loyalty-button-border"
         )
+        XCTAssertEqual(DSPlatformColorExtension.darkOrangeButtonLabel.rgb, 0xCE6900)
+        XCTAssertEqual(
+            DSPlatformColorExtension.darkOrangeButtonLabel,
+            DSPrimitiveColor.Minit.tone600
+        )
         XCTAssertEqual(DSPlatformColorExtension.loyaltyRankSubtitle.rgb, 0xA3A3A3)
         XCTAssertEqual(
             DSPlatformColorExtension.loyaltyRankSubtitle.sourceID,

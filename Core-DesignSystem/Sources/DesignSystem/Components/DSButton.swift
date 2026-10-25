@@ -18,6 +18,17 @@ public enum DSButtonType {
     /// material always reads as "glass over dark content" regardless of the device's
     /// system appearance.
     case glass
+    /// Near-black pill with a dark orange label, same size as `.primary`. Fill reuses
+    /// `.tertiary`'s `Background.Button.tertiary` (`#000000`). `.tertiary` forces a white
+    /// label (`Text.onColorButton`), and `.textStyle` has no fill, so this case is the
+    /// only orange-on-black pairing. Label is `darkOrangeButtonLabel`
+    /// (`Minit.tone600`, `#CE6900`): the darkest existing orange that clears WCAG 4.5:1
+    /// on black (5.65:1). Deeper shades fail (`tone700` `#9D5000` 3.58:1, `tone800`
+    /// `#6C3700` 2.18:1). Brighter semantic oranges (`Text.accent` / `Button.primary`
+    /// `#FF9A31`, `Button.accent`
+    /// `#FF8200`) also pass, but they are the Get started fill, not a dark label.
+    /// One call site: the Start screen demo button. Does not change other types.
+    case darkOrange
     case textStyle(textColor: Color, typography: FontType)
 }
 
@@ -212,7 +223,7 @@ public struct DSButton: View {
         return heightStyle == .small ? .uiRegular : .uiLargeBold
     }
 
-    private var labelColor: Color {
+    var labelColor: Color {
         switch type {
         case .primary, .secondary, .tertiary:
             return isEnabled ? DSColor.Text.onColorButton : DSColor.Text.disabled
@@ -220,12 +231,14 @@ public struct DSButton: View {
             return isEnabled ? DSColor.Text.primary : DSColor.Text.disabled
         case .glass:
             return isEnabled ? .white : .white.opacity(0.5)
+        case .darkOrange:
+            return isEnabled ? Self.darkOrangeLabel : DSColor.Text.disabled
         case .textStyle(let color, _):
             return color
         }
     }
 
-    private var backgroundColor: Color {
+    var backgroundColor: Color {
         switch type {
         case .primary:
             return isEnabled ? DSColor.Background.Button.primary : DSColor.Background.Button.disabled
@@ -235,6 +248,8 @@ public struct DSButton: View {
             return isEnabled ? DSColor.Background.Button.tertiary : DSColor.Background.Button.disabled
         case .social:
             return DSColor.Background.Button.disabled
+        case .darkOrange:
+            return isEnabled ? DSColor.Background.Button.tertiary : DSColor.Background.Button.disabled
         case .loyaltyCard:
             // Unused — `.loyaltyCard` renders its gradient via `backgroundView` instead.
             return .clear
@@ -298,6 +313,9 @@ public struct DSButton: View {
     // MARK: - `.glass` constants
 
     private static let glassBorder = Color.white.opacity(0.25)
+
+    /// `darkOrangeButtonLabel` (`Minit.tone600`, `#CE6900`).
+    private static let darkOrangeLabel = DSPlatformColorExtension.darkOrangeButtonLabel.color
 }
 
 #Preview {
@@ -305,6 +323,7 @@ public struct DSButton: View {
         DSButton(title: "Redeem Rewards", type: .primary) { }
         DSButton(title: "Redeem Rewards", type: .secondary) { }
         DSButton(title: "Reset Password", type: .tertiary) { }
+        DSButton(title: "Try Minit in Demo mode", type: .darkOrange) { }
         DSButton(title: "Redeem Rewards", type: .primary, isEnabled: false) { }
 
         // Loading state — label content swaps for a tinted ProgressView; taps are ignored.

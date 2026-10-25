@@ -130,12 +130,13 @@ struct StartScreen: View {
             }
 
             if showsDemo {
-                // Solid neutral pill, same size as Get started, quieter than the orange
-                // primary. `.social` is the existing light surface (`Background.Button.disabled`,
-                // grey 50) with a dark label (`Text.primary`).
+                // Same size as Get started. Near-black fill is `.tertiary`'s
+                // `Background.Button.tertiary` (#000000); `.darkOrange` exists because
+                // that type forces a white label. Label is `darkOrangeButtonLabel`
+                // (`Minit.tone600`, #CE6900).
                 DSButton(
                     title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
-                    type: .social
+                    type: .darkOrange
                 ) {
                     showsDemoConfirmation = true
                 }

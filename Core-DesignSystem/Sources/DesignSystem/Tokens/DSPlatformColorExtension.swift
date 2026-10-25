@@ -1,5 +1,5 @@
-/// Color values retained from the existing product palette because the Mode 1
-/// design export has no matching primitive for them.
+/// Named colours that are not Mode 1 semantic roles: legacy values with no matching
+/// primitive, and one-offs that alias a primitive without a Figma role.
 internal enum DSPlatformColorExtension {
     static let controlSelected = DSColorToken(
         rgb: 0x12B76A,
@@ -13,6 +13,9 @@ internal enum DSPlatformColorExtension {
         rgb: 0xDFDFDF,
         sourceID: "platform:legacy:loyalty-button-border"
     )
+    /// `DSButtonType.darkOrange` label. Aliases `Minit.tone600` (`#CE6900`).
+    /// No semantic text role — the darkest semantic orange is `Text.accent` (tone400).
+    static let darkOrangeButtonLabel = DSPrimitiveColor.Minit.tone600
     /// Figma loyalty-card rank subtitle `#A3A3A3`. No Mode 1 primitive matches
     /// (nearest greys are `#B3B3B3` and `#999999`).
     static let loyaltyRankSubtitle = DSColorToken(
