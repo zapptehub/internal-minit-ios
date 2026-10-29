@@ -21,9 +21,12 @@ struct ShakeReportSheet: View {
     }
 
     /// Android `ShakeReportSheet` spacing (dp as pt) and Material 3 field/button metrics.
+    /// Top padding is the distance from the sheet's top edge to the title. Android's
+    /// 8dp sits under a drag handle that already clears the title; the system grabber
+    /// does not, so the title needs about 30pt.
     private enum Metrics {
         static let sidePadding: CGFloat = 24
-        static let topPadding: CGFloat = 8
+        static let topPadding: CGFloat = 30
         static let bottomPadding: CGFloat = 24
         static let spacing: CGFloat = 16
         static let fieldPadding: CGFloat = 16
@@ -436,7 +439,8 @@ enum ShakeReportSheetPresenter {
 @Observable
 private final class ReportSheetFit {
     /// Resting height used until the form reports its measured height.
-    static let fallbackContentHeight: CGFloat = 320
+    /// Includes the 30pt top padding (was 320 when that padding was 8).
+    static let fallbackContentHeight: CGFloat = 342
 
     @ObservationIgnored
     var onChange: (_ animated: Bool) -> Void = { _ in }
