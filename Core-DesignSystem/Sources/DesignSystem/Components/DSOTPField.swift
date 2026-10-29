@@ -101,7 +101,8 @@ public struct DSOTPField: View {
                 onDeleteBackwardOnEmpty: {
                     model.handleDeleteBackwardOnEmpty(at: index)
                     code.wrappedValue = model.code
-                }
+                },
+                reportID: "otp"
             )
         }
     }

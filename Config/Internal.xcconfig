@@ -26,3 +26,7 @@ CF_ACCESS_CLIENT_SECRET =
 #include? "Secrets.xcconfig"
 
 SENTRY_ENVIRONMENT = internal
+
+// Whole value, after Local.xcconfig. Internal does not define DEBUG.
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = MINIT_SHAKE
+MINIT_SHAKE_REPORT_EMAIL = armands.berzins@saleseverest.com

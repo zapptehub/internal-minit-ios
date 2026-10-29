@@ -5,6 +5,7 @@ import CoreNetworking
 import DataAuth
 import DataProfile
 import DataLoyaltyCard
+import DesignSystem
 import FeatureHome
 import FeatureLogin
 import FeatureStart
@@ -84,7 +85,26 @@ final class AppDependencies {
         self.startAnalytics = ConsoleStartAnalyticsAdapter()
         self.onboardingAnalytics = ConsoleOnboardingAnalyticsAdapter()
         self.showsDemo = Self.demoEnabled() && dataBackend == "http"
+        #if MINIT_SHAKE
+        let reportAddress = Self.reportAddress()
+        self.reportAddress = reportAddress
+        ShakeReportLog.shared.setEnabled(reportAddress != nil)
+        if reportAddress != nil {
+            AppLogger.lineSink = { ShakeReportLog.shared.record($0) }
+            DiagnosticLines.record = { ShakeReportLog.shared.record($0) }
+        }
+        #endif
     }
+
+    #if MINIT_SHAKE
+    /// `MinitShakeReportEmail` when it expanded to a non-empty address. Empty, missing,
+    /// or a leftover `$(` token leaves shake-to-report off.
+    let reportAddress: String?
+
+    static func reportAddress(bundle: Bundle = .main) -> String? {
+        ShakeReportGate.address(from: plistString("MinitShakeReportEmail", bundle: bundle))
+    }
+    #endif
 
     /// `MinitAPIBaseURL` from Info.plist (`MINIT_API_BASE_URL` in the configuration xcconfig).
     /// Requires an absolute `http` or `https` URL with a host, no query or fragment, and no trailing slash.

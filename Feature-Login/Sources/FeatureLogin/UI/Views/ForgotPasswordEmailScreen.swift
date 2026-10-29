@@ -52,7 +52,8 @@ struct ForgotPasswordEmailScreen: View {
                 label: LoginLocalizedString.string("createAccount.field.email", locale: locale),
                 text: $viewModel.email,
                 validationState: viewModel.hasEmailFormatError ? .error : .none,
-                keyboardTypeOverride: .emailAddress
+                keyboardTypeOverride: .emailAddress,
+                reportID: "email"
             )
             .padding(.top, headlineToFieldsSpacing)
 
@@ -87,6 +88,7 @@ struct ForgotPasswordEmailScreen: View {
     /// Stub — shows the shared "under construction" alert via `LoginViewModel`.
     private var contactSupportLink: some View {
         Button {
+            DiagnosticLines.line("support")
             viewModel.showFeatureUnderConstruction()
         } label: {
             HStack(spacing: DSConstant.small.value) {

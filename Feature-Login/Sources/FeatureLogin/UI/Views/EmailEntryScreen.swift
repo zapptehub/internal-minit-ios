@@ -46,6 +46,7 @@ struct EmailEntryScreen: View {
                     .autocorrectionDisabled()
                     .textContentType(.emailAddress)
                     .focused($isEmailFieldFocused)
+                    .diagnosticField(id: "email", text: viewModel.email, isFocused: isEmailFieldFocused)
                     .frame(minHeight: dynamicTypeSize > .large ? emailFieldFontSize * 1.25 : nil, alignment: .leading)
                     .accessibilityLabel(LoginLocalizedString.string("createAccount.field.email", locale: locale))
                     .accessibilityHintIfPresent(invalidEmailAccessibilityHint)

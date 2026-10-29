@@ -71,6 +71,7 @@ struct StartScreen: View {
             Button(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale), role: .cancel) {}
             Button(DesignSystemLocalizedString.string("common.alert.continue", locale: locale)) {
                 onDemoContinue()
+                DiagnosticLines.line("start.demo.continue")
             }
         } message: {
             Text(StartLocalizedString.string("start.demo.alert.message", locale: locale))
@@ -125,8 +126,8 @@ struct StartScreen: View {
                 title: StartLocalizedString.string("start.button.getStarted", locale: locale),
                 type: .primary
             ) {
-                analytics?.trackGetStartedTapped(file: #fileID)
                 onGetStarted()
+                analytics?.trackGetStartedTapped(file: #fileID)
             }
 
             if showsDemo {
@@ -138,6 +139,7 @@ struct StartScreen: View {
                     title: StartLocalizedString.string("start.button.tryDemo", locale: locale),
                     type: .darkOrange
                 ) {
+                    DiagnosticLines.line("start.demo")
                     showsDemoConfirmation = true
                 }
             }
@@ -148,6 +150,10 @@ struct StartScreen: View {
                 .tint(DSColor.Text.inverse)
                 .multilineTextAlignment(.center)
                 .uncompressedWhenTextIsLarge()
+                .environment(\.openURL, OpenURLAction { _ in
+                    DiagnosticLines.line("start.legal")
+                    return .systemAction
+                })
         }
         .padding(.horizontal, DSConstant.xxLarge.value)
         .padding(.bottom, DSConstant.xxLarge.value)

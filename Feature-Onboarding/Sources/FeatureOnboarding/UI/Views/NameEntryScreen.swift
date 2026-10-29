@@ -40,6 +40,7 @@ struct NameEntryScreen: View {
                 .autocapitalization(.words)
                 .autocorrectionDisabled()
                 .focused($isNameFieldFocused)
+                .diagnosticField(id: "name", text: viewModel.name, isFocused: isNameFieldFocused)
                 .submitLabel(.continue)
                 .onSubmit {
                     guard viewModel.canContinueFromName else { return }

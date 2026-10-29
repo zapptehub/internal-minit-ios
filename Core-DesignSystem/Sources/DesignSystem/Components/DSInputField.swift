@@ -34,6 +34,8 @@ public struct DSInputField: View {
     private let isFocusedOverride: Bool?
     private let isFocusedBinding: Binding<Bool>?
     private let onDeleteBackwardOnEmpty: (() -> Void)?
+    /// Stable id for `field focused` / `field typed`. Nil records nothing.
+    private let reportID: String?
 
     @FocusState private var isFocused: Bool
     @State private var isSecureTextHidden = true
@@ -78,7 +80,8 @@ public struct DSInputField: View {
         /// can't report this (no text change to diff against), so this box switches to a
         /// UIKit-backed field that overrides `deleteBackward()` directly. `DSOTPField` uses
         /// this to jump focus back to (and clear) the previous digit box.
-        onDeleteBackwardOnEmpty: (() -> Void)? = nil
+        onDeleteBackwardOnEmpty: (() -> Void)? = nil,
+        reportID: String? = nil
     ) {
         self.label = label
         self.text = text
@@ -92,6 +95,7 @@ public struct DSInputField: View {
         self.isFocusedOverride = isFocusedOverride
         self.isFocusedBinding = isFocusedBinding
         self.onDeleteBackwardOnEmpty = onDeleteBackwardOnEmpty
+        self.reportID = reportID
     }
 
     public var body: some View {
@@ -111,6 +115,15 @@ public struct DSInputField: View {
         }
         .autocorrectionDisabled()
         .disabled(!isEnabled)
+        .diagnosticField(id: reportID, text: text.wrappedValue, isFocused: loggedFocus)
+    }
+
+    /// Keyboard focus, not the OTP fill highlight. The line records the id only.
+    private var loggedFocus: Bool {
+        if let isFocusedBinding {
+            return isFocusedBinding.wrappedValue
+        }
+        return isFocused
     }
 
     /// Android uses the visible description as the error announcement when it is

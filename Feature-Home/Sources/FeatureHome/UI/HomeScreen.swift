@@ -90,9 +90,11 @@ struct HomeScreen: View {
         .task { await model.loadHome() }
         .alert(HomeLocalizedString.string("home.logOut.title", locale: locale), isPresented: logOutConfirmationPresented) {
             Button(HomeLocalizedString.string("home.logOut.cancel", locale: locale), role: .cancel) {
+                DiagnosticLines.line("home.logOut.cancel")
                 model.dismissLogOutConfirmation()
             }
             Button(HomeLocalizedString.string("home.logOut.title", locale: locale), role: .destructive) {
+                DiagnosticLines.line("home.logOut.confirm")
                 model.onLogOut = onLogOut
                 model.confirmLogOut()
             }
@@ -218,6 +220,7 @@ struct HomeScreen: View {
         let model = model
         let retryEnabled = !model.isLoggingOut
         let retry: () -> Void = {
+            DiagnosticLines.line("home.retry")
             Task { await model.loadCatalog() }
         }
         let column = VStack(alignment: .leading, spacing: 0) {
@@ -324,12 +327,14 @@ struct HomeScreen: View {
             rankProgress: face.rankProgress,
             showsShadow: false
         ) {
+            DiagnosticLines.line("home.loyalty")
             model.openLoyaltyCardDetail()
         }
     }
 
     private var profileButton: some View {
         Button {
+            DiagnosticLines.line("home.profile")
             model.profileTapped()
         } label: {
             AvatarImage(
@@ -344,11 +349,16 @@ struct HomeScreen: View {
         .accessibilityLabel(HomeLocalizedString.string("home.a11y.profile", locale: locale))
     }
 
+    private func notificationsTapped() {
+        DiagnosticLines.line("home.notifications")
+        model.openNotifications()
+    }
+
     @ViewBuilder
     private var bellButton: some View {
         if #available(iOS 26, *) {
             Button {
-                model.openNotifications()
+                notificationsTapped()
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -364,7 +374,7 @@ struct HomeScreen: View {
             .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         } else {
             Button {
-                model.openNotifications()
+                notificationsTapped()
             } label: {
                 DSIconView(
                     icon: .minitBell,
@@ -393,7 +403,10 @@ struct HomeScreen: View {
         DSBannerCarousel(
             items: model.catalog.bannerItems(locale: locale),
             initialIndex: model.catalog.dailyOfferInitialIndex,
-            onBannerTap: { model.showUnderConstruction(.dailyOfferBanner) }
+            onBannerTap: {
+                DiagnosticLines.line("home.dailyOffer")
+                model.showUnderConstruction(.dailyOfferBanner)
+            }
         )
         .id(DailyOfferCarouselIdentity(
             initialIndex: model.catalog.dailyOfferInitialIndex,
@@ -406,8 +419,14 @@ struct HomeScreen: View {
         DSCircleItemList(
             title: model.catalog.sectionTitle("products", locale: locale),
             items: model.catalog.productItems(locale: locale),
-            onItemTap: { model.showUnderConstruction(.product) },
-            onSeeAllTap: { model.showUnderConstruction(.productsSeeAll) }
+            onItemTap: {
+                DiagnosticLines.line("home.products.item")
+                model.showUnderConstruction(.product)
+            },
+            onSeeAllTap: {
+                DiagnosticLines.line("home.products.seeAll")
+                model.showUnderConstruction(.productsSeeAll)
+            }
         )
     }
 
@@ -415,8 +434,14 @@ struct HomeScreen: View {
         DSChallengesCardList(
             title: model.catalog.sectionTitle("challenges", locale: locale),
             items: model.catalog.challengeItems(locale: locale),
-            onItemTap: { model.showUnderConstruction(.challenge) },
-            onSeeAllTap: { model.showUnderConstruction(.challengesSeeAll) }
+            onItemTap: {
+                DiagnosticLines.line("home.challenges.item")
+                model.showUnderConstruction(.challenge)
+            },
+            onSeeAllTap: {
+                DiagnosticLines.line("home.challenges.seeAll")
+                model.showUnderConstruction(.challengesSeeAll)
+            }
         )
     }
 
@@ -424,8 +449,14 @@ struct HomeScreen: View {
         DSMediaCardList(
             title: model.catalog.sectionTitle("news", locale: locale),
             items: model.catalog.newsItems(locale: locale),
-            onItemTap: { model.showUnderConstruction(.newsAndRecipe) },
-            onSeeAllTap: { model.showUnderConstruction(.newsAndRecipesSeeAll) }
+            onItemTap: {
+                DiagnosticLines.line("home.news.item")
+                model.showUnderConstruction(.newsAndRecipe)
+            },
+            onSeeAllTap: {
+                DiagnosticLines.line("home.news.seeAll")
+                model.showUnderConstruction(.newsAndRecipesSeeAll)
+            }
         )
     }
 

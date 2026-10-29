@@ -158,8 +158,20 @@ final class NetworkClientImpl: NetworkClient {
     }
 
     private func load(_ request: URLRequest) async throws -> (data: Data, response: HTTPURLResponse) {
+        #if MINIT_SHAKE
+        let started = Date()
+        #endif
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
+        #if MINIT_SHAKE
+        let milliseconds = Int(Date().timeIntervalSince(started) * 1000)
+        ShakeReportLog.shared.recordHTTP(
+            method: request.httpMethod ?? "GET",
+            url: request.url,
+            status: http.statusCode,
+            milliseconds: milliseconds
+        )
+        #endif
         return (data, http)
     }
 

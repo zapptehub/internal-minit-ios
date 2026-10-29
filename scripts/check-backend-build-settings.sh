@@ -226,6 +226,63 @@ case $tests_release_flags in
 esac
 echo "OK minitTests Internal matches Release: DEBUG is not defined"
 
+contains_token() {
+  flags=$1
+  token=$2
+  case " $flags " in
+    *" $token "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+require_token() {
+  label=$1
+  flags=$2
+  token=$3
+  if ! contains_token "$flags" "$token"; then
+    echo "FAIL $label is missing $token" >&2
+    echo "flags: $flags" >&2
+    exit 1
+  fi
+  echo "OK $label has $token"
+}
+
+reject_token() {
+  label=$1
+  flags=$2
+  token=$3
+  if contains_token "$flags" "$token"; then
+    echo "FAIL $label defines $token" >&2
+    echo "flags: $flags" >&2
+    exit 1
+  fi
+  echo "OK $label has no $token"
+}
+
+require_token "Debug" "$debug_flags" MINIT_SHAKE
+require_token "Internal" "$internal_flags" MINIT_SHAKE
+reject_token "Release" "$release_flags" MINIT_SHAKE
+require_token "minitTests Debug" "$tests_debug_flags" MINIT_SHAKE
+require_token "minitTests Internal" "$tests_internal_flags" MINIT_SHAKE
+reject_token "minitTests Internal" "$tests_internal_flags" DEBUG
+reject_token "minitTests Release" "$tests_release_flags" MINIT_SHAKE
+
+release_email=$(value Release MINIT_SHAKE_REPORT_EMAIL)
+if [ -n "$release_email" ]; then
+  echo "FAIL Release MINIT_SHAKE_REPORT_EMAIL is non-empty" >&2
+  exit 1
+fi
+echo "OK Release MINIT_SHAKE_REPORT_EMAIL empty"
+
+for config in Debug Internal; do
+  actual=$(value "$config" MINIT_SHAKE_REPORT_EMAIL)
+  if [ -z "$actual" ]; then
+    echo "FAIL $config MINIT_SHAKE_REPORT_EMAIL is empty" >&2
+    exit 1
+  fi
+  echo "OK $config MINIT_SHAKE_REPORT_EMAIL set"
+done
+
 # Committed source lines. Resolved Debug and Internal settings can still be
 # overridden by gitignored Local.xcconfig, which is why expect_committed skips
 # when that file or Secrets.xcconfig is present. These lines always run.
@@ -242,6 +299,9 @@ expect_exact_line() {
 expect_exact_line "$root/Config/Development.xcconfig" "MINIT_DATA_BACKEND = http"
 expect_exact_line "$root/Config/Internal.xcconfig" "MINIT_DATA_BACKEND = http"
 expect_exact_line "$root/Config/Release.xcconfig" "MINIT_DATA_BACKEND = firebase"
+expect_exact_line "$root/Config/Development.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG MINIT_SHAKE"
+expect_exact_line "$root/Config/Internal.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = MINIT_SHAKE"
+expect_exact_line "$root/Config/Release.xcconfig" "MINIT_SHAKE_REPORT_EMAIL ="
 
 # The http assignment has to precede the optional Local include, so Local can
 # still override it. An exact-line check does not prove that order.
@@ -268,6 +328,33 @@ expect_http_before_local_include() {
 
 expect_http_before_local_include "$root/Config/Development.xcconfig"
 expect_http_before_local_include "$root/Config/Internal.xcconfig"
+
+expect_line_after_local_include() {
+  file=$1
+  text=$2
+  setting_line=$(line_number "$file" "$text")
+  include_line=$(line_number "$file" '#include? "Local.xcconfig"')
+  if [ -z "$setting_line" ] || [ -z "$include_line" ]; then
+    echo "FAIL $(basename "$file") is missing $text or #include? \"Local.xcconfig\"" >&2
+    exit 1
+  fi
+  if [ "$setting_line" -le "$include_line" ]; then
+    echo "FAIL $(basename "$file") $text is not after #include? \"Local.xcconfig\"" >&2
+    exit 1
+  fi
+  echo "OK $(basename "$file") $text comes after #include? \"Local.xcconfig\""
+}
+
+expect_line_after_local_include "$root/Config/Development.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG MINIT_SHAKE"
+expect_line_after_local_include "$root/Config/Internal.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = MINIT_SHAKE"
+
+for file in "$root/Config/Development.xcconfig" "$root/Config/Internal.xcconfig"; do
+  if ! grep -E '^MINIT_SHAKE_REPORT_EMAIL = [^[:space:]]' "$file" >/dev/null; then
+    echo "FAIL $(basename "$file") MINIT_SHAKE_REPORT_EMAIL is missing or empty" >&2
+    exit 1
+  fi
+  echo "OK $(basename "$file") MINIT_SHAKE_REPORT_EMAIL is non-empty"
+done
 
 if grep -E '#include\??[[:space:]]+"*(Local|Secrets)\.xcconfig"' "$root/Config/Release.xcconfig" >/dev/null; then
   echo "FAIL Release.xcconfig includes Local.xcconfig or Secrets.xcconfig" >&2

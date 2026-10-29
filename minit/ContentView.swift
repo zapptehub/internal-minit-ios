@@ -49,6 +49,10 @@ struct ContentView: View {
     /// writes a new value, without any direct coupling between the two. Empty string is
     /// the "never explicitly set yet" sentinel — `@AppStorage` can't hold `String?`.
     @AppStorage(UserDefaultsAppLanguagePreferenceStore.defaultKey) private var appLanguageCode = ""
+    #if MINIT_SHAKE
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var lastShakeAt = Date.distantPast
+    #endif
 
     var body: some View {
         content
@@ -56,6 +60,27 @@ struct ContentView: View {
             .task {
                 await appFlow.bootstrap()
             }
+            #if MINIT_SHAKE
+            .onAppear {
+                if AppDependencies.shared.reportAddress != nil {
+                    ShakeReportWindow.disableShakeToEdit()
+                }
+                recordRoute(appFlow.state)
+            }
+            .onChange(of: appFlow.state) { _, state in
+                recordRoute(state)
+                noteSignedInLaunch(state)
+            }
+            .onChange(of: activeSheet) { _, sheet in
+                recordSheet(sheet)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                ShakeReportLog.shared.scene(reportScene(phase))
+            }
+            .onReceive(NotificationCenter.default.publisher(for: ShakeReportWindow.didShake)) { _ in
+                handleShake()
+            }
+            #endif
     }
 
     /// A confirmed device-wide language choice applies everywhere — Start, Login, the
@@ -91,7 +116,12 @@ struct ContentView: View {
                 homeRepository: AppDependencies.shared.homeRepository,
                 networkClient: AppDependencies.shared.networkClient,
                 apiBaseURL: AppDependencies.shared.apiBaseURL,
-                onLogOut: appFlow.logOut
+                onLogOut: {
+                    #if MINIT_SHAKE
+                    ShakeReportLog.shared.endSession()
+                    #endif
+                    appFlow.logOut()
+                }
             )
         }
     }
@@ -107,11 +137,17 @@ struct ContentView: View {
             analytics: AppDependencies.shared.startAnalytics,
             showsDemo: AppDependencies.shared.showsDemo,
             onGetStarted: {
+                #if MINIT_SHAKE
+                ShakeReportLog.shared.beginGetStarted()
+                #endif
                 // A prior demo attempt must not outlive an email login that follows it.
                 appFlow.clearDemoSession()
                 activeSheet = .login
             },
             onDemoContinue: {
+                #if MINIT_SHAKE
+                ShakeReportLog.shared.beginDemoContinue()
+                #endif
                 appFlow.startDemo()
             }
         )
@@ -181,6 +217,56 @@ struct ContentView: View {
             }
         )
     }
+
+    #if MINIT_SHAKE
+    private func handleShake() {
+        guard let address = AppDependencies.shared.reportAddress else { return }
+        guard !ShakeReportSheetPresenter.isPresented else { return }
+        let now = Date()
+        guard now.timeIntervalSince(lastShakeAt) >= 2 else { return }
+        guard ShakeReportSheetPresenter.present(address: address, locale: currentLocale) else { return }
+        lastShakeAt = now
+    }
+
+    private func recordRoute(_ state: AppFlowViewModel.State) {
+        ShakeReportLog.shared.record("route \(ShakeReportRoute.screen(state))")
+    }
+
+    private func recordSheet(_ sheet: AuthSheet?) {
+        let name: String
+        switch sheet {
+        case .login:
+            name = "login"
+        case .passwordChanged:
+            name = "passwordChanged"
+        case nil:
+            name = "none"
+        }
+        ShakeReportLog.shared.record("route sheet \(name)")
+    }
+
+    private func noteSignedInLaunch(_ state: AppFlowViewModel.State) {
+        switch state {
+        case .authenticated, .onboarding, .onboardingStatusFailed:
+            ShakeReportLog.shared.noteSignedInLaunchIfNeeded()
+        case .loading, .sessionRestoreFailed, .unauthenticated:
+            break
+        }
+    }
+
+    private func reportScene(_ phase: ScenePhase) -> ShakeReportScene {
+        switch phase {
+        case .active:
+            return .active
+        case .background:
+            return .background
+        case .inactive:
+            return .inactive
+        @unknown default:
+            return .inactive
+        }
+    }
+    #endif
 }
 
 /// Session-restore failure and onboarding-status failure each show their own

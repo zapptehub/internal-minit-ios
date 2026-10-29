@@ -12,6 +12,8 @@
 	<string>$(MINIT_DATA_BACKEND)</string>
 	<key>MinitDemoEnabled</key>
 	<string>$(MINIT_DEMO_ENABLED)</string>
+	<key>MinitShakeReportEmail</key>
+	<string>$(MINIT_SHAKE_REPORT_EMAIL)</string>
 	<key>CFAccessClientId</key>
 	<string>$(CF_ACCESS_CLIENT_ID)</string>
 	<key>CFAccessClientSecret</key>

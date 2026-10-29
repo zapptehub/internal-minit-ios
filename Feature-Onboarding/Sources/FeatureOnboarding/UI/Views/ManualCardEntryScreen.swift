@@ -33,7 +33,8 @@ struct ManualCardEntryScreen: View {
                 DSInputField(
                     label: OnboardingLocalizedString.string("onboarding.manualEntry.placeholder", locale: locale),
                     text: $code,
-                    placeholder: OnboardingLocalizedString.string("onboarding.manualEntry.placeholder", locale: locale)
+                    placeholder: OnboardingLocalizedString.string("onboarding.manualEntry.placeholder", locale: locale),
+                    reportID: "card"
                 )
                 .textInputAutocapitalization(.characters)
                 .submitLabel(.continue)

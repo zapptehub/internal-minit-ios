@@ -10,6 +10,9 @@ public final class LoginViewModel {
     public var password: String = ""
     public var state: AuthState = .idle
     public var errorMessage: String? = nil
+    /// Last classified auth failure. Verification analytics record this case name, not the
+    /// localized sentence in `errorMessage`.
+    public private(set) var lastAuthFailure: AuthOperationError?
 
     /// Re-entered password on the Create Account step — compared against `password` for
     /// the "Continue" enabled state; not used by any other step.
@@ -286,7 +289,9 @@ public final class LoginViewModel {
     /// Catalog copy for a failed auth call, using the in-app language. Firebase's
     /// English `localizedDescription` is not shown.
     private func presentAuthFailure(_ error: Error) {
-        let message = LoginAuthErrorMessage.message(for: error, locale: currentLocale)
+        let operation = AuthOperationError(error)
+        lastAuthFailure = operation
+        let message = LoginAuthErrorMessage.message(for: operation, locale: currentLocale)
         state = .error(message)
         errorMessage = message
     }

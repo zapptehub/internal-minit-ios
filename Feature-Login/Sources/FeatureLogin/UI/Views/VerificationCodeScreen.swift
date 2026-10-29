@@ -63,13 +63,14 @@ struct VerificationCodeScreen: View {
                 }
             case .idle where purpose == .passwordReset:
                 confirmInFlight = false
-            case .error(let message):
+            case .error:
                 confirmInFlight = false
+                let reason = Self.authFailureName(viewModel.lastAuthFailure ?? .unexpected)
                 switch purpose {
                 case .signIn:
-                    analytics.trackLoginFailed(reason: message, file: #fileID)
+                    analytics.trackLoginFailed(reason: reason, file: #fileID)
                 case .signUp:
-                    analytics.trackSignUpFailed(reason: message, file: #fileID)
+                    analytics.trackSignUpFailed(reason: reason, file: #fileID)
                 case .passwordReset:
                     break
                 }
@@ -170,6 +171,7 @@ struct VerificationCodeScreen: View {
 
     private var supportFooter: some View {
         Button {
+            DiagnosticLines.line("support")
             viewModel.showFeatureUnderConstruction()
         } label: {
             (
@@ -200,6 +202,28 @@ struct VerificationCodeScreen: View {
 
     private var isConfirmEnabled: Bool {
         viewModel.otpCode.count == 4 && !viewModel.state.isLoading
+    }
+
+    /// English case name. The localized sentence stays on screen and out of the log.
+    private static func authFailureName(_ error: AuthOperationError) -> String {
+        switch error {
+        case .invalidCredentials:
+            return "invalidCredentials"
+        case .invalidEmail:
+            return "invalidEmail"
+        case .emailAlreadyInUse:
+            return "emailAlreadyInUse"
+        case .weakPassword:
+            return "weakPassword"
+        case .accountDisabled:
+            return "accountDisabled"
+        case .network:
+            return "network"
+        case .tooManyRequests:
+            return "tooManyRequests"
+        case .unexpected:
+            return "unexpected"
+        }
     }
 }
 

@@ -52,6 +52,12 @@ struct TabRootView: View {
         // Popups from the tabs (Home's loyalty card) draw above the tab bar, centred on
         // the full screen, with the scrim covering the tab bar like Android.
         .dsPopupHost()
+        .onAppear {
+            DiagnosticLines.line("route tab \(selectedTab.rawValue)")
+        }
+        .onChange(of: selectedTab) { _, tab in
+            DiagnosticLines.line("route tab \(tab.rawValue)")
+        }
     }
 
     @ViewBuilder

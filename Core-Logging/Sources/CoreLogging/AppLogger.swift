@@ -10,11 +10,19 @@ protocol LogFileWriting: Sendable {
 extension LogFileWriter: LogFileWriting {}
 
 public struct AppLogger: Sendable {
+    /// Optional line sink. The app sets this for internal builds and leaves it nil otherwise.
+    /// `forward` does not write the debug file log.
+    public nonisolated(unsafe) static var lineSink: (@Sendable (String) -> Void)?
+
     private let subsystem: String
     private let category: String
     private let osLogger: Logger
     private let writer: LogFileWriting
     private let isFileLoggingEnabled: @Sendable () -> Bool
+
+    public static func forward(_ line: String) {
+        lineSink?(line)
+    }
 
     public init(subsystem: String, category: String) {
         self.init(

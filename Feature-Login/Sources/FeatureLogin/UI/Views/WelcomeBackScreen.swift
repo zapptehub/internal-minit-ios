@@ -47,13 +47,15 @@ struct WelcomeBackScreen: View {
                     label: LoginLocalizedString.string("createAccount.field.email", locale: locale),
                     text: $viewModel.email,
                     validationState: viewModel.hasEmailFormatError ? .error : .none,
-                    keyboardTypeOverride: .emailAddress
+                    keyboardTypeOverride: .emailAddress,
+                    reportID: "email"
                 )
                 DSInputField(
                     label: LoginLocalizedString.string("login.field.password", locale: locale),
                     text: $viewModel.password,
                     type: .password,
-                    placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale)
+                    placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
+                    reportID: "password"
                 )
             }
             .padding(.top, headlineToFieldsSpacing)

@@ -37,21 +37,24 @@ struct CreateAccountScreen: View {
                     text: $viewModel.email,
                     validationState: viewModel.hasEmailFormatError ? .error : .none,
                     isEnabled: true,
-                    keyboardTypeOverride: .emailAddress
+                    keyboardTypeOverride: .emailAddress,
+                    reportID: "email"
                 )
                 DSInputField(
                     label: LoginLocalizedString.string("login.field.password", locale: locale),
                     text: $viewModel.password,
                     type: .password,
                     placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
-                    validationState: viewModel.hasPasswordLengthError ? .error : .none
+                    validationState: viewModel.hasPasswordLengthError ? .error : .none,
+                    reportID: "password"
                 )
                 DSInputField(
                     label: LoginLocalizedString.string("createAccount.field.confirmPassword", locale: locale),
                     text: $viewModel.confirmPassword,
                     type: .password,
                     placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
-                    validationState: passwordsMismatch ? .error : .none
+                    validationState: passwordsMismatch ? .error : .none,
+                    reportID: "passwordConfirm"
                 )
             }
             .padding(.top, headlineToFieldsSpacing)
@@ -61,6 +64,9 @@ struct CreateAccountScreen: View {
                 isChecked: $viewModel.marketingOptIn
             )
             .padding(.top, DSConstant.large.value)
+            .onChange(of: viewModel.marketingOptIn) { _, _ in
+                DiagnosticLines.line("createAccount.marketing")
+            }
 
             if let errorMessage = viewModel.errorMessage {
                 DSWarningMessage(message: errorMessage)
