@@ -2,6 +2,7 @@
 import CoreLogging
 import DesignSystem
 import MessageUI
+import Observation
 import SwiftUI
 import UIKit
 
@@ -9,7 +10,8 @@ struct ShakeReportSheet: View {
     let address: String
     /// Dismisses the UIKit sheet. Cancel drops the draft with the view.
     let onClose: () -> Void
-    var onFieldFocus: (Bool) -> Void = { _ in }
+    /// Shared with the UIKit presenter, which owns the fitted detent.
+    fileprivate let fit: ReportSheetFit
     @Environment(\.locale) private var locale
     @State private var draft = ""
     @FocusState private var fieldFocused: Bool
@@ -18,49 +20,110 @@ struct ShakeReportSheet: View {
         MFMailComposeViewController.canSendMail()
     }
 
+    /// Android `ShakeReportSheet` spacing (dp as pt) and Material 3 field/button metrics.
+    private enum Metrics {
+        static let sidePadding: CGFloat = 24
+        static let topPadding: CGFloat = 8
+        static let bottomPadding: CGFloat = 24
+        static let spacing: CGFloat = 16
+        static let fieldPadding: CGFloat = 16
+        static let fieldCornerRadius: CGFloat = 4
+        static let borderWidth: CGFloat = 1
+        static let focusedBorderWidth: CGFloat = 2
+        static let buttonHeight: CGFloat = 40
+        static let buttonTouchHeight: CGFloat = 48
+        static let buttonLabelSize: CGFloat = 17
+    }
+
     var body: some View {
         let placeholder = AppLocalizedString.string("shake.report.placeholder", locale: locale)
-        VStack(alignment: .leading, spacing: 16) {
-            Text(AppLocalizedString.string("shake.report.title", locale: locale))
-                .font(.title2.bold())
-                .accessibilityAddTraits(.isHeader)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Metrics.spacing) {
+                Text(AppLocalizedString.string("shake.report.title", locale: locale))
+                    .typography(.headingMediumBold)
+                    .foregroundStyle(DSColor.Text.primary)
+                    .accessibilityAddTraits(.isHeader)
 
-            TextField("", text: $draft, prompt: Text(placeholder), axis: .vertical)
-                .accessibilityLabel(placeholder)
+                TextField(
+                    "",
+                    text: $draft,
+                    prompt: Text(placeholder).foregroundStyle(DSColor.Text.secondary),
+                    axis: .vertical
+                )
+                .textFieldStyle(.plain)
+                .typography(.paragraphLargeRegular)
+                .foregroundStyle(DSColor.Text.primary)
+                .tint(DSColor.Background.Button.primary)
                 .lineLimit(3...6)
                 .focused($fieldFocused)
+                .padding(Metrics.fieldPadding)
+                .background {
+                    // The padding sits outside the field. Taps there focus it; taps on
+                    // the text still land on the field so the caret can be placed.
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { fieldFocused = true }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius, style: .circular)
+                        .strokeBorder(
+                            fieldFocused ? DSColor.Background.Button.primary : DSColor.Border.active,
+                            lineWidth: fieldFocused ? Metrics.focusedBorderWidth : Metrics.borderWidth
+                        )
+                        .allowsHitTesting(false)
+                }
+                .accessibilityLabel(placeholder)
 
-            if !canSendMail {
-                Text(AppLocalizedString.string("shake.report.mailUnavailable", locale: locale))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+                if !canSendMail {
+                    Text(AppLocalizedString.string("shake.report.mailUnavailable", locale: locale))
+                        .typography(.paragraphRegular)
+                        .foregroundStyle(DSColor.Text.secondary)
+                }
 
-            Button {
-                send()
-            } label: {
-                Text(AppLocalizedString.string("shake.report.send", locale: locale))
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(DSColor.Background.Button.primary)
+                Button {
+                    send()
+                } label: {
+                    Text(AppLocalizedString.string("shake.report.send", locale: locale))
+                        .font(.system(size: Metrics.buttonLabelSize, weight: .bold))
+                        .foregroundStyle(DSColor.Text.onColorButton)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: Metrics.buttonHeight)
+                        .background(DSColor.Background.Button.primary, in: Capsule())
+                        .frame(height: Metrics.buttonTouchHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
-            Button {
-                onClose()
-            } label: {
-                Text(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale))
-                    .frame(maxWidth: .infinity)
+                Button {
+                    onClose()
+                } label: {
+                    Text(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale))
+                        .font(.system(size: Metrics.buttonLabelSize, weight: .bold))
+                        .foregroundStyle(DSColor.Background.Button.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: Metrics.buttonTouchHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .padding(.horizontal, Metrics.sidePadding)
+            .padding(.top, Metrics.topPadding)
+            .padding(.bottom, Metrics.bottomPadding)
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { size in
+                // A zero-width pass before the sheet has a real width reports a
+                // nonsense height and would open the detent at full screen.
+                guard size.width > 200 else { return }
+                fit.noteContentHeight(size.height)
+            }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 16)
+        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(.systemBackground))
         .onChange(of: fieldFocused) { _, focused in
-            onFieldFocus(focused)
+            fit.noteFieldFocused(focused)
         }
     }
 
@@ -178,45 +241,77 @@ private final class ShakeReportAlertController: UIAlertController {
 /// root. A SwiftUI `.sheet` on `ContentView` is anchored there too, so it does
 /// not stack on top of them. UIKit presentation from the current top controller
 /// does. The sheet still uses the in-app locale passed in from `ContentView`.
-/// Detents are set here: SwiftUI `.presentationDetents` do not apply to this present.
+/// The fitted detent and the solid sheet background are applied here. SwiftUI
+/// presentation modifiers do not drive a UIKit `present`. A regular-width iPad
+/// page sheet is a centred card, so that size class keeps the system sheet.
 enum ShakeReportSheetPresenter {
     private static var active: SheetSession?
+    private static let fittedDetentID = UISheetPresentationController.Detent.Identifier("fitted")
 
     static var isPresented: Bool { active != nil }
+
+    /// Fitted height is for iPhone and compact iPad. A regular-width iPad page sheet ignores detents.
+    private static func usesFittedDetent(_ traits: UITraitCollection) -> Bool {
+        if traits.userInterfaceIdiom == .pad, traits.horizontalSizeClass == .regular {
+            return false
+        }
+        return true
+    }
 
     @discardableResult
     static func present(address: String, locale: Locale) -> Bool {
         guard active == nil, let presenter = shakeReportTopViewController() else { return false }
-        let session = SheetSession()
+        let session = SheetSession(usesFittedDetent: usesFittedDetent(presenter.traitCollection))
+        session.fit.homeIndicatorInset = presenter.view.window?.safeAreaInsets.bottom ?? 0
         let host = ReportHostingController(
             rootView: ShakeReportSheet(
                 address: address,
                 onClose: { [weak session] in
                     session?.close()
                 },
-                onFieldFocus: { [weak session] focused in
-                    session?.setFieldFocused(focused)
-                }
+                fit: session.fit
             )
             .environment(\.locale, locale)
         )
         host.onDidDismiss = { [weak session] in
             session?.end()
         }
+        host.onSafeAreaTop = { [weak session] top in
+            session?.fit.noteTopChrome(top)
+        }
+        // Keyboard avoidance would pad the form by the IME as well as growing the
+        // sheet. The detent lift keeps Send above the keyboard; the 24pt bottom
+        // padding stays the only space under Cancel.
+        host.safeAreaRegions = .container
         host.modalPresentationStyle = .pageSheet
         if let sheet = host.sheetPresentationController {
-            sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
-            sheet.selectedDetentIdentifier = .medium
+            if session.usesFittedDetent {
+                let detent = UISheetPresentationController.Detent.custom(identifier: fittedDetentID) { [weak session] context in
+                    let height = session?.fit.detentHeight ?? ReportSheetFit.fallbackContentHeight
+                    return min(height, context.maximumDetentValue)
+                }
+                if #available(iOS 26.1, *) {
+                    let solid = UIVisualEffect()
+                    detent.backgroundEffect = solid
+                    sheet.backgroundEffect = solid
+                }
+                sheet.detents = [detent]
+                sheet.selectedDetentIdentifier = fittedDetentID
+            } else if #available(iOS 26.1, *) {
+                sheet.backgroundEffect = UIVisualEffect()
+            }
         }
         host.presentationController?.delegate = session
         session.host = host
         active = session
+        if session.usesFittedDetent {
+            session.startKeyboardObservation()
+        }
         presenter.present(host, animated: true)
         host.presentationController?.delegate = session
         guard presenter.presentedViewController === host else {
-            active = nil
-            session.host = nil
+            session.end()
             return false
         }
         return true
@@ -229,37 +324,54 @@ enum ShakeReportSheetPresenter {
 
     /// One presented sheet. Swipe dismissal and `close()` both end it once.
     private final class SheetSession: NSObject, UIAdaptivePresentationControllerDelegate {
+        let fit = ReportSheetFit()
+        let usesFittedDetent: Bool
         var host: UIViewController?
         private var ended = false
-        /// True only after focus selects the large detent. A large detent the
-        /// user dragged to stays where they left it when focus ends.
-        private var expandedForFocus = false
+        private var invalidatingDetent = false
+        private var detentNeedsAnotherPass = false
+        private var keyboardObserver: NSObjectProtocol?
+        private var lastKeyboardEndFrame: CGRect?
+
+        init(usesFittedDetent: Bool) {
+            self.usesFittedDetent = usesFittedDetent
+            super.init()
+            fit.onChange = { [weak self] animated in
+                self?.invalidateFittedDetent(animated: animated)
+            }
+            fit.onFieldFocus = { [weak self] _ in
+                self?.publishKeyboardLift()
+            }
+        }
 
         func close() {
             host?.dismiss(animated: true)
         }
 
-        func setFieldFocused(_ focused: Bool) {
-            guard let sheet = host?.sheetPresentationController else { return }
-            if focused {
-                guard sheet.selectedDetentIdentifier != .large else { return }
-                expandedForFocus = true
-                sheet.animateChanges {
-                    sheet.selectedDetentIdentifier = .large
+        func startKeyboardObservation() {
+            guard usesFittedDetent, keyboardObserver == nil else { return }
+            keyboardObserver = NotificationCenter.default.addObserver(
+                forName: UIResponder.keyboardWillChangeFrameNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                // `Notification` is not Sendable. Read the frame here, then
+                // enter the main actor without capturing the notification.
+                let endFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+                let session = self
+                MainActor.assumeIsolated {
+                    session?.applyKeyboard(endFrame: endFrame)
                 }
-                return
-            }
-            guard expandedForFocus else { return }
-            expandedForFocus = false
-            guard sheet.selectedDetentIdentifier == .large else { return }
-            sheet.animateChanges {
-                sheet.selectedDetentIdentifier = .medium
             }
         }
 
         func end() {
             guard !ended else { return }
             ended = true
+            if let keyboardObserver {
+                NotificationCenter.default.removeObserver(keyboardObserver)
+                self.keyboardObserver = nil
+            }
             host = nil
             ShakeReportSheetPresenter.end(self)
         }
@@ -267,6 +379,106 @@ enum ShakeReportSheetPresenter {
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
             end()
         }
+
+        private func applyKeyboard(endFrame: CGRect?) {
+            guard !ended, usesFittedDetent else { return }
+            lastKeyboardEndFrame = endFrame
+            publishKeyboardLift()
+        }
+
+        /// Lift only while this sheet's field is focused, so another keyboard
+        /// (Mail, an undocked iPad keyboard) cannot resize the detent.
+        private func publishKeyboardLift() {
+            guard !ended, usesFittedDetent else { return }
+            let lift: CGFloat
+            if fit.fieldFocused, let frame = lastKeyboardEndFrame {
+                lift = keyboardLift(from: frame)
+            } else {
+                lift = 0
+            }
+            fit.noteKeyboardLift(lift)
+        }
+
+        private func keyboardLift(from frame: CGRect) -> CGFloat {
+            guard let window = host?.view.window else { return 0 }
+            let keyboard = window.convert(frame, from: window.screen.coordinateSpace)
+            let overlap = window.bounds.intersection(keyboard).height
+            // The custom detent already adds the home-indicator inset back onto
+            // the sheet. Subtract it so the keyboard does not lift the form twice.
+            return max(0, overlap - fit.homeIndicatorInset)
+        }
+
+        private func invalidateFittedDetent(animated: Bool) {
+            guard usesFittedDetent, !ended, let sheet = host?.sheetPresentationController else { return }
+            if invalidatingDetent {
+                detentNeedsAnotherPass = true
+                return
+            }
+            invalidatingDetent = true
+            let changes = {
+                sheet.invalidateDetents()
+            }
+            if animated {
+                sheet.animateChanges(changes)
+            } else {
+                changes()
+            }
+            invalidatingDetent = false
+            if detentNeedsAnotherPass {
+                detentNeedsAnotherPass = false
+                invalidateFittedDetent(animated: animated)
+            }
+        }
+    }
+}
+
+/// Content height, grabber inset, and keyboard lift for one presented report sheet.
+@Observable
+private final class ReportSheetFit {
+    /// Resting height used until the form reports its measured height.
+    static let fallbackContentHeight: CGFloat = 320
+
+    @ObservationIgnored
+    var onChange: (_ animated: Bool) -> Void = { _ in }
+    @ObservationIgnored
+    var onFieldFocus: (Bool) -> Void = { _ in }
+    @ObservationIgnored
+    private(set) var fieldFocused = false
+    private(set) var contentHeight: CGFloat = 0
+    private(set) var keyboardLift: CGFloat = 0
+    private(set) var topChrome: CGFloat = 0
+    @ObservationIgnored
+    var homeIndicatorInset: CGFloat = 0
+
+    /// Height passed to the custom detent. The system adds the bottom safe area.
+    var detentHeight: CGFloat {
+        let content = contentHeight > 0 ? contentHeight : Self.fallbackContentHeight
+        return max(content + topChrome + keyboardLift, 1)
+    }
+
+    func noteContentHeight(_ height: CGFloat) {
+        guard height > 1, abs(height - contentHeight) > 0.5 else { return }
+        let first = contentHeight == 0
+        contentHeight = height
+        onChange(!first)
+    }
+
+    func noteKeyboardLift(_ lift: CGFloat) {
+        guard abs(lift - keyboardLift) > 0.5 else { return }
+        keyboardLift = lift
+        onChange(true)
+    }
+
+    func noteTopChrome(_ top: CGFloat) {
+        guard abs(top - topChrome) > 0.5 else { return }
+        topChrome = top
+        onChange(false)
+    }
+
+    func noteFieldFocused(_ focused: Bool) {
+        guard fieldFocused != focused else { return }
+        fieldFocused = focused
+        onFieldFocus(focused)
     }
 }
 
@@ -274,6 +486,24 @@ enum ShakeReportSheetPresenter {
 /// A mail composer or share sheet covering it does not.
 private final class ReportHostingController<Content: View>: UIHostingController<Content> {
     var onDidDismiss: () -> Void = {}
+    var onSafeAreaTop: (CGFloat) -> Void = { _ in }
+    private var reportedTop: CGFloat = -1
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let top = view.safeAreaInsets.top
+        guard abs(top - reportedTop) > 0.5 else { return }
+        reportedTop = top
+        let report = onSafeAreaTop
+        DispatchQueue.main.async {
+            report(top)
+        }
+    }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
