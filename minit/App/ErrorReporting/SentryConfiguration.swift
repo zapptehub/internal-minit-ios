@@ -1,5 +1,7 @@
 import Foundation
+#if !MINIT_SENTRY_NO_PII
 import FirebaseAuth
+#endif
 import Sentry
 
 /// Starts Sentry at launch and keeps its user in sync with Firebase Auth.
@@ -54,7 +56,9 @@ nonisolated struct SentryPiiPolicy: Equatable, Sendable {
 }
 
 enum SentryConfiguration {
+    #if !MINIT_SENTRY_NO_PII
     private static var authListener: AuthStateDidChangeListenerHandle?
+    #endif
 
     static func start(bundle: Bundle = .main, processInfo: ProcessInfo = .processInfo) {
         // The app is the unit-test host. Tests deliberately crash/stub HTTP 500s, which
@@ -80,12 +84,7 @@ enum SentryConfiguration {
             )
         }
 
-        #if MINIT_SENTRY_NO_PII
-        authListener = Auth.auth().addStateDidChangeListener { _, _ in
-            // `attachUser` is false. The function that would set uid and email is not in this build.
-            guard SentryPiiPolicy.active.attachUser else { return }
-        }
-        #else
+        #if !MINIT_SENTRY_NO_PII
         authListener = Auth.auth().addStateDidChangeListener { _, user in
             guard SentryPiiPolicy.active.attachUser else { return }
             guard let user else {
