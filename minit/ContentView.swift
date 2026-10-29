@@ -220,11 +220,16 @@ struct ContentView: View {
 
     #if MINIT_SHAKE
     private func handleShake() {
-        guard let address = AppDependencies.shared.reportAddress else { return }
-        guard !ShakeReportSheetPresenter.isPresented else { return }
         let now = Date()
-        guard now.timeIntervalSince(lastShakeAt) >= 2 else { return }
-        guard ShakeReportSheetPresenter.present(address: address, locale: currentLocale) else { return }
+        let address = AppDependencies.shared.reportAddress
+        guard ShakeReportGate.shouldOpen(
+            address: address,
+            busy: ShakeReportAlertPresenter.isBusy,
+            now: now,
+            lastShake: lastShakeAt
+        ), let address else { return }
+        // The cooldown starts only once the alert is actually on screen.
+        guard ShakeReportAlertPresenter.present(address: address, locale: currentLocale) else { return }
         lastShakeAt = now
     }
 

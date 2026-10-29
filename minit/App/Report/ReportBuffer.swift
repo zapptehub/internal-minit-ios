@@ -11,6 +11,15 @@ nonisolated enum ShakeReportGate {
         if value.isEmpty || value.hasPrefix("$(") { return nil }
         return value
     }
+
+    /// False when there is no address, the alert or sheet is already up, or the
+    /// shake that opened the alert was less than two seconds ago. A wall clock
+    /// that moves backwards counts as elapsed so the cooldown cannot stick.
+    static func shouldOpen(address: String?, busy: Bool, now: Date, lastShake: Date) -> Bool {
+        guard address != nil, !busy else { return false }
+        if now < lastShake { return true }
+        return now.timeIntervalSince(lastShake) >= 2
+    }
 }
 
 nonisolated enum ShakeReportScene {

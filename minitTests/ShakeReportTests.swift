@@ -15,6 +15,62 @@ final class ShakeReportTests: XCTestCase {
         XCTAssertEqual(ShakeReportGate.address(from: " qa@example.com "), "qa@example.com")
     }
 
+    func testShakeStaysClosedWhileBusyOrInsideCooldown() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: nil,
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(-2)
+        ))
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: true,
+            now: now,
+            lastShake: now.addingTimeInterval(-2)
+        ))
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(-1)
+        ))
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(-1.99)
+        ))
+        XCTAssertTrue(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(-2)
+        ))
+    }
+
+    func testShakeOpensWhenTheClockMovesBackwards() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        XCTAssertTrue(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(1)
+        ))
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: "qa@example.com",
+            busy: true,
+            now: now,
+            lastShake: now.addingTimeInterval(1)
+        ))
+        XCTAssertFalse(ShakeReportGate.shouldOpen(
+            address: nil,
+            busy: false,
+            now: now,
+            lastShake: now.addingTimeInterval(1)
+        ))
+    }
+
     func testScrubDropsSecretsAndHeaderKeepsUidAndEmail() {
         let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signaturevalue"
         let clock = TestClock(Date(timeIntervalSince1970: 1_700_000_000))
@@ -261,6 +317,21 @@ final class ShakeReportTests: XCTestCase {
                 "en": "No mail account is set up. You can still share the report.",
                 "sk": "Nie je nastavený e-mailový účet. Hlásenie môžete aj tak zdieľať.",
                 "hu": "Nincs beállítva levelezőfiók. A jelentést így is megoszthatod.",
+            ],
+            "shake.report.prompt.title": [
+                "en": "Shake detected",
+                "sk": "Zistené zatrasenie",
+                "hu": "Rázást észleltünk",
+            ],
+            "shake.report.prompt.message": [
+                "en": "Would you like to report a bug or suggest an improvement?",
+                "sk": "Chcete nahlásiť chybu alebo navrhnúť zlepšenie?",
+                "hu": "Szeretnél hibát bejelenteni vagy fejlesztést javasolni?",
+            ],
+            "shake.report.prompt.report": [
+                "en": "Report",
+                "sk": "Nahlásiť",
+                "hu": "Bejelentés",
             ],
         ]
         for (key, translations) in expected {

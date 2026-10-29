@@ -1,4 +1,5 @@
 #if MINIT_SHAKE
+import CoreLogging
 import DesignSystem
 import MessageUI
 import SwiftUI
@@ -8,48 +9,59 @@ struct ShakeReportSheet: View {
     let address: String
     /// Dismisses the UIKit sheet. Cancel drops the draft with the view.
     let onClose: () -> Void
+    var onFieldFocus: (Bool) -> Void = { _ in }
     @Environment(\.locale) private var locale
     @State private var draft = ""
+    @FocusState private var fieldFocused: Bool
+
+    private var canSendMail: Bool {
+        MFMailComposeViewController.canSendMail()
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DSConstant.large.value) {
+        let placeholder = AppLocalizedString.string("shake.report.placeholder", locale: locale)
+        VStack(alignment: .leading, spacing: 16) {
             Text(AppLocalizedString.string("shake.report.title", locale: locale))
-                .typography(.headingMediumBold)
-                .foregroundColor(DSColor.Text.heading)
+                .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
 
-            TextField(
-                AppLocalizedString.string("shake.report.placeholder", locale: locale),
-                text: $draft,
-                axis: .vertical
-            )
-            .lineLimit(3...8)
-            .typography(.paragraphRegular)
+            TextField("", text: $draft, prompt: Text(placeholder), axis: .vertical)
+                .accessibilityLabel(placeholder)
+                .lineLimit(3...6)
+                .focused($fieldFocused)
 
-            if !MFMailComposeViewController.canSendMail() {
+            if !canSendMail {
                 Text(AppLocalizedString.string("shake.report.mailUnavailable", locale: locale))
-                    .typography(.paragraphRegular)
-                    .foregroundColor(DSColor.Text.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
-            DSButton(
-                title: AppLocalizedString.string("shake.report.send", locale: locale),
-                type: .primary
-            ) {
+            Button {
                 send()
+            } label: {
+                Text(AppLocalizedString.string("shake.report.send", locale: locale))
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(DSColor.Background.Button.primary)
 
-            Button(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale)) {
+            Button {
                 onClose()
+            } label: {
+                Text(DesignSystemLocalizedString.string("common.alert.cancel", locale: locale))
+                    .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
+            .buttonStyle(.bordered)
+            .controlSize(.large)
         }
-        .padding(DSConstant.large.value)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(DSColor.Background.Layer.level0.ignoresSafeArea())
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
+        .onChange(of: fieldFocused) { _, focused in
+            onFieldFocus(focused)
+        }
     }
 
     private func send() {
@@ -80,12 +92,93 @@ struct ShakeReportSheet: View {
     }
 }
 
+/// System alert shown before the report sheet. A SwiftUI `.alert` on `ContentView`
+/// sits under the login sheet and the Home covers, same as a SwiftUI sheet would.
+enum ShakeReportAlertPresenter {
+    private static let logger = AppLogger(subsystem: "com.minit.app", category: "ShakeReport")
+    /// Covers the alert `present` and the Report handler's sheet `present`, and is
+    /// cleared before either call returns. The alert stays busy by remaining in the
+    /// presented chain, so dismissing an ancestor cannot leave this stuck.
+    private static var promptBusy = false
+
+    /// True while the alert is up, during the gap before the sheet, or while the
+    /// sheet (including Mail or the share sheet on top of it) is up.
+    static var isBusy: Bool {
+        promptBusy || ShakeReportSheetPresenter.isPresented || shakeReportAlertIsPresented()
+    }
+
+    @discardableResult
+    static func present(address: String, locale: Locale) -> Bool {
+        guard !isBusy, let presenter = shakeReportTopViewController() else { return false }
+        let handoff = ShakeReportHandoff { report in
+            guard report else { return }
+            promptBusy = true
+            defer { promptBusy = false }
+            guard ShakeReportSheetPresenter.present(address: address, locale: locale) else {
+                logger.error("Shake report sheet failed to present")
+                return
+            }
+        }
+        let alert = ShakeReportAlertController(
+            title: AppLocalizedString.string("shake.report.prompt.title", locale: locale),
+            message: AppLocalizedString.string("shake.report.prompt.message", locale: locale),
+            preferredStyle: .alert
+        )
+        let cancel = UIAlertAction(
+            title: DesignSystemLocalizedString.string("common.alert.cancel", locale: locale),
+            style: .cancel
+        ) { _ in
+            handoff.resolve(report: false)
+        }
+        let report = UIAlertAction(
+            title: AppLocalizedString.string("shake.report.prompt.report", locale: locale),
+            style: .default
+        ) { _ in
+            handoff.resolve(report: true)
+        }
+        alert.addAction(cancel)
+        alert.addAction(report)
+        alert.preferredAction = report
+        promptBusy = true
+        defer { promptBusy = false }
+        presenter.present(alert, animated: true)
+        return presenter.presentedViewController === alert
+    }
+}
+
+/// Resolves the alert once. Each action calls this from its own handler.
+/// UIKit has already dismissed the alert by then, so Report presents the sheet directly.
+private final class ShakeReportHandoff {
+    private var resolved = false
+    private let onResolved: (Bool) -> Void
+
+    init(onResolved: @escaping (Bool) -> Void) {
+        self.onResolved = onResolved
+    }
+
+    func resolve(report: Bool) {
+        guard !resolved else { return }
+        resolved = true
+        onResolved(report)
+    }
+}
+
+/// Keeps Cancel and Report Minit orange (#FF9A31) once the alert loads its view.
+/// Applied here so `alert.view` is not touched before the actions exist.
+private final class ShakeReportAlertController: UIAlertController {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        view.tintColor = UIColor(DSColor.Background.Button.primary)
+    }
+}
+
 /// Presents the report sheet on the top-most view controller.
 ///
 /// The login sheet and Home's full-screen cover are already presented from the
 /// root. A SwiftUI `.sheet` on `ContentView` is anchored there too, so it does
 /// not stack on top of them. UIKit presentation from the current top controller
 /// does. The sheet still uses the in-app locale passed in from `ContentView`.
+/// Detents are set here: SwiftUI `.presentationDetents` do not apply to this present.
 enum ShakeReportSheetPresenter {
     private static var active: SheetSession?
 
@@ -96,9 +189,15 @@ enum ShakeReportSheetPresenter {
         guard active == nil, let presenter = shakeReportTopViewController() else { return false }
         let session = SheetSession()
         let host = ReportHostingController(
-            rootView: ShakeReportSheet(address: address) { [weak session] in
-                session?.close()
-            }
+            rootView: ShakeReportSheet(
+                address: address,
+                onClose: { [weak session] in
+                    session?.close()
+                },
+                onFieldFocus: { [weak session] focused in
+                    session?.setFieldFocused(focused)
+                }
+            )
             .environment(\.locale, locale)
         )
         host.onDidDismiss = { [weak session] in
@@ -106,8 +205,9 @@ enum ShakeReportSheetPresenter {
         }
         host.modalPresentationStyle = .pageSheet
         if let sheet = host.sheetPresentationController {
-            sheet.detents = [.medium()]
+            sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
+            sheet.selectedDetentIdentifier = .medium
         }
         host.presentationController?.delegate = session
         session.host = host
@@ -131,9 +231,30 @@ enum ShakeReportSheetPresenter {
     private final class SheetSession: NSObject, UIAdaptivePresentationControllerDelegate {
         var host: UIViewController?
         private var ended = false
+        /// True only after focus selects the large detent. A large detent the
+        /// user dragged to stays where they left it when focus ends.
+        private var expandedForFocus = false
 
         func close() {
             host?.dismiss(animated: true)
+        }
+
+        func setFieldFocused(_ focused: Bool) {
+            guard let sheet = host?.sheetPresentationController else { return }
+            if focused {
+                guard sheet.selectedDetentIdentifier != .large else { return }
+                expandedForFocus = true
+                sheet.animateChanges {
+                    sheet.selectedDetentIdentifier = .large
+                }
+                return
+            }
+            guard expandedForFocus else { return }
+            expandedForFocus = false
+            guard sheet.selectedDetentIdentifier == .large else { return }
+            sheet.animateChanges {
+                sheet.selectedDetentIdentifier = .medium
+            }
         }
 
         func end() {
@@ -161,14 +282,27 @@ private final class ReportHostingController<Content: View>: UIHostingController<
     }
 }
 
-private func shakeReportTopViewController() -> UIViewController? {
+private func shakeReportRootViewController() -> UIViewController? {
     let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
     let window = scenes.flatMap(\.windows).first { $0.isKeyWindow } ?? scenes.first?.windows.first
-    var controller = window?.rootViewController
+    return window?.rootViewController
+}
+
+private func shakeReportTopViewController() -> UIViewController? {
+    var controller = shakeReportRootViewController()
     while let presented = controller?.presentedViewController {
         controller = presented
     }
     return controller
+}
+
+private func shakeReportAlertIsPresented() -> Bool {
+    var controller = shakeReportRootViewController()
+    while let current = controller {
+        if current is ShakeReportAlertController { return true }
+        controller = current.presentedViewController
+    }
+    return false
 }
 
 /// Hands the report to Mail, or to the share sheet when Mail has no account.
