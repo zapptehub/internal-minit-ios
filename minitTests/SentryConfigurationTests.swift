@@ -18,10 +18,14 @@ final class SentryConfigurationTests: XCTestCase {
             dsn: "https://public@sentry.example/1",
             environment: "development",
             releaseName: "saleseverest.minit@1+1",
-            screenCapture: false
+            screenCapture: false,
+            policy: .on
         )
         XCTAssertEqual(options.environment, "development")
         XCTAssertTrue(options.sendDefaultPii)
+        XCTAssertTrue(SentryPiiPolicy.on.sendDefaultPii)
+        XCTAssertTrue(SentryPiiPolicy.on.attachUser)
+        XCTAssertTrue(SentryPiiPolicy.on.keepHttpQuery)
         XCTAssertFalse(options.attachScreenshot)
         XCTAssertNotNil(options.beforeSend)
         XCTAssertNotNil(options.beforeBreadcrumb)
@@ -29,6 +33,7 @@ final class SentryConfigurationTests: XCTestCase {
         let breadcrumb = Breadcrumb(level: .error, category: "http")
         breadcrumb.type = "http"
         breadcrumb.setData(value: "https://api.minit.app/v1/me", key: "url")
+        breadcrumb.setData(value: "token=secret&email=a@b.c", key: "http.query")
         breadcrumb.setData(value: "Bearer fake-token", key: "Authorization")
         breadcrumb.setData(value: "fake-access-secret", key: "CF-Access-Client-Secret")
         breadcrumb.setData(
@@ -43,10 +48,12 @@ final class SentryConfigurationTests: XCTestCase {
 
         let scrubbedBreadcrumb = options.beforeBreadcrumb?(breadcrumb)
         assertAccessSecretRemoved(from: scrubbedBreadcrumb?.data)
+        XCTAssertEqual(scrubbedBreadcrumb?.data?["http.query"] as? String, "token=secret&email=a@b.c")
 
         let event = Event(level: .error)
         let request = SentryRequest()
         request.url = "https://api.minit.app/v1/me"
+        request.queryString = "token=secret&email=a@b.c"
         request.method = "GET"
         request.headers = [
             "Authorization": "Bearer fake-token",
@@ -73,9 +80,11 @@ final class SentryConfigurationTests: XCTestCase {
         let attached = Breadcrumb(level: .error, category: "http")
         attached.setData(value: "fake-access-secret", key: "CF-Access-Client-Secret")
         attached.setData(value: "Bearer fake-token", key: "Authorization")
+        attached.setData(value: "token=secret&email=a@b.c", key: "http.query")
         event.breadcrumbs = [attached]
 
         let scrubbed = options.beforeSend?(event)
+        XCTAssertEqual(scrubbed?.request?.queryString, "token=secret&email=a@b.c")
         let headers = scrubbed?.request?.headers ?? [:]
         XCTAssertEqual(headers["Authorization"], "Bearer fake-token")
         XCTAssertEqual(headers["CF-Access-Client-Id"], "fake-access-id")
@@ -93,6 +102,57 @@ final class SentryConfigurationTests: XCTestCase {
         let attachedData = scrubbed?.breadcrumbs?.first?.data ?? [:]
         XCTAssertEqual(attachedData["Authorization"] as? String, "Bearer fake-token")
         XCTAssertNil(attachedData["CF-Access-Client-Secret"])
+        XCTAssertEqual(attachedData["http.query"] as? String, "token=secret&email=a@b.c")
+    }
+
+    /// Release policy is compile-time (`MINIT_SENTRY_NO_PII`). This applies that value
+    /// directly so both policies can be tested from a Debug test host.
+    func testReleasePolicyDropsQueryAndDoesNotAddAuthorization() {
+        XCTAssertFalse(SentryPiiPolicy.release.sendDefaultPii)
+        XCTAssertFalse(SentryPiiPolicy.release.attachUser)
+        XCTAssertFalse(SentryPiiPolicy.release.keepHttpQuery)
+
+        let options = Options()
+        SentryConfiguration.applyOptions(
+            options,
+            dsn: "https://public@sentry.example/1",
+            environment: "release",
+            releaseName: "saleseverest.minit@1+1",
+            screenCapture: false,
+            policy: .release
+        )
+        XCTAssertFalse(options.sendDefaultPii)
+        XCTAssertFalse(options.attachScreenshot)
+        XCTAssertNotNil(options.beforeSend)
+        XCTAssertNotNil(options.beforeBreadcrumb)
+
+        let breadcrumb = Breadcrumb(level: .info, category: "http")
+        breadcrumb.type = "http"
+        breadcrumb.setData(value: "https://api.minit.app/v1/me", key: "url")
+        breadcrumb.setData(value: "token=secret&email=a@b.c", key: "http.query")
+        let scrubbedBreadcrumb = options.beforeBreadcrumb?(breadcrumb)
+        XCTAssertEqual(scrubbedBreadcrumb?.data?["url"] as? String, "https://api.minit.app/v1/me")
+        XCTAssertNil(scrubbedBreadcrumb?.data?["http.query"])
+        XCTAssertNil(scrubbedBreadcrumb?.data?["Authorization"])
+
+        let event = Event(level: .error)
+        let request = SentryRequest()
+        request.url = "https://api.minit.app/v1/me"
+        request.queryString = "token=secret&email=a@b.c"
+        event.request = request
+        let attached = Breadcrumb(level: .info, category: "http")
+        attached.setData(value: "token=secret&email=a@b.c", key: "http.query")
+        attached.setData(value: "https://api.minit.app/v1/me", key: "url")
+        event.breadcrumbs = [attached]
+
+        let scrubbed = options.beforeSend?(event)
+        XCTAssertEqual(scrubbed?.request?.url, "https://api.minit.app/v1/me")
+        XCTAssertNil(scrubbed?.request?.queryString)
+        XCTAssertNil(scrubbed?.request?.headers?["Authorization"])
+        let attachedData = scrubbed?.breadcrumbs?.first?.data ?? [:]
+        XCTAssertNil(attachedData["http.query"])
+        XCTAssertNil(attachedData["Authorization"])
+        XCTAssertEqual(attachedData["url"] as? String, "https://api.minit.app/v1/me")
     }
 
     private func assertAccessSecretRemoved(from data: [String: Any]?, file: StaticString = #filePath, line: UInt = #line) {

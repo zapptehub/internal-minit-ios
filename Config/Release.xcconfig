@@ -13,3 +13,7 @@ MINIT_DEMO_ENABLED = NO
 CF_ACCESS_CLIENT_ID =
 CF_ACCESS_CLIENT_SECRET =
 MINIT_SHAKE_REPORT_EMAIL =
+
+// Store builds send no Sentry PII. Debug and Internal omit this flag.
+// A later TestFlight configuration must omit it too.
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = MINIT_SENTRY_NO_PII

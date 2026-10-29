@@ -4,12 +4,10 @@ import Sentry
 
 /// Starts Sentry at launch and keeps its user in sync with Firebase Auth.
 ///
-/// TODO(Armands, before first Release ship): Release still sends PII and email.
-/// WARNING: every environment, including "release", sets `sendDefaultPii = true`
-/// and `sentryUser.email = user.email`. A Release build therefore sends the
-/// customer's IP and Firebase email to Sentry. Whether a shipped Release build
-/// may keep doing that is an open question for Armands. Decide it before the
-/// first Release ship, and leave this behavior unchanged until that decision.
+/// Release (`MINIT_SENTRY_NO_PII` in `Config/Release.xcconfig`) sends no default
+/// PII, no Firebase uid or email, and no HTTP query. Debug and Internal omit that
+/// flag and keep all three. A later TestFlight configuration must omit the flag.
+/// The choice is compile-time; there is no runtime switch.
 ///
 /// Environments are "development", "internal", and "release". Screen capture is
 /// decided in one place, `screenCaptureEnvironments`:
@@ -28,13 +26,33 @@ import Sentry
 /// not include `CF-Access-Client-Secret`. `beforeSend` removes that header from the
 /// failed-request event (request headers, response headers, extras, and breadcrumbs
 /// already on the event). `beforeBreadcrumb` removes it from breadcrumb data.
-/// Authorization is left in place. Server-side Data Scrubber settings live in the
-/// Sentry project settings, not here.
+/// Authorization is left in place. Those hooks do not add it. When `keepHttpQuery`
+/// is false they clear `request.queryString` and breadcrumb `http.query`.
+/// Server-side Data Scrubber settings live in the Sentry project settings, not here.
 ///
-/// All environments send default PII (e.g. IP) and set the user to Firebase uid + email.
+/// `SentryPiiPolicy` is `sendDefaultPii`, `attachUser` (uid and email together),
+/// and `keepHttpQuery`. Non-release: all true. Release: all false.
 /// The DSN and environment come from Info.plist keys `SentryDSN` / `SentryEnvironment`.
 /// `SENTRY_DSN` is in `Config/Sentry.xcconfig`. `SENTRY_ENVIRONMENT` is set by
 /// `Config/Development.xcconfig`, `Config/Internal.xcconfig`, and `Config/Release.xcconfig`.
+nonisolated struct SentryPiiPolicy: Equatable, Sendable {
+    let sendDefaultPii: Bool
+    let attachUser: Bool
+    let keepHttpQuery: Bool
+
+    /// Debug and Internal. Also the policy a later TestFlight configuration uses.
+    static let on = SentryPiiPolicy(sendDefaultPii: true, attachUser: true, keepHttpQuery: true)
+
+    /// App Store Release, selected by `MINIT_SENTRY_NO_PII`.
+    static let release = SentryPiiPolicy(sendDefaultPii: false, attachUser: false, keepHttpQuery: false)
+
+    #if MINIT_SENTRY_NO_PII
+    static let active = release
+    #else
+    static let active = on
+    #endif
+}
+
 enum SentryConfiguration {
     private static var authListener: AuthStateDidChangeListenerHandle?
 
@@ -62,16 +80,31 @@ enum SentryConfiguration {
             )
         }
 
+        #if MINIT_SENTRY_NO_PII
+        authListener = Auth.auth().addStateDidChangeListener { _, _ in
+            // `attachUser` is false. The function that would set uid and email is not in this build.
+            guard SentryPiiPolicy.active.attachUser else { return }
+        }
+        #else
         authListener = Auth.auth().addStateDidChangeListener { _, user in
+            guard SentryPiiPolicy.active.attachUser else { return }
             guard let user else {
                 SentrySDK.setUser(nil)
                 return
             }
-            let sentryUser = User(userId: user.uid)
-            sentryUser.email = user.email
-            SentrySDK.setUser(sentryUser)
+            attachAuthenticatedUser(user)
         }
+        #endif
     }
+
+    #if !MINIT_SENTRY_NO_PII
+    /// Sets Firebase uid and email on the Sentry user. Compiled out of Release.
+    private static func attachAuthenticatedUser(_ user: FirebaseAuth.User) {
+        let sentryUser = User(userId: user.uid)
+        sentryUser.email = user.email
+        SentrySDK.setUser(sentryUser)
+    }
+    #endif
 
     /// Environments allowed to capture the screen (screenshots, view hierarchy,
     /// unmasked session replay). The single switch: edit this set to change or rename it.
@@ -102,12 +135,13 @@ enum SentryConfiguration {
         dsn: String,
         environment: String,
         releaseName: String?,
-        screenCapture: Bool
+        screenCapture: Bool,
+        policy: SentryPiiPolicy = .active
     ) {
         options.dsn = dsn
         options.environment = environment
         options.releaseName = releaseName
-        options.sendDefaultPii = true
+        options.sendDefaultPii = policy.sendDefaultPii
         options.attachScreenshot = screenCapture
         options.attachViewHierarchy = screenCapture
         options.sessionReplay.sessionSampleRate = screenCapture ? 1.0 : 0
@@ -121,18 +155,22 @@ enum SentryConfiguration {
             options.sessionReplay.networkRequestHeaders = ["Authorization", "Cookie", "X-Firebase-AppCheck", "X-Client-Version", "X-Goog-Api-Key"]
             options.sessionReplay.networkResponseHeaders = ["Set-Cookie"]
         }
-        installCloudflareAccessSecretScrub(on: options)
+        installCloudflareAccessSecretScrub(on: options, policy: policy)
     }
 
     /// Removes `CF-Access-Client-Secret` before a failed-request event or an HTTP
-    /// breadcrumb is sent. Does not remove `Authorization` or `CF-Access-Client-Id`.
-    private nonisolated static func installCloudflareAccessSecretScrub(on options: Options) {
+    /// breadcrumb is sent. Does not remove or add `Authorization` or `CF-Access-Client-Id`.
+    /// When `keepHttpQuery` is false, clears `request.queryString` and breadcrumb `http.query`.
+    private nonisolated static func installCloudflareAccessSecretScrub(
+        on options: Options,
+        policy: SentryPiiPolicy
+    ) {
         options.beforeSend = { event in
-            scrubCloudflareAccessClientSecret(from: event)
+            scrubCloudflareAccessClientSecret(from: event, policy: policy)
             return event
         }
         options.beforeBreadcrumb = { breadcrumb in
-            scrubCloudflareAccessClientSecret(from: breadcrumb)
+            scrubCloudflareAccessClientSecret(from: breadcrumb, policy: policy)
             return breadcrumb
         }
     }
@@ -143,7 +181,13 @@ enum SentryConfiguration {
         name.caseInsensitiveCompare(accessClientSecretHeader) == .orderedSame
     }
 
-    private nonisolated static func scrubCloudflareAccessClientSecret(from event: Event) {
+    private nonisolated static func scrubCloudflareAccessClientSecret(
+        from event: Event,
+        policy: SentryPiiPolicy
+    ) {
+        if !policy.keepHttpQuery {
+            event.request?.queryString = nil
+        }
         if let headers = event.request?.headers {
             event.request?.headers = headers.filter { !isCloudflareAccessClientSecret($0.key) }
         }
@@ -157,10 +201,16 @@ enum SentryConfiguration {
         if let extra = event.extra {
             event.extra = scrubbingStringKeyed(extra)
         }
-        event.breadcrumbs?.forEach { scrubCloudflareAccessClientSecret(from: $0) }
+        event.breadcrumbs?.forEach { scrubCloudflareAccessClientSecret(from: $0, policy: policy) }
     }
 
-    private nonisolated static func scrubCloudflareAccessClientSecret(from breadcrumb: Breadcrumb) {
+    private nonisolated static func scrubCloudflareAccessClientSecret(
+        from breadcrumb: Breadcrumb,
+        policy: SentryPiiPolicy
+    ) {
+        if !policy.keepHttpQuery {
+            breadcrumb.setData(value: nil, key: "http.query")
+        }
         guard let data = breadcrumb.data else { return }
         for (key, value) in data {
             if isCloudflareAccessClientSecret(key) {
