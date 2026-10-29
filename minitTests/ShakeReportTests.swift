@@ -313,11 +313,6 @@ final class ShakeReportTests: XCTestCase {
                 "sk": "Odoslať",
                 "hu": "Küldés",
             ],
-            "shake.report.mailUnavailable": [
-                "en": "No mail account is set up. You can still share the report.",
-                "sk": "Nie je nastavený e-mailový účet. Hlásenie môžete aj tak zdieľať.",
-                "hu": "Nincs beállítva levelezőfiók. A jelentést így is megoszthatod.",
-            ],
             "shake.report.prompt.title": [
                 "en": "Shake detected",
                 "sk": "Zistené zatrasenie",

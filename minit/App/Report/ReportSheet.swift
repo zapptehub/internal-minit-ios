@@ -16,10 +16,6 @@ struct ShakeReportSheet: View {
     @State private var draft = ""
     @FocusState private var fieldFocused: Bool
 
-    private var canSendMail: Bool {
-        MFMailComposeViewController.canSendMail()
-    }
-
     /// Android `ShakeReportSheet` spacing (dp as pt) and Material 3 field/button metrics.
     /// Top padding is the distance from the sheet's top edge to the title. Android's
     /// 8dp sits under a drag handle that already clears the title; the system grabber
@@ -77,12 +73,6 @@ struct ShakeReportSheet: View {
                 }
                 .accessibilityLabel(placeholder)
 
-                if !canSendMail {
-                    Text(AppLocalizedString.string("shake.report.mailUnavailable", locale: locale))
-                        .typography(.paragraphRegular)
-                        .foregroundStyle(DSColor.Text.secondary)
-                }
-
                 Button {
                     send()
                 } label: {
@@ -139,15 +129,11 @@ struct ShakeReportSheet: View {
             identity: identity
         )
         let subject = "Minit report iOS \(context.version) \(context.environment)"
-        let fallback = MFMailComposeViewController.canSendMail()
-            ? nil
-            : AppLocalizedString.string("shake.report.mailUnavailable", locale: locale)
         ShakeReportLog.shared.beginExternalPresentation()
         let presented = ShakeReportMailer.present(
             address: address,
             subject: subject,
-            text: text,
-            fallback: fallback
+            text: text
         ) {
             ShakeReportLog.shared.endExternalPresentation()
             onClose()
@@ -549,7 +535,6 @@ enum ShakeReportMailer {
         address: String,
         subject: String,
         text: String,
-        fallback: String?,
         onFinish: @escaping () -> Void
     ) -> Bool {
         guard let presenter = shakeReportTopViewController() else { return false }
@@ -568,11 +553,7 @@ enum ShakeReportMailer {
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent("minit-report-\(UUID().uuidString).txt")
             try Data(text.utf8).write(to: url, options: .atomic)
-            var items: [Any] = [url]
-            if let fallback {
-                items.append(fallback)
-            }
-            let activity = UIActivityViewController(activityItems: items, applicationActivities: nil)
+            let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
             if let popover = activity.popoverPresentationController {
                 popover.sourceView = presenter.view
                 popover.sourceRect = CGRect(

@@ -271,29 +271,6 @@
         }
       }
     },
-    "shake.report.mailUnavailable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No mail account is set up. You can still share the report."
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nincs beállítva levelezőfiók. A jelentést így is megoszthatod."
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nie je nastavený e-mailový účet. Hlásenie môžete aj tak zdieľať."
-          }
-        }
-      }
-    },
     "appFlow.retry" : {
       "extractionState" : "manual",
       "localizations" : {
