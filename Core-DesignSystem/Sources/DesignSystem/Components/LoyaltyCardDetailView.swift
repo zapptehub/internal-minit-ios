@@ -79,8 +79,12 @@ public struct LoyaltyCardDetailView: View {
                 heightStyle: Self.closeButtonHeightStyle,
                 labelStyle: Self.closeLabelStyle
             ) {
+                // The popup is removed inside this action, so the touch hook's anchor
+                // may already be gone. This line is the tap; it also suppresses a second one.
+                DiagnosticLines.line("tap close")
                 onClose()
             }
+            .diagnosticTap("close")
         }
         .padding(.top, Self.contentPaddingTop)
         .padding(.horizontal, Self.contentPaddingHorizontal)

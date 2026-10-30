@@ -16,6 +16,8 @@ public struct LoyaltyCard: View {
     /// Home sits the card on a solid orange field where the shared card shadow reads too
     /// heavy; onboarding keeps the default shadow over the gradient.
     var showsShadow: Bool = true
+    /// Stable id for a finger tap on the chip (`tap home.loyalty`). Nil records nothing.
+    var tapID: String? = nil
     /// Chip tap, and the summary's VoiceOver action when non-nil. Nil on the
     /// onboarding marketing preview, so the summary stays a label; Home presents
     /// the full-screen QR detail.
@@ -46,6 +48,7 @@ public struct LoyaltyCard: View {
         chipLabel: String,
         rankProgress: Double,
         showsShadow: Bool = true,
+        tapID: String? = nil,
         onChipTap: (() -> Void)? = nil
     ) {
         self.rankTitle = rankTitle
@@ -54,6 +57,7 @@ public struct LoyaltyCard: View {
         self.chipLabel = chipLabel
         self.rankProgress = rankProgress
         self.showsShadow = showsShadow
+        self.tapID = tapID
         self.onChipTap = onChipTap
     }
 
@@ -191,6 +195,7 @@ public struct LoyaltyCard: View {
         ) {
             onChipTap?()
         }
+        .diagnosticTap(tapID)
     }
 }
 

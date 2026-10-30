@@ -61,6 +61,7 @@ struct NotificationsScreen: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .diagnosticTap("back")
         .accessibilityLabel(HomeLocalizedString.string("home.notifications.a11y.back", locale: locale))
     }
 

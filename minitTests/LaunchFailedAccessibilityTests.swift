@@ -57,7 +57,18 @@ final class LaunchFailedAccessibilityTests: XCTestCase {
     }
 }
 
-private final class LaunchAnnouncementLog {
+private func setLaunchFailureAccessibilityAutomation(_ enabled: Bool) {
+    typealias SetFlag = @convention(c) (Bool) -> Void
+    guard let symbol = dlsym(dlopen("/usr/lib/libAccessibility.dylib", RTLD_LAZY), "_AXSSetAutomationEnabled") else {
+        return
+    }
+    unsafeBitCast(symbol, to: SetFlag.self)(enabled)
+}
+
+/// Opt out of the test target's MainActor isolation. Accessibility automation releases
+/// the hosting controller from a later CA commit, and on iOS 26.2 an isolated deinit
+/// aborts in `swift_task_deinitOnExecutorImpl` ("pointer being freed was not allocated").
+nonisolated private final class LaunchAnnouncementLog {
     var messages: [String] = []
 }
 
@@ -74,7 +85,15 @@ private struct LaunchFailureAccessibilitySnapshot {
         host.view.frame = window.bounds
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
-        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        // SwiftUI leaves the accessibility tree empty until automation is on,
+        // so this snapshot would otherwise see no header or Retry button.
+        setLaunchFailureAccessibilityAutomation(true)
+        defer { setLaunchFailureAccessibilityAutomation(false) }
+        let deadline = Date().addingTimeInterval(0.5)
+        while Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            if host.view.accessibilityElementCount() > 0 { break }
+        }
 
         var collected: [LaunchFailureAccessibilityNode] = []
         var visited: Set<ObjectIdentifier> = []

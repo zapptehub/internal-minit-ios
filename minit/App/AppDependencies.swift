@@ -90,6 +90,7 @@ final class AppDependencies {
         self.reportAddress = reportAddress
         ShakeReportLog.shared.setEnabled(reportAddress != nil)
         if reportAddress != nil {
+            ShakeReportHooks.install()
             AppLogger.lineSink = { ShakeReportLog.shared.record($0) }
             DiagnosticLines.record = { ShakeReportLog.shared.record($0) }
         }

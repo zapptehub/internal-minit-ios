@@ -325,9 +325,9 @@ struct HomeScreen: View {
             points: face.points,
             chipLabel: face.chipLabel,
             rankProgress: face.rankProgress,
-            showsShadow: false
+            showsShadow: false,
+            tapID: "home.loyalty"
         ) {
-            DiagnosticLines.line("home.loyalty")
             model.openLoyaltyCardDetail()
         }
     }
@@ -371,6 +371,7 @@ struct HomeScreen: View {
                 .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("home.notifications")
             .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         } else {
             Button {
@@ -389,6 +390,7 @@ struct HomeScreen: View {
                 .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("home.notifications")
             .accessibilityLabel(HomeLocalizedString.string("home.a11y.notifications", locale: locale))
         }
     }

@@ -165,11 +165,14 @@ final class NetworkClientImpl: NetworkClient {
         guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
         #if MINIT_SHAKE
         let milliseconds = Int(Date().timeIntervalSince(started) * 1000)
+        // Release does not define MINIT_SHAKE, so production builds do not capture bodies.
         ShakeReportLog.shared.recordHTTP(
             method: request.httpMethod ?? "GET",
             url: request.url,
             status: http.statusCode,
-            milliseconds: milliseconds
+            milliseconds: milliseconds,
+            body: data,
+            contentType: http.value(forHTTPHeaderField: "Content-Type")
         )
         #endif
         return (data, http)
