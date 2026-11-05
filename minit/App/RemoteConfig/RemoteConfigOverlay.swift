@@ -244,7 +244,6 @@ struct RemoteConfigChrome: View {
             RemoteConfigTesterUpdateAlert(
                 isPresented: showTesterAlert,
                 locale: locale,
-                installedVersion: gate.installedMarketingVersion,
                 dismiss: { showTesterAlert = false }
             )
         )
@@ -316,7 +315,8 @@ struct RemoteConfigBannerCard: View {
                 .accessibilityAddTraits(.isHeader)
                 if let updateTitle, let onUpdate {
                     // Same horizontal span as the title and body. Stops before the close control.
-                    DSButton(title: updateTitle, type: .primary, widthStyle: .expanded, action: onUpdate)
+                    // Gray pill: `.social` is the neutral fill (Grey.tone50 #F2F2F2) with primary text.
+                    DSButton(title: updateTitle, type: .social, widthStyle: .expanded, action: onUpdate)
                 }
             }
             .padding(.top, 2)
@@ -440,7 +440,6 @@ struct RemoteConfigGateSheet: View {
             RemoteConfigTesterUpdateAlert(
                 isPresented: showTesterAlert,
                 locale: locale,
-                installedVersion: gate.installedMarketingVersion,
                 dismiss: { showTesterAlert = false }
             )
         )
@@ -547,11 +546,10 @@ private enum RemoteConfigUpdateTrigger {
     }
 }
 
-/// Internal/dev Update alert. Open mail is the emphasised action.
+/// Internal/dev Update alert. Open mail is the emphasised action. Cancel is the only other action.
 private struct RemoteConfigTesterUpdateAlert: View {
     var isPresented: Bool
     var locale: Locale
-    var installedVersion: String
     var dismiss: () -> Void
 
     var body: some View {
@@ -572,20 +570,6 @@ private struct RemoteConfigTesterUpdateAlert: View {
                 handler: {
                     dismiss()
                     RemoteConfigMailOpener.openMailApp()
-                }
-            ),
-            RemoteConfigNativeAlertAction(
-                title: AppLocalizedString.string(RemoteConfigCopy.requestVersion, locale: locale),
-                style: .default,
-                handler: {
-                    dismiss()
-                    let subject = AppLocalizedString.string(RemoteConfigCopy.requestSubject, locale: locale)
-                    let template = AppLocalizedString.string(RemoteConfigCopy.requestBody, locale: locale)
-                    let body = RemoteConfigTesterMail.requestBody(
-                        template: template,
-                        installedVersion: installedVersion
-                    )
-                    RemoteConfigMailOpener.openInvite(subject: subject, body: body)
                 }
             ),
             RemoteConfigNativeAlertAction(
@@ -856,10 +840,5 @@ private enum RemoteConfigMailOpener {
             guard !opened, let compose = URL(string: "mailto:") else { return }
             UIApplication.shared.open(compose)
         }
-    }
-
-    static func openInvite(subject: String, body: String) {
-        guard let url = RemoteConfigTesterMail.requestInviteURL(subject: subject, body: body) else { return }
-        UIApplication.shared.open(url)
     }
 }
