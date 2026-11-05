@@ -138,6 +138,84 @@ final class RemoteConfigGateTests: XCTestCase {
         XCTAssertFalse(gate.showsMaintenanceStillUnavailableAlert)
     }
 
+    func testLaunchAlreadyBlockingRequestsLogoutOnce() async {
+        let backend = ScriptedRemoteConfigBackend(
+            snapshot: snapshot(blocking: true, message: #"{"en":"Closed"}"#)
+        )
+        let gate = makeGate(backend: backend)
+        var requests = 0
+        gate.bindBlockingLogoutHandler { requests += 1 }
+
+        XCTAssertEqual(requests, 1)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 1 }
+        XCTAssertEqual(requests, 1)
+
+        backend.snapshot = snapshot(blocking: true, message: #"{"en":"Still closed"}"#)
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 2 }
+        XCTAssertEqual(requests, 1)
+
+        gate.reloadMaintenance()
+        await waitUntil { !gate.isReloadingMaintenance }
+        XCTAssertEqual(requests, 1)
+        XCTAssertTrue(gate.snapshot.maintenanceBlocking)
+    }
+
+    func testTransitionIntoBlockingRequestsLogoutOnceAcrossRecomputes() async {
+        let backend = ScriptedRemoteConfigBackend(snapshot: snapshot(blocking: false))
+        let gate = makeGate(backend: backend)
+        var requests = 0
+        gate.bindBlockingLogoutHandler { requests += 1 }
+        XCTAssertEqual(requests, 0)
+
+        backend.snapshot = snapshot(blocking: true, message: #"{"en":"Closed"}"#)
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 1 }
+        XCTAssertEqual(requests, 1)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 2 }
+        XCTAssertEqual(requests, 1)
+
+        backend.snapshot = snapshot(blocking: false, minVersion: "9.0")
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 3 }
+        XCTAssertEqual(requests, 1)
+        XCTAssertFalse(gate.snapshot.maintenanceBlocking)
+
+        backend.snapshot = snapshot(blocking: true, message: #"{"en":"Again"}"#)
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 4 }
+        XCTAssertEqual(requests, 2)
+    }
+
+    func testForceSoftAndBannerNeverRequestLogout() async {
+        let backend = ScriptedRemoteConfigBackend(
+            snapshot: snapshot(blocking: false, minVersion: "9.0", softVersion: "8.0", bannerMessage: #"{"en":"Tonight"}"#)
+        )
+        let gate = makeGate(backend: backend)
+        var requests = 0
+        gate.bindBlockingLogoutHandler { requests += 1 }
+        XCTAssertEqual(requests, 0)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 1 }
+        XCTAssertEqual(requests, 0)
+
+        backend.snapshot = snapshot(blocking: false, softVersion: "8.0", bannerMessage: #"{"en":"Tonight"}"#)
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 2 }
+        XCTAssertEqual(requests, 0)
+
+        backend.snapshot = snapshot(blocking: false, bannerMessage: #"{"en":"Tonight"}"#)
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 3 }
+        XCTAssertEqual(requests, 0)
+        XCTAssertFalse(gate.snapshot.maintenanceBlocking)
+    }
+
     func testReloadClearsInFlightFlagWhenFetchThrows() async {
         let blocking = snapshot(blocking: true, message: #"{"en":"Closed"}"#)
         let backend = ScriptedRemoteConfigBackend(snapshot: blocking)
@@ -175,12 +253,13 @@ final class RemoteConfigGateTests: XCTestCase {
         blocking: Bool,
         message: String = "{}",
         minVersion: String = "",
-        softVersion: String = ""
+        softVersion: String = "",
+        bannerMessage: String = "{}"
     ) -> RemoteConfigSnapshot {
         RemoteConfigSnapshot(
             maintenanceBlocking: blocking,
             maintenanceBlockingMessage: message,
-            maintenanceBannerMessage: "{}",
+            maintenanceBannerMessage: bannerMessage,
             maintenanceBannerStart: "",
             maintenanceBannerEnd: "",
             minVersionIOS: minVersion,

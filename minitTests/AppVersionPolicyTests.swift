@@ -557,6 +557,45 @@ final class AppVersionPolicyTests: XCTestCase {
         XCTAssertEqual(evaluate(installed: "1.0"), AppVersionPolicy.Decision.clear)
     }
 
+    func testBlockingLogoutRequestsOnceOnColdStartAndOnEachNewEpisode() {
+        var coldStart = BlockingMaintenanceLogoutEdge()
+        XCTAssertTrue(coldStart.observe(isBlocking: true))
+        XCTAssertFalse(coldStart.observe(isBlocking: true))
+        XCTAssertFalse(coldStart.observe(isBlocking: true))
+
+        var episode = BlockingMaintenanceLogoutEdge()
+        XCTAssertFalse(episode.observe(isBlocking: false))
+        XCTAssertTrue(episode.observe(isBlocking: true))
+        XCTAssertFalse(episode.observe(isBlocking: true))
+        XCTAssertFalse(episode.observe(isBlocking: false))
+        XCTAssertFalse(
+            BlockingMaintenanceLogoutEdge.shouldRequestLogout(wasBlocking: true, isBlocking: true)
+        )
+        XCTAssertTrue(episode.observe(isBlocking: true))
+    }
+
+    func testForceSoftAndBannerNeverRequestBlockingLogout() {
+        var edge = BlockingMaintenanceLogoutEdge()
+        let force = evaluate(minVersion: "9.0", installed: "1.0")
+        let soft = evaluate(softVersion: "8.0", installed: "1.0")
+        let banner = evaluate(bannerMessage: #"{"en":"Tonight"}"#)
+        XCTAssertNotNil(force.force)
+        XCTAssertNil(force.blocking)
+        XCTAssertNotNil(soft.softBanner)
+        XCTAssertNil(soft.blocking)
+        XCTAssertNotNil(banner.downtimeBanner)
+        XCTAssertNil(banner.blocking)
+
+        XCTAssertFalse(edge.observe(isBlocking: force.blocking != nil))
+        XCTAssertFalse(edge.observe(isBlocking: soft.blocking != nil))
+        XCTAssertFalse(edge.observe(isBlocking: banner.blocking != nil))
+
+        let blocking = evaluate(blockingMessage: #"{"en":"Closed"}"#, blocking: true)
+        XCTAssertNotNil(blocking.blocking)
+        XCTAssertTrue(edge.observe(isBlocking: blocking.blocking != nil))
+        XCTAssertFalse(edge.observe(isBlocking: blocking.blocking != nil))
+    }
+
     func testInAppDefaultsLeaveEveryGateOff() {
         let decision = AppVersionPolicy.evaluate(
             AppVersionPolicy.Input(

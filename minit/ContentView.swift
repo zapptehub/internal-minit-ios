@@ -61,6 +61,16 @@ struct ContentView: View {
                 RemoteConfigWindowAnchor(gate: .shared, locale: currentLocale)
             }
             .task {
+                // Same clear as Home's Log Out. Registered before bootstrap so a
+                // cold start that is already blocking cannot restore Home, and so
+                // a later rising edge logs out without a second request per refresh.
+                let flow = appFlow
+                RemoteConfigGate.shared.bindBlockingLogoutHandler {
+                    #if MINIT_SHAKE
+                    ShakeReportLog.shared.endSession()
+                    #endif
+                    flow.logOut()
+                }
                 await appFlow.bootstrap()
             }
             .onChange(of: scenePhase) { _, phase in

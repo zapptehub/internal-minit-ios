@@ -176,6 +176,29 @@ extension RemoteConfigSnapshot {
     }
 }
 
+/// One logout per blocking-maintenance episode.
+///
+/// Before any snapshot, the previous value is not blocking, so a cold start whose
+/// first snapshot is already blocking is a rising edge. Further observations that
+/// stay blocking do not request again. Force update, soft update, and the downtime
+/// banner pass `isBlocking: false`. When blocking ends, the next rise can request
+/// again; nothing here restores the session that was cleared.
+struct BlockingMaintenanceLogoutEdge: Equatable {
+    private var hasObserved = false
+    private var wasBlocking = false
+
+    mutating func observe(isBlocking: Bool) -> Bool {
+        let previouslyBlocking = hasObserved && wasBlocking
+        hasObserved = true
+        wasBlocking = isBlocking
+        return Self.shouldRequestLogout(wasBlocking: previouslyBlocking, isBlocking: isBlocking)
+    }
+
+    static func shouldRequestLogout(wasBlocking: Bool, isBlocking: Bool) -> Bool {
+        isBlocking && !wasBlocking
+    }
+}
+
 /// Pure maintenance and minimum-version decision. No Firebase types.
 /// The soft banner's close control stores `dismissedSoftVersionDefaultsKey` and stays
 /// quiet until the soft floor changes. There is no soft-update dialog.

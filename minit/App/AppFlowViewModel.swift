@@ -79,6 +79,11 @@ final class AppFlowViewModel {
     /// `NetworkClientImpl.clearCachedResponses()`. That cache is the session's
     /// own, not `URLCache.shared`.
     private let clearAvatarURLCache: @MainActor () -> Void
+    /// True while blocking maintenance should keep Start on screen. Defaults to the
+    /// live Remote Config snapshot. Tests pass a scripted value.
+    private let isBlockingMaintenance: @MainActor () -> Bool
+    /// Consumes the gate's one-shot logout request for the current blocking episode.
+    private let consumeBlockingLogoutRequest: @MainActor () -> Bool
     /// Identifies the newest bootstrap, login, logout, or retry. An older attempt
     /// applies a result — including after cancellation — only while this still matches.
     private var launchAttempt = 0
@@ -90,7 +95,13 @@ final class AppFlowViewModel {
         networkClient: NetworkClient,
         demoSessionStore: DemoSessionTokenStore,
         restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
-        clearAvatarURLCache: @escaping @MainActor () -> Void = {}
+        clearAvatarURLCache: @escaping @MainActor () -> Void = {},
+        isBlockingMaintenance: @escaping @MainActor () -> Bool = {
+            RemoteConfigGate.shared.snapshot.maintenanceBlocking
+        },
+        consumeBlockingLogoutRequest: @escaping @MainActor () -> Bool = {
+            RemoteConfigGate.shared.consumePendingBlockingLogout()
+        }
     ) {
         self.authRepository = authRepository
         self.loyaltyCardRepository = loyaltyCardRepository
@@ -99,31 +110,65 @@ final class AppFlowViewModel {
         self.demoSessionStore = demoSessionStore
         self.restoreTimeout = restoreTimeout
         self.clearAvatarURLCache = clearAvatarURLCache
+        self.isBlockingMaintenance = isBlockingMaintenance
+        self.consumeBlockingLogoutRequest = consumeBlockingLogoutRequest
     }
 
     /// Called once from `ContentView`'s `.task { }`.
+    /// When blocking maintenance is already up, this does not restore a session.
+    /// The logout request is `logOut()`, the same clear Home's Log Out button uses.
+    /// If that request was already delivered, this returns without starting another one
+    /// and without bumping the launch attempt, so the in-flight logout can finish.
     func bootstrap() async {
+        if isBlockingMaintenance() {
+            if consumeBlockingLogoutRequest() {
+                logOut()
+            }
+            return
+        }
         let attempt = beginLaunchAttempt()
         state = .loading
         do {
             if let session = try await withLaunchTimeout({
                 try await self.authRepository.currentSession()
             }) {
+                if relinquishSessionForBlockingMaintenance() { return }
                 guard isCurrentLaunchAttempt(attempt) else { return }
                 await resolvePostAuthDestination(userId: session.userId, attempt: attempt)
             } else {
+                if relinquishSessionForBlockingMaintenance() { return }
                 guard isCurrentLaunchAttempt(attempt) else { return }
                 restoredLocale = nil
                 state = .unauthenticated
             }
         } catch is CancellationError {
+            if relinquishSessionForBlockingMaintenance() { return }
             applySessionRestoreFailureIfCurrent(attempt)
         } catch {
+            if relinquishSessionForBlockingMaintenance() { return }
             applySessionRestoreFailureIfCurrent(attempt)
         }
     }
 
+    /// Blocking maintenance began while a session read was in flight.
+    /// `currentSession()` can save the token again after `logOut()` cleared it,
+    /// because the auth repository actor yields between clear and sign-out.
+    /// Running `logOut()` after that read returns makes the clear the last write.
+    /// Returns true when the caller must not enter Home, onboarding, or Start-via-restore.
+    private func relinquishSessionForBlockingMaintenance() -> Bool {
+        guard isBlockingMaintenance() else { return false }
+        _ = consumeBlockingLogoutRequest()
+        logOut()
+        return true
+    }
+
     func retryBootstrap() {
+        if isBlockingMaintenance() {
+            if consumeBlockingLogoutRequest() {
+                logOut()
+            }
+            return
+        }
         switch state {
         case .sessionRestoreFailed:
             Task { await bootstrap() }
@@ -142,6 +187,10 @@ final class AppFlowViewModel {
     /// the linked-card check so a returning account that already finished onboarding
     /// skips straight into the main app.
     func didLogIn(_ session: AuthData) {
+        if isBlockingMaintenance() {
+            logOut()
+            return
+        }
         let attempt = beginLaunchAttempt()
         state = .loading
         Task { await resolvePostAuthDestination(userId: session.userId, attempt: attempt) }
@@ -153,6 +202,10 @@ final class AppFlowViewModel {
     /// demo slot before the normal post-login routing runs, so the seeded linked card
     /// skips onboarding straight to Home as Iveta.
     func startDemo() {
+        if isBlockingMaintenance() {
+            logOut()
+            return
+        }
         demoStartErrorMessage = nil
         let attempt = beginLaunchAttempt()
         state = .loading
@@ -193,12 +246,16 @@ final class AppFlowViewModel {
     /// primary is tapped with a confirmed linked card (Create Card's Continue, or
     /// processing scan's Enter Minit), never from bootstrap.
     func didCompleteOnboarding(userId: String) {
+        if isBlockingMaintenance() {
+            logOut()
+            return
+        }
         restoredLocale = nil
         state = .authenticated(userId: userId)
     }
 
-    /// Signs the user out and returns them to the unauthenticated flow (e.g. from the
-    /// dashboard-under-construction placeholder's Log Out button).
+    /// Signs the user out and returns them to the unauthenticated flow.
+    /// Home's Log Out button and blocking maintenance both use this method.
     ///
     /// Clears the session URL cache before the auth call, the same moment Home
     /// confirms logout, and again after `logout()` returns. A load in flight can
@@ -229,6 +286,10 @@ final class AppFlowViewModel {
                 try await self.loyaltyCardRepository.fetchLinkedCard(userId: userId)
             }
             guard isCurrentLaunchAttempt(attempt) else { return }
+            if isBlockingMaintenance() {
+                logOut()
+                return
+            }
             if linkedCard != nil {
                 restoredLocale = nil
                 state = .authenticated(userId: userId)

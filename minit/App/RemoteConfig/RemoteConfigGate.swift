@@ -17,6 +17,8 @@ protocol RemoteConfigBackend: AnyObject {
 /// Foreground recomputes the banner window from the activated config and fetches again.
 /// `minimumFetchInterval` is 0 on every channel. A failed fetch keeps the live snapshot.
 /// Launch, foreground, and maintenance Reload share one in-flight network fetch.
+/// A rising edge of `maintenance_blocking` requests logout once per episode.
+/// Force update, soft update, and the downtime banner do not.
 @MainActor
 final class RemoteConfigGate: ObservableObject {
     static let shared = RemoteConfigGate()
@@ -37,6 +39,11 @@ final class RemoteConfigGate: ObservableObject {
     private let channel: AppDistributionChannel
     let installedMarketingVersion: String
     private let defaults: UserDefaults
+    /// Rising edge of blocking maintenance. Force, soft, and banner stay false.
+    private var blockingLogoutEdge = BlockingMaintenanceLogoutEdge()
+    /// Set when an episode begins before the app flow has registered a handler.
+    private var pendingBlockingLogout = false
+    private var blockingLogoutHandler: (@MainActor () -> Void)?
 
     init(
         bundle: Bundle = .main,
@@ -53,8 +60,25 @@ final class RemoteConfigGate: ObservableObject {
         if let backend {
             self.backend = backend
             didStart = true
-            snapshot = backend.readSnapshot()
+            let initial = backend.readSnapshot()
+            snapshot = initial
+            noteBlockingLogout(initial)
         }
+    }
+
+    /// App flow registers the same logout the in-app Log Out control uses.
+    /// A blocking episode that started before registration is delivered once, here.
+    func bindBlockingLogoutHandler(_ handler: @escaping @MainActor () -> Void) {
+        blockingLogoutHandler = handler
+        deliverPendingBlockingLogout()
+    }
+
+    /// True once, when a blocking episode requested logout and no handler has run it.
+    /// Bootstrap consumes this so it does not restore a session under the sheet.
+    func consumePendingBlockingLogout() -> Bool {
+        guard pendingBlockingLogout else { return false }
+        pendingBlockingLogout = false
+        return true
     }
 
     static func start() {
@@ -196,12 +220,27 @@ final class RemoteConfigGate: ObservableObject {
     /// Publishing a non-blocking snapshot drops the still-unavailable alert. The sheet
     /// can disappear without the OK handler, and the next maintenance episode must not
     /// show that alert on its own.
+    /// Blocking maintenance requests logout on the rising edge only, after the snapshot
+    /// is visible to the handler.
     private func publish(_ snapshot: RemoteConfigSnapshot) {
         self.snapshot = snapshot
         evaluatedAt = Date()
         if !snapshot.maintenanceBlocking {
             showsMaintenanceStillUnavailableAlert = false
         }
+        noteBlockingLogout(snapshot)
+    }
+
+    private func noteBlockingLogout(_ snapshot: RemoteConfigSnapshot) {
+        guard blockingLogoutEdge.observe(isBlocking: snapshot.maintenanceBlocking) else { return }
+        pendingBlockingLogout = true
+        deliverPendingBlockingLogout()
+    }
+
+    private func deliverPendingBlockingLogout() {
+        guard pendingBlockingLogout, let blockingLogoutHandler else { return }
+        pendingBlockingLogout = false
+        blockingLogoutHandler()
     }
 }
 

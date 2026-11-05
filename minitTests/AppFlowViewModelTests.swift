@@ -14,7 +14,9 @@ final class AppFlowViewModelTests: XCTestCase {
         networkClient: NetworkClient = FakeDemoNetworkClient(),
         demoSessionStore: DemoSessionTokenStore = DemoSessionTokenStore(),
         restoreTimeout: Duration = AppFlowViewModel.defaultRestoreTimeout,
-        clearAvatarURLCache: @escaping @MainActor () -> Void = {}
+        clearAvatarURLCache: @escaping @MainActor () -> Void = {},
+        isBlockingMaintenance: @escaping @MainActor () -> Bool = { false },
+        consumeBlockingLogoutRequest: @escaping @MainActor () -> Bool = { false }
     ) -> AppFlowViewModel {
         AppFlowViewModel(
             authRepository: auth,
@@ -23,7 +25,9 @@ final class AppFlowViewModelTests: XCTestCase {
             networkClient: networkClient,
             demoSessionStore: demoSessionStore,
             restoreTimeout: restoreTimeout,
-            clearAvatarURLCache: clearAvatarURLCache
+            clearAvatarURLCache: clearAvatarURLCache,
+            isBlockingMaintenance: isBlockingMaintenance,
+            consumeBlockingLogoutRequest: consumeBlockingLogoutRequest
         )
     }
 
@@ -265,6 +269,87 @@ final class AppFlowViewModelTests: XCTestCase {
         vm.didCompleteOnboarding(userId: "user-1")
         XCTAssertEqual(vm.state, .authenticated(userId: "user-1"))
         XCTAssertNil(vm.restoredLocale)
+    }
+
+    func testBootstrapWhileBlockingMaintenanceLogsOutOnceAndSkipsRestore() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = AuthData(token: "token", userId: "user-1")
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.linkedCard = LoyaltyCardData(code: "CARD", ownerUserId: "user-1", points: 3)
+        var requestsRemaining = 1
+        let vm = makeViewModel(
+            auth: auth,
+            loyalty: loyalty,
+            isBlockingMaintenance: { true },
+            consumeBlockingLogoutRequest: {
+                guard requestsRemaining > 0 else { return false }
+                requestsRemaining -= 1
+                return true
+            }
+        )
+
+        await vm.bootstrap()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(auth.currentSessionCallCount, 0)
+        XCTAssertEqual(loyalty.fetchLinkedCardCallCount, 0)
+
+        await vm.bootstrap()
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(auth.currentSessionCallCount, 0)
+    }
+
+    func testBootstrapLogsOutWhenBlockingStartsDuringSessionRestore() async {
+        let auth = FakeAuthRepository()
+        auth.sessionToReturn = AuthData(token: "token", userId: "user-1")
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.linkedCard = LoyaltyCardData(code: "CARD", ownerUserId: "user-1", points: 1)
+        var blocking = false
+        var pending = false
+        auth.onCurrentSession = {
+            blocking = true
+            pending = true
+        }
+        let vm = makeViewModel(
+            auth: auth,
+            loyalty: loyalty,
+            isBlockingMaintenance: { blocking },
+            consumeBlockingLogoutRequest: {
+                guard pending else { return false }
+                pending = false
+                return true
+            }
+        )
+
+        await vm.bootstrap()
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(auth.currentSessionCallCount, 1)
+        XCTAssertEqual(loyalty.fetchLinkedCardCallCount, 0)
+    }
+
+    func testDidLogInWhileBlockingMaintenanceDoesNotEnterHome() async {
+        let auth = FakeAuthRepository()
+        let loyalty = FakeLoyaltyCardRepository()
+        loyalty.linkedCard = LoyaltyCardData(code: "CARD", ownerUserId: "user-1", points: 1)
+        let vm = makeViewModel(
+            auth: auth,
+            loyalty: loyalty,
+            isBlockingMaintenance: { true },
+            consumeBlockingLogoutRequest: { false }
+        )
+
+        vm.didLogIn(AuthData(token: "token", userId: "user-1"))
+        await waitForState(vm, .unauthenticated)
+
+        XCTAssertEqual(vm.state, .unauthenticated)
+        XCTAssertEqual(auth.logoutCallCount, 1)
+        XCTAssertEqual(loyalty.fetchLinkedCardCallCount, 0)
     }
 
     func testLogOutCallsRepositoryAndReturnsUnauthenticated() async {
@@ -561,6 +646,7 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
     private(set) var currentSessionCallCount = 0
     private(set) var logoutCallCount = 0
     var onLogout: (() -> Void)?
+    var onCurrentSession: (() -> Void)?
 
     func login(email: String, password: String) async throws -> AuthData {
         AuthData(token: "t", userId: "user")
@@ -573,6 +659,7 @@ private final class FakeAuthRepository: AuthRepository, @unchecked Sendable {
 
     func currentSession() async throws -> AuthData? {
         currentSessionCallCount += 1
+        onCurrentSession?()
         if hangCurrentSession {
             try await hangUntilCancelled()
         }
