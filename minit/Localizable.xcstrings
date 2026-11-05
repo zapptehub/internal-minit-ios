@@ -409,29 +409,6 @@
         }
       }
     },
-    "remoteConfig.update.later" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Later"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Később"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neskôr"
-          }
-        }
-      }
-    },
     "remoteConfig.update.soft.releaseBody" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -520,6 +497,213 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktualizovať"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.soft.testerBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A newer test build is available. Check Firebase App Tester or your email."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elérhető egy újabb tesztverzió. A Firebase App Testerben vagy az e-mailjeid között találod."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "K dispozícii je novšie testovacie zostavenie. Nájdete ho vo Firebase App Tester alebo vo svojom e-maile."
+          }
+        }
+      }
+    },
+    "remoteConfig.banner.downtimeTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maintenance"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karbantartás"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Údržba"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.testerAlert.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internal test build"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Belső tesztverzió"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interné testovacie zostavenie"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.testerAlert.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is an internal test build. Testers get the new version by email or in Firebase App Tester. If you are not a tester, write to Armands for an invite."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez egy belső tesztverzió. A tesztelők e-mailben vagy a Firebase App Testerben kapják meg az új verziót. Ha nem vagy tesztelő, írj Armandsnak meghívóért."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toto je interné testovacie zostavenie. Testéri dostanú novú verziu e-mailom alebo vo Firebase App Tester. Ak nie ste tester, napíšte Armandsovi a požiadajte o pozvánku."
+          }
+        }
+      }
+    },
+    "remoteConfig.update.openMail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open mail"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Levelek megnyitása"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otvoriť poštu"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.requestVersion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request new version"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Új verzió kérése"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Požiadať o novú verziu"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.alertCancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mégse"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zrušiť"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.requestSubject" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit test version invite"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meghívó a Minit tesztverziójához"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozvánka na testovaciu verziu Minit"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.requestBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hello,\n\nPlease send me an invite to the new Minit test version.\n\nPlatform: iOS\nInstalled version: %@\n"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Szia,\n\nKérlek, küldj meghívót a Minit új tesztverziójához.\n\nPlatform: iOS\nTelepített verzió: %@\n"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobrý deň,\n\nProsím o pozvánku na novú testovaciu verziu aplikácie Minit.\n\nPlatforma: iOS\nNainštalovaná verzia: %@\n"
           }
         }
       }

@@ -20,7 +20,7 @@ final class RemoteConfigGate: ObservableObject {
     /// Coalesces launch `activate` + the first foreground `.active` so they share one fetch.
     private var isFetching = false
     private let channel: AppDistributionChannel
-    private let installedMarketingVersion: String
+    let installedMarketingVersion: String
     private let defaults: UserDefaults
 
     init(bundle: Bundle = .main, defaults: UserDefaults = .standard, now: Date = Date()) {

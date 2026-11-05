@@ -177,8 +177,10 @@ extension RemoteConfigSnapshot {
 }
 
 /// Pure maintenance and minimum-version decision. No Firebase types.
+/// The soft banner's close control stores `dismissedSoftVersionDefaultsKey` and stays
+/// quiet until the soft floor changes. There is no soft-update dialog.
 enum AppVersionPolicy {
-    /// Later stores this UserDefaults value and stays quiet until the soft floor changes.
+    /// The soft banner close control stores this UserDefaults value and stays quiet until the soft floor changes.
     static let dismissedSoftVersionDefaultsKey = "minit.remoteConfig.dismissedSoftMinVersionIOS"
 
     struct Input: Equatable {
@@ -193,10 +195,21 @@ enum AppVersionPolicy {
 
     struct Decision: Equatable {
         var blocking: Blocking?
-        var update: Update?
-        var banner: Banner?
+        var force: Force?
+        var softBanner: SoftBanner?
+        var downtimeBanner: DowntimeBanner?
 
-        static let clear = Decision(blocking: nil, update: nil, banner: nil)
+        /// Blocking and force are non-dismissable sheets. Banners leave the app usable.
+        var coversApp: Bool {
+            blocking != nil || force != nil
+        }
+
+        static let clear = Decision(
+            blocking: nil,
+            force: nil,
+            softBanner: nil,
+            downtimeBanner: nil
+        )
     }
 
     struct Blocking: Equatable {
@@ -208,27 +221,28 @@ enum AppVersionPolicy {
         case catalogFallback
     }
 
-    enum Update: Equatable {
-        case force(Prompt)
-        case soft(Prompt)
-
-        var prompt: Prompt {
-            switch self {
-            case .force(let prompt), .soft(let prompt):
-                return prompt
-            }
-        }
-    }
-
-    struct Prompt: Equatable {
+    struct Force: Equatable {
         var usesTesterCopy: Bool
-        /// Release only, and only when `update_url_ios` is a non-empty URL. Development and internal never open one.
-        var updateURL: URL?
-        /// Trimmed soft floor. Later writes this exact string. Nil for a force update.
-        var softThreshold: String?
+        /// Always set. Release without a usable URL is `UpdateAction.unavailable`.
+        var action: UpdateAction
     }
 
-    struct Banner: Equatable {
+    enum UpdateAction: Equatable {
+        /// Release, and `update_url_ios` is a non-empty https or `itms-apps` URL.
+        case openStore(URL)
+        /// Development and internal. Update opens the tester alert instead of a URL.
+        case testerAlert
+        /// Release with an empty or disallowed URL. The Update button stays hidden.
+        case unavailable
+    }
+
+    struct SoftBanner: Equatable {
+        var usesTesterCopy: Bool
+        /// Trimmed soft floor. Close writes this exact string.
+        var threshold: String
+    }
+
+    struct DowntimeBanner: Equatable {
         var message: String
         var identity: String
     }
@@ -241,16 +255,21 @@ enum AppVersionPolicy {
             )
             return Decision(
                 blocking: Blocking(body: body.map(ResolvedText.remote) ?? .catalogFallback),
-                update: nil,
-                banner: nil
+                force: nil,
+                softBanner: nil,
+                downtimeBanner: nil
             )
         }
 
-        let update = resolveUpdate(input)
-        if case .force = update {
-            return Decision(blocking: nil, update: update, banner: nil)
+        if let force = resolveForce(input) {
+            return Decision(blocking: nil, force: force, softBanner: nil, downtimeBanner: nil)
         }
-        return Decision(blocking: nil, update: update, banner: resolveBanner(input))
+        return Decision(
+            blocking: nil,
+            force: nil,
+            softBanner: resolveSoftBanner(input),
+            downtimeBanner: resolveDowntimeBanner(input)
+        )
     }
 
     static func resolveMessage(json: String, languageCode: String) -> String? {
@@ -284,12 +303,29 @@ enum AppVersionPolicy {
         return internet.date(from: trimmed)
     }
 
-    private static func resolveUpdate(_ input: Input) -> Update? {
+    private static func resolveForce(_ input: Input) -> Force? {
         guard let installed = MarketingVersion.components(input.installedMarketingVersion) else {
             return nil
         }
-        if MarketingVersion.isStrictlyAbove(floor: input.snapshot.minVersionIOS, installed: installed) {
-            return .force(prompt(input, softThreshold: nil))
+        guard MarketingVersion.isStrictlyAbove(floor: input.snapshot.minVersionIOS, installed: installed) else {
+            return nil
+        }
+        return Force(usesTesterCopy: input.channel.usesTesterCopy, action: forceAction(input))
+    }
+
+    private static func forceAction(_ input: Input) -> UpdateAction {
+        if input.channel.usesTesterCopy {
+            return .testerAlert
+        }
+        guard let url = releaseUpdateURL(channel: input.channel, raw: input.snapshot.updateURLIOS) else {
+            return .unavailable
+        }
+        return .openStore(url)
+    }
+
+    private static func resolveSoftBanner(_ input: Input) -> SoftBanner? {
+        guard let installed = MarketingVersion.components(input.installedMarketingVersion) else {
+            return nil
         }
         let softFloor = input.snapshot.softMinVersionIOS.trimmingCharacters(in: .whitespacesAndNewlines)
         guard MarketingVersion.isStrictlyAbove(floor: softFloor, installed: installed) else {
@@ -299,15 +335,7 @@ enum AppVersionPolicy {
         if dismissed == softFloor {
             return nil
         }
-        return .soft(prompt(input, softThreshold: softFloor))
-    }
-
-    private static func prompt(_ input: Input, softThreshold: String?) -> Prompt {
-        Prompt(
-            usesTesterCopy: input.channel.usesTesterCopy,
-            updateURL: releaseUpdateURL(channel: input.channel, raw: input.snapshot.updateURLIOS),
-            softThreshold: softThreshold
-        )
+        return SoftBanner(usesTesterCopy: input.channel.usesTesterCopy, threshold: softFloor)
     }
 
     private static let allowedUpdateURLSchemes: Set<String> = ["https", "itms-apps"]
@@ -325,7 +353,7 @@ enum AppVersionPolicy {
         return url
     }
 
-    private static func resolveBanner(_ input: Input) -> Banner? {
+    private static func resolveDowntimeBanner(_ input: Input) -> DowntimeBanner? {
         let rawMessage = input.snapshot.maintenanceBannerMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let message = resolveMessage(
             json: rawMessage,
@@ -338,7 +366,7 @@ enum AppVersionPolicy {
         guard windowAllows(start: start, end: end, now: input.now) else { return nil }
         let identity = bannerIdentity(message: rawMessage, start: start, end: end)
         if input.dismissedBannerIdentity == identity { return nil }
-        return Banner(message: message, identity: identity)
+        return DowntimeBanner(message: message, identity: identity)
     }
 
     private static func windowAllows(start: String, end: String, now: Date) -> Bool {
@@ -361,6 +389,33 @@ enum AppVersionPolicy {
         guard let text = value as? String else { return nil }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+/// Tester mail targets. Subject and body come from the catalog; this only builds the URL.
+enum RemoteConfigTesterMail {
+    static let email = "armands.berzins@saleseverest.com"
+
+    static func addressURL() -> URL? {
+        URL(string: "mailto:\(email)")
+    }
+
+    static func requestBody(template: String, installedVersion: String) -> String {
+        String(format: template, installedVersion)
+    }
+
+    /// `mailto:` with a prefilled subject and body.
+    /// Query values are percent-encoded, including `&`, `+`, and `=`, which `URLQueryItem` leaves raw.
+    static func requestInviteURL(subject: String, body: String) -> URL? {
+        let query = "subject=\(percentEncodeQueryValue(subject))&body=\(percentEncodeQueryValue(body))"
+        return URL(string: "mailto:\(email)?\(query)")
+    }
+
+    /// `urlQueryAllowed` still contains `&`, `+`, and `=`. Those split or rewrite a query value.
+    private static func percentEncodeQueryValue(_ value: String) -> String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&+=")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 }
 

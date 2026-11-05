@@ -21,21 +21,15 @@ final class AppVersionPolicyTests: XCTestCase {
             .orderedAscending
         )
 
-        XCTAssertNil(evaluate(minVersion: "1.0.0", installed: "1.0").update)
-        XCTAssertNil(evaluate(minVersion: "1.0", installed: "1.0.0").update)
-        XCTAssertNil(evaluate(softVersion: "1.0.0", installed: "1.0").update)
-        XCTAssertNil(evaluate(minVersion: "1", installed: "1.0.0").update)
+        XCTAssertNil(evaluate(minVersion: "1.0.0", installed: "1.0").force)
+        XCTAssertNil(evaluate(minVersion: "1.0", installed: "1.0.0").force)
+        XCTAssertNil(evaluate(softVersion: "1.0.0", installed: "1.0").softBanner)
+        XCTAssertNil(evaluate(minVersion: "1", installed: "1.0.0").force)
 
-        guard case .force = evaluate(minVersion: "1.0.1", installed: "1.0").update else {
-            return XCTFail("1.0.1 is above 1.0")
-        }
-        guard case .soft = evaluate(softVersion: "1.0.1", installed: "1.0").update else {
-            return XCTFail("soft 1.0.1 is above 1.0")
-        }
-        guard case .force = evaluate(minVersion: "1.10", installed: "1.2").update else {
-            return XCTFail("1.10 is above 1.2")
-        }
-        XCTAssertNil(evaluate(minVersion: "1.2", installed: "1.10").update)
+        XCTAssertNotNil(evaluate(minVersion: "1.0.1", installed: "1.0").force, "1.0.1 is above 1.0")
+        XCTAssertNotNil(evaluate(softVersion: "1.0.1", installed: "1.0").softBanner, "soft 1.0.1 is above 1.0")
+        XCTAssertNotNil(evaluate(minVersion: "1.10", installed: "1.2").force, "1.10 is above 1.2")
+        XCTAssertNil(evaluate(minVersion: "1.2", installed: "1.10").force)
     }
 
     func testInvalidInstalledVersionSkipsUpdateGate() {
@@ -48,9 +42,10 @@ final class AppVersionPolicyTests: XCTestCase {
                 installed: installed,
                 blocking: false
             )
-            XCTAssertNil(decision.update, installed)
+            XCTAssertNil(decision.force, installed)
+            XCTAssertNil(decision.softBanner, installed)
             XCTAssertNil(decision.blocking, installed)
-            XCTAssertEqual(decision.banner?.message, "Tonight", installed)
+            XCTAssertEqual(decision.downtimeBanner?.message, "Tonight", installed)
         }
 
         let blocking = evaluate(
@@ -61,63 +56,64 @@ final class AppVersionPolicyTests: XCTestCase {
             blocking: true
         )
         XCTAssertEqual(blocking.blocking?.body, .remote("Closed"))
-        XCTAssertNil(blocking.update)
+        XCTAssertNil(blocking.force)
+        XCTAssertNil(blocking.softBanner)
     }
 
     func testBlankOrInvalidFloorTurnsThatComparatorOff() {
-        guard case .soft(let prompt) = evaluate(minVersion: "", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("blank hard floor leaves soft on")
-        }
-        XCTAssertEqual(prompt.softThreshold, "2.0")
+        let soft = evaluate(minVersion: "", softVersion: "2.0", installed: "1.0")
+        XCTAssertEqual(soft.softBanner?.threshold, "2.0", "blank hard floor leaves soft on")
+        XCTAssertNil(soft.force)
 
-        guard case .soft = evaluate(minVersion: "nope", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("invalid hard floor leaves soft on")
-        }
-        guard case .force = evaluate(minVersion: "2.0", softVersion: "", installed: "1.0").update else {
-            return XCTFail("blank soft floor leaves force on")
-        }
-        guard case .force = evaluate(minVersion: "2.0", softVersion: "soon", installed: "1.0").update else {
-            return XCTFail("invalid soft floor leaves force on")
-        }
-        XCTAssertNil(evaluate(minVersion: "", softVersion: "", installed: "1.0").update)
-        XCTAssertNil(evaluate(minVersion: " ", softVersion: "x", installed: "1.0").update)
-        XCTAssertNil(evaluate(minVersion: "1.0", softVersion: "1.0.0", installed: "1.0").update)
+        XCTAssertNotNil(
+            evaluate(minVersion: "nope", softVersion: "2.0", installed: "1.0").softBanner,
+            "invalid hard floor leaves soft on"
+        )
+        XCTAssertNotNil(evaluate(minVersion: "2.0", softVersion: "", installed: "1.0").force, "blank soft floor leaves force on")
+        XCTAssertNil(evaluate(minVersion: "2.0", softVersion: "", installed: "1.0").softBanner)
+        XCTAssertNotNil(
+            evaluate(minVersion: "2.0", softVersion: "soon", installed: "1.0").force,
+            "invalid soft floor leaves force on"
+        )
+        XCTAssertNil(evaluate(minVersion: "", softVersion: "", installed: "1.0").force)
+        XCTAssertNil(evaluate(minVersion: "", softVersion: "", installed: "1.0").softBanner)
+        XCTAssertNil(evaluate(minVersion: " ", softVersion: "x", installed: "1.0").force)
+        XCTAssertNil(evaluate(minVersion: " ", softVersion: "x", installed: "1.0").softBanner)
+        XCTAssertNil(evaluate(minVersion: "1.0", softVersion: "1.0.0", installed: "1.0").force)
+        XCTAssertNil(evaluate(minVersion: "1.0", softVersion: "1.0.0", installed: "1.0").softBanner)
     }
 
     func testForceBeatsSoftWhenBothFloorsMatchOrApply() {
-        guard case .force = evaluate(minVersion: "2.0", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("matching floors")
+        for (hard, soft, label) in [("2.0", "2.0", "matching floors"), ("2.0", "3.0", "both apply, soft higher"), ("3.0", "2.0", "both apply, hard higher")] {
+            let decision = evaluate(minVersion: hard, softVersion: soft, installed: "1.0")
+            XCTAssertNotNil(decision.force, label)
+            XCTAssertNil(decision.softBanner, label)
+            XCTAssertNil(decision.downtimeBanner, label)
         }
-        guard case .force = evaluate(minVersion: "2.0", softVersion: "3.0", installed: "1.0").update else {
-            return XCTFail("both apply, soft higher")
-        }
-        guard case .force = evaluate(minVersion: "3.0", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("both apply, hard higher")
-        }
-        guard case .soft = evaluate(minVersion: "1.0", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("hard equal to install does not force")
-        }
-        guard case .soft = evaluate(minVersion: "0.9", softVersion: "2.0", installed: "1.0").update else {
-            return XCTFail("hard below install leaves soft")
-        }
+        let hardEqual = evaluate(minVersion: "1.0", softVersion: "2.0", installed: "1.0")
+        XCTAssertNil(hardEqual.force, "hard equal to install does not force")
+        XCTAssertNotNil(hardEqual.softBanner)
+        let hardBelow = evaluate(minVersion: "0.9", softVersion: "2.0", installed: "1.0")
+        XCTAssertNil(hardBelow.force, "hard below install leaves soft")
+        XCTAssertNotNil(hardBelow.softBanner)
     }
 
     func testBannerWindowEdges() {
         let message = #"{"en":"Down tonight","sk":"Vecer","hu":"Ma este"}"#
 
         XCTAssertEqual(
-            evaluate(bannerMessage: message, bannerStart: "", bannerEnd: "").banner?.message,
+            evaluate(bannerMessage: message, bannerStart: "", bannerEnd: "").downtimeBanner?.message,
             "Down tonight"
         )
-        XCTAssertNil(evaluate(bannerMessage: "{}", bannerStart: "", bannerEnd: "").banner)
-        XCTAssertNil(evaluate(bannerMessage: "", bannerStart: "", bannerEnd: "").banner)
+        XCTAssertNil(evaluate(bannerMessage: "{}", bannerStart: "", bannerEnd: "").downtimeBanner)
+        XCTAssertNil(evaluate(bannerMessage: "", bannerStart: "", bannerEnd: "").downtimeBanner)
 
         XCTAssertEqual(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T11:00:00Z",
                 bannerEnd: "2026-11-05T13:00:00Z"
-            ).banner?.message,
+            ).downtimeBanner?.message,
             "Down tonight"
         )
         XCTAssertNotNil(
@@ -125,58 +121,58 @@ final class AppVersionPolicyTests: XCTestCase {
                 bannerMessage: message,
                 bannerStart: "2026-11-05T12:00:00Z",
                 bannerEnd: "2026-11-05T13:00:00Z"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T11:00:00Z",
                 bannerEnd: "2026-11-05T12:00:00Z"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T13:00:00Z",
                 bannerEnd: "2026-11-05T14:00:00Z"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T10:00:00Z",
                 bannerEnd: "2026-11-05T11:00:00Z"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNil(
-            evaluate(bannerMessage: message, bannerStart: "2026-11-05T11:00:00Z", bannerEnd: "").banner
+            evaluate(bannerMessage: message, bannerStart: "2026-11-05T11:00:00Z", bannerEnd: "").downtimeBanner
         )
         XCTAssertNil(
-            evaluate(bannerMessage: message, bannerStart: "", bannerEnd: "2026-11-05T13:00:00Z").banner
+            evaluate(bannerMessage: message, bannerStart: "", bannerEnd: "2026-11-05T13:00:00Z").downtimeBanner
         )
         XCTAssertNil(
-            evaluate(bannerMessage: message, bannerStart: "tomorrow", bannerEnd: "later").banner
+            evaluate(bannerMessage: message, bannerStart: "tomorrow", bannerEnd: "later").downtimeBanner
         )
         XCTAssertNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T13:00:00Z",
                 bannerEnd: "2026-11-05T11:00:00Z"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNotNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T13:00:00+02:00",
                 bannerEnd: "2026-11-05T15:00:00+02:00"
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNotNil(
             evaluate(
                 bannerMessage: message,
                 bannerStart: "2026-11-05T11:00:00.000Z",
                 bannerEnd: "2026-11-05T13:00:00.500Z"
-            ).banner
+            ).downtimeBanner
         )
     }
 
@@ -211,34 +207,29 @@ final class AppVersionPolicyTests: XCTestCase {
             .catalogFallback
         )
 
-        XCTAssertEqual(evaluate(bannerMessage: json, language: "hu").banner?.message, "Hungarian")
-        XCTAssertEqual(evaluate(bannerMessage: #"{"sk":"Slovak"}"#, language: "fr").banner?.message, nil)
-        XCTAssertNil(evaluate(bannerMessage: "{}", language: "en").banner)
+        XCTAssertEqual(evaluate(bannerMessage: json, language: "hu").downtimeBanner?.message, "Hungarian")
+        XCTAssertEqual(evaluate(bannerMessage: #"{"sk":"Slovak"}"#, language: "fr").downtimeBanner?.message, nil)
+        XCTAssertNil(evaluate(bannerMessage: "{}", language: "en").downtimeBanner)
     }
 
-    func testLaterStoresSoftThresholdAndStaysQuietUntilItChanges() {
+    func testSoftBannerDismissStoresThresholdAndStaysQuietUntilItChanges() {
         XCTAssertEqual(
             AppVersionPolicy.dismissedSoftVersionDefaultsKey,
             "minit.remoteConfig.dismissedSoftMinVersionIOS"
         )
 
         let shown = evaluate(softVersion: "1.2", installed: "1.0")
-        guard case .soft(let prompt) = shown.update else {
-            return XCTFail("soft prompt")
-        }
-        XCTAssertEqual(prompt.softThreshold, "1.2")
+        XCTAssertEqual(shown.softBanner?.threshold, "1.2")
+        XCTAssertNil(shown.force)
 
-        let quiet = evaluate(softVersion: "1.2", installed: "1.0", dismissedSoft: prompt.softThreshold)
-        XCTAssertNil(quiet.update)
+        let quiet = evaluate(softVersion: "1.2", installed: "1.0", dismissedSoft: shown.softBanner?.threshold)
+        XCTAssertNil(quiet.softBanner)
 
         let padded = evaluate(softVersion: "  1.2  ", installed: "1.0", dismissedSoft: "1.2")
-        XCTAssertNil(padded.update)
+        XCTAssertNil(padded.softBanner)
 
         let changed = evaluate(softVersion: "1.3", installed: "1.0", dismissedSoft: "1.2")
-        guard case .soft(let again) = changed.update else {
-            return XCTFail("new threshold shows again")
-        }
-        XCTAssertEqual(again.softThreshold, "1.3")
+        XCTAssertEqual(changed.softBanner?.threshold, "1.3")
 
         let stillThere = evaluate(
             bannerMessage: #"{"en":"Down tonight"}"#,
@@ -246,8 +237,8 @@ final class AppVersionPolicyTests: XCTestCase {
             installed: "1.0",
             dismissedSoft: "1.2"
         )
-        XCTAssertNil(stillThere.update)
-        XCTAssertEqual(stillThere.banner?.message, "Down tonight")
+        XCTAssertNil(stillThere.softBanner)
+        XCTAssertEqual(stillThere.downtimeBanner?.message, "Down tonight")
     }
 
     func testBannerDismissLastsUntilMessageOrWindowChanges() {
@@ -256,7 +247,7 @@ final class AppVersionPolicyTests: XCTestCase {
             bannerStart: "2026-11-05T11:00:00Z",
             bannerEnd: "2026-11-05T13:00:00Z"
         )
-        let identity = try? XCTUnwrap(shown.banner?.identity)
+        let identity = try? XCTUnwrap(shown.downtimeBanner?.identity)
         guard let identity else { return }
 
         XCTAssertNil(
@@ -265,7 +256,7 @@ final class AppVersionPolicyTests: XCTestCase {
                 bannerStart: "2026-11-05T11:00:00Z",
                 bannerEnd: "2026-11-05T13:00:00Z",
                 dismissedBanner: identity
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNotNil(
             evaluate(
@@ -273,7 +264,7 @@ final class AppVersionPolicyTests: XCTestCase {
                 bannerStart: "2026-11-05T11:00:00Z",
                 bannerEnd: "2026-11-05T13:00:00Z",
                 dismissedBanner: identity
-            ).banner
+            ).downtimeBanner
         )
         XCTAssertNotNil(
             evaluate(
@@ -281,7 +272,7 @@ final class AppVersionPolicyTests: XCTestCase {
                 bannerStart: "2026-11-05T11:30:00Z",
                 bannerEnd: "2026-11-05T13:00:00Z",
                 dismissedBanner: identity
-            ).banner
+            ).downtimeBanner
         )
     }
 
@@ -290,8 +281,8 @@ final class AppVersionPolicyTests: XCTestCase {
         let start = "2026-11-05T11:00:00Z"
         let end = "2026-11-05T13:00:00Z"
         let english = evaluate(bannerMessage: json, bannerStart: start, bannerEnd: end, language: "en")
-        let identity = try XCTUnwrap(english.banner?.identity)
-        XCTAssertEqual(english.banner?.message, "English")
+        let identity = try XCTUnwrap(english.downtimeBanner?.identity)
+        XCTAssertEqual(english.downtimeBanner?.message, "English")
         XCTAssertEqual(identity, AppVersionPolicy.bannerIdentity(message: json, start: start, end: end))
         XCTAssertNotEqual(identity, AppVersionPolicy.bannerIdentity(message: "English", start: start, end: end))
 
@@ -302,11 +293,11 @@ final class AppVersionPolicyTests: XCTestCase {
             language: "sk",
             dismissedBanner: identity
         )
-        XCTAssertNil(dismissedInSlovak.banner)
+        XCTAssertNil(dismissedInSlovak.downtimeBanner)
 
         let slovak = evaluate(bannerMessage: json, bannerStart: start, bannerEnd: end, language: "sk")
-        XCTAssertEqual(slovak.banner?.message, "Slovak")
-        XCTAssertEqual(slovak.banner?.identity, identity)
+        XCTAssertEqual(slovak.downtimeBanner?.message, "Slovak")
+        XCTAssertEqual(slovak.downtimeBanner?.identity, identity)
 
         let padded = evaluate(
             bannerMessage: " \n\(json)\n ",
@@ -314,8 +305,8 @@ final class AppVersionPolicyTests: XCTestCase {
             bannerEnd: end,
             language: "hu"
         )
-        XCTAssertEqual(padded.banner?.message, "English")
-        XCTAssertEqual(padded.banner?.identity, identity)
+        XCTAssertEqual(padded.downtimeBanner?.message, "English")
+        XCTAssertEqual(padded.downtimeBanner?.identity, identity)
     }
 
     func testEveryChannelUsesTheSameMarketingKeys() {
@@ -344,16 +335,19 @@ final class AppVersionPolicyTests: XCTestCase {
         ]
         for channel in AppDistributionChannel.allCases {
             let decision = evaluate(values: values, channel: channel, installed: "1.0.0")
-            guard case .force(let prompt) = decision.update else {
-                return XCTFail("\(channel.rawValue) should force from min_version_ios")
-            }
-            XCTAssertEqual(prompt.usesTesterCopy, channel != .release, channel.rawValue)
+            let force = decision.force
+            XCTAssertNotNil(force, "\(channel.rawValue) should force from min_version_ios")
+            XCTAssertEqual(force?.usesTesterCopy, channel.usesTesterCopy, channel.rawValue)
             if channel == .release {
-                XCTAssertEqual(prompt.updateURL?.absoluteString, "https://apps.apple.com/app/id1")
+                guard case .openStore(let url) = force?.action else {
+                    return XCTFail("\(channel.rawValue) should open the store")
+                }
+                XCTAssertEqual(url.absoluteString, "https://apps.apple.com/app/id1")
             } else {
-                XCTAssertNil(prompt.updateURL, channel.rawValue)
+                XCTAssertEqual(force?.action, .testerAlert, channel.rawValue)
             }
-            XCTAssertNil(decision.banner)
+            XCTAssertNil(decision.softBanner)
+            XCTAssertNil(decision.downtimeBanner)
         }
 
         let softValues: [String: String] = [
@@ -363,9 +357,10 @@ final class AppVersionPolicyTests: XCTestCase {
             "min_build_ios": "1",
         ]
         for channel in AppDistributionChannel.allCases {
-            guard case .soft = evaluate(values: softValues, channel: channel, installed: "1.0").update else {
-                return XCTFail("\(channel.rawValue) should soft-update from soft_min_version_ios")
-            }
+            let decision = evaluate(values: softValues, channel: channel, installed: "1.0")
+            XCTAssertNotNil(decision.softBanner, "\(channel.rawValue) should soft-update from soft_min_version_ios")
+            XCTAssertEqual(decision.softBanner?.usesTesterCopy, channel.usesTesterCopy, channel.rawValue)
+            XCTAssertNil(decision.force, channel.rawValue)
         }
 
         let androidOnly: [String: String] = [
@@ -374,7 +369,9 @@ final class AppVersionPolicyTests: XCTestCase {
             "min_build_ios": "999",
         ]
         for channel in AppDistributionChannel.allCases {
-            XCTAssertNil(evaluate(values: androidOnly, channel: channel, installed: "1.0").update, channel.rawValue)
+            let decision = evaluate(values: androidOnly, channel: channel, installed: "1.0")
+            XCTAssertNil(decision.force, channel.rawValue)
+            XCTAssertNil(decision.softBanner, channel.rawValue)
         }
 
         XCTAssertEqual(
@@ -388,43 +385,41 @@ final class AppVersionPolicyTests: XCTestCase {
             evaluate(values: [
                 RemoteConfigKey.minVersionIOS: "1.0",
                 "min_build_ios": "999",
-            ], installed: "1.0.0").update
+            ], installed: "1.0.0").force
         )
     }
 
     func testReleaseUpdateURLOpensOnlyWhenSet() {
-        guard case .force(let withURL) = evaluate(
+        let withURL = evaluate(
             minVersion: "2.0",
             updateURL: " https://apps.apple.com/app/id9 ",
             channel: .release,
             installed: "1.0"
-        ).update else {
+        ).force
+        guard case .openStore(let url) = withURL?.action else {
             return XCTFail("force")
         }
-        XCTAssertEqual(withURL.updateURL?.absoluteString, "https://apps.apple.com/app/id9")
-        XCTAssertFalse(withURL.usesTesterCopy)
+        XCTAssertEqual(url.absoluteString, "https://apps.apple.com/app/id9")
+        XCTAssertEqual(withURL?.usesTesterCopy, false)
 
-        guard case .force(let empty) = evaluate(minVersion: "2.0", updateURL: "  ", channel: .release, installed: "1.0").update else {
-            return XCTFail("force without url")
-        }
-        XCTAssertNil(empty.updateURL)
-
-        guard case .force(let invalid) = evaluate(minVersion: "2.0", updateURL: "not a url", channel: .release, installed: "1.0").update else {
-            return XCTFail("force with invalid url")
-        }
-        XCTAssertNil(invalid.updateURL)
+        XCTAssertEqual(
+            evaluate(minVersion: "2.0", updateURL: "  ", channel: .release, installed: "1.0").force?.action,
+            .unavailable
+        )
+        XCTAssertEqual(
+            evaluate(minVersion: "2.0", updateURL: "not a url", channel: .release, installed: "1.0").force?.action,
+            .unavailable
+        )
 
         for channel in [AppDistributionChannel.development, .internal] {
-            guard case .force(let prompt) = evaluate(
+            let force = evaluate(
                 minVersion: "2.0",
                 updateURL: "https://apps.apple.com/app/id9",
                 channel: channel,
                 installed: "1.0"
-            ).update else {
-                return XCTFail(channel.rawValue)
-            }
-            XCTAssertNil(prompt.updateURL)
-            XCTAssertTrue(prompt.usesTesterCopy)
+            ).force
+            XCTAssertEqual(force?.action, .testerAlert, channel.rawValue)
+            XCTAssertEqual(force?.usesTesterCopy, true, channel.rawValue)
         }
     }
 
@@ -436,15 +431,15 @@ final class AppVersionPolicyTests: XCTestCase {
             "ITMS-APPS://apps.apple.com/app/id9",
         ]
         for raw in allowed {
-            guard case .force(let prompt) = evaluate(
+            guard case .openStore(let url) = evaluate(
                 minVersion: "2.0",
                 updateURL: " \(raw) ",
                 channel: .release,
                 installed: "1.0"
-            ).update else {
+            ).force?.action else {
                 return XCTFail(raw)
             }
-            XCTAssertEqual(prompt.updateURL?.scheme?.lowercased(), URL(string: raw)?.scheme?.lowercased(), raw)
+            XCTAssertEqual(url.scheme?.lowercased(), URL(string: raw)?.scheme?.lowercased(), raw)
         }
 
         let rejected = [
@@ -456,15 +451,11 @@ final class AppVersionPolicyTests: XCTestCase {
             "file:///tmp/app",
         ]
         for raw in rejected {
-            guard case .force(let prompt) = evaluate(
-                minVersion: "2.0",
-                updateURL: raw,
-                channel: .release,
-                installed: "1.0"
-            ).update else {
-                return XCTFail(raw)
-            }
-            XCTAssertNil(prompt.updateURL, raw)
+            XCTAssertEqual(
+                evaluate(minVersion: "2.0", updateURL: raw, channel: .release, installed: "1.0").force?.action,
+                .unavailable,
+                raw
+            )
         }
     }
 
@@ -478,20 +469,26 @@ final class AppVersionPolicyTests: XCTestCase {
 
         let blocking = evaluate(values: floorsAndBanner, installed: "1.0", blocking: true)
         XCTAssertEqual(blocking.blocking?.body, .remote("Closed"))
-        XCTAssertNil(blocking.update)
-        XCTAssertNil(blocking.banner)
+        XCTAssertNil(blocking.force)
+        XCTAssertNil(blocking.softBanner)
+        XCTAssertNil(blocking.downtimeBanner)
+        XCTAssertTrue(blocking.coversApp)
 
         let force = evaluate(values: floorsAndBanner, installed: "1.0", blocking: false)
-        guard case .force = force.update else { return XCTFail("force") }
-        XCTAssertNil(force.banner)
+        XCTAssertNotNil(force.force)
+        XCTAssertNil(force.softBanner)
+        XCTAssertNil(force.downtimeBanner)
         XCTAssertNil(force.blocking)
+        XCTAssertTrue(force.coversApp)
 
         var softValues = floorsAndBanner
         softValues[RemoteConfigKey.minVersionIOS] = ""
         let soft = evaluate(values: softValues, installed: "1.0")
-        guard case .soft = soft.update else { return XCTFail("soft") }
-        XCTAssertEqual(soft.banner?.message, "Tonight")
+        XCTAssertNotNil(soft.softBanner)
+        XCTAssertNil(soft.force)
+        XCTAssertEqual(soft.downtimeBanner?.message, "Tonight")
         XCTAssertNil(soft.blocking)
+        XCTAssertFalse(soft.coversApp)
 
         let banner = evaluate(
             values: [
@@ -499,12 +496,11 @@ final class AppVersionPolicyTests: XCTestCase {
             ],
             installed: "1.0"
         )
-        XCTAssertNil(banner.update)
-        XCTAssertEqual(banner.banner?.message, "Tonight")
+        XCTAssertNil(banner.force)
+        XCTAssertNil(banner.softBanner)
+        XCTAssertEqual(banner.downtimeBanner?.message, "Tonight")
 
-        XCTAssertEqual(evaluate(installed: "1.0").blocking, nil)
-        XCTAssertNil(evaluate(installed: "1.0").update)
-        XCTAssertNil(evaluate(installed: "1.0").banner)
+        XCTAssertEqual(evaluate(installed: "1.0"), AppVersionPolicy.Decision.clear)
     }
 
     func testInAppDefaultsLeaveEveryGateOff() {
@@ -519,9 +515,54 @@ final class AppVersionPolicyTests: XCTestCase {
                 dismissedBannerIdentity: nil
             )
         )
-        XCTAssertNil(decision.blocking)
-        XCTAssertNil(decision.update)
-        XCTAssertNil(decision.banner)
+        XCTAssertEqual(decision, AppVersionPolicy.Decision.clear)
+    }
+
+    func testRequestInviteMailIncludesPlatformAndInstalledVersion() throws {
+        XCTAssertEqual(
+            RemoteConfigTesterMail.addressURL()?.absoluteString,
+            "mailto:armands.berzins@saleseverest.com"
+        )
+        for language in ["en", "sk", "hu"] {
+            let template = AppLocalizedString.string(
+                RemoteConfigCopy.requestBody,
+                locale: Locale(identifier: language)
+            )
+            let body = RemoteConfigTesterMail.requestBody(template: template, installedVersion: "1.4")
+            XCTAssertTrue(body.contains("iOS"), language)
+            XCTAssertTrue(body.contains("1.4"), language)
+            let subject = AppLocalizedString.string(
+                RemoteConfigCopy.requestSubject,
+                locale: Locale(identifier: language)
+            )
+            let url = try XCTUnwrap(RemoteConfigTesterMail.requestInviteURL(subject: subject, body: body))
+            XCTAssertEqual(url.scheme, "mailto")
+            XCTAssertTrue(url.absoluteString.contains("armands.berzins@saleseverest.com"), url.absoluteString)
+            let items = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
+            XCTAssertEqual(items.first { $0.name == "subject" }?.value, subject)
+            let decoded = try XCTUnwrap(items.first { $0.name == "body" }?.value)
+            XCTAssertTrue(decoded.contains("iOS"), decoded)
+            XCTAssertTrue(decoded.contains("1.4"), decoded)
+            XCTAssertTrue(url.absoluteString.hasPrefix("mailto:\(RemoteConfigTesterMail.email)?"), url.absoluteString)
+        }
+    }
+
+    func testRequestInviteURLEncodesReservedQueryCharacters() throws {
+        let subject = "A&B+C=D"
+        let body = "line1\nline2 & more+equals=yes"
+        let url = try XCTUnwrap(RemoteConfigTesterMail.requestInviteURL(subject: subject, body: body))
+        let absolute = url.absoluteString
+        XCTAssertTrue(absolute.hasPrefix("mailto:\(RemoteConfigTesterMail.email)?"))
+        XCTAssertFalse(absolute.contains("mailto:/"))
+        let query = String(absolute.split(separator: "?", maxSplits: 1)[1])
+        XCTAssertEqual(query.filter { $0 == "&" }.count, 1)
+        XCTAssertTrue(query.contains("%26"))
+        XCTAssertTrue(query.contains("%2B"))
+        XCTAssertTrue(query.contains("%3D"))
+        XCTAssertTrue(query.contains("%0A"))
+        let items = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
+        XCTAssertEqual(items.first { $0.name == "subject" }?.value, subject)
+        XCTAssertEqual(items.first { $0.name == "body" }?.value, body)
     }
 
     func testChannelResolutionUsesSentryEnvironment() {
@@ -575,10 +616,55 @@ final class AppVersionPolicyTests: XCTestCase {
                 "sk": "Aktualizovať",
                 "hu": "Frissítés",
             ],
-            RemoteConfigCopy.laterButton: [
-                "en": "Later",
-                "sk": "Neskôr",
-                "hu": "Később",
+            RemoteConfigCopy.softTesterBody: [
+                "en": "A newer test build is available. Check Firebase App Tester or your email.",
+                "sk": "K dispozícii je novšie testovacie zostavenie. Nájdete ho vo Firebase App Tester alebo vo svojom e-maile.",
+                "hu": "Elérhető egy újabb tesztverzió. A Firebase App Testerben vagy az e-mailjeid között találod.",
+            ],
+            RemoteConfigCopy.dismissBanner: [
+                "en": "Dismiss",
+                "sk": "Zavrieť",
+                "hu": "Bezárás",
+            ],
+            RemoteConfigCopy.downtimeTitle: [
+                "en": "Maintenance",
+                "sk": "Údržba",
+                "hu": "Karbantartás",
+            ],
+            RemoteConfigCopy.alertTitle: [
+                "en": "Internal test build",
+                "sk": "Interné testovacie zostavenie",
+                "hu": "Belső tesztverzió",
+            ],
+            RemoteConfigCopy.alertMessage: [
+                "en": "This is an internal test build. Testers get the new version by email or in Firebase App Tester. If you are not a tester, write to Armands for an invite.",
+                "sk": "Toto je interné testovacie zostavenie. Testéri dostanú novú verziu e-mailom alebo vo Firebase App Tester. Ak nie ste tester, napíšte Armandsovi a požiadajte o pozvánku.",
+                "hu": "Ez egy belső tesztverzió. A tesztelők e-mailben vagy a Firebase App Testerben kapják meg az új verziót. Ha nem vagy tesztelő, írj Armandsnak meghívóért.",
+            ],
+            RemoteConfigCopy.openMail: [
+                "en": "Open mail",
+                "sk": "Otvoriť poštu",
+                "hu": "Levelek megnyitása",
+            ],
+            RemoteConfigCopy.requestVersion: [
+                "en": "Request new version",
+                "sk": "Požiadať o novú verziu",
+                "hu": "Új verzió kérése",
+            ],
+            RemoteConfigCopy.alertCancel: [
+                "en": "Cancel",
+                "sk": "Zrušiť",
+                "hu": "Mégse",
+            ],
+            RemoteConfigCopy.requestSubject: [
+                "en": "Minit test version invite",
+                "sk": "Pozvánka na testovaciu verziu Minit",
+                "hu": "Meghívó a Minit tesztverziójához",
+            ],
+            RemoteConfigCopy.requestBody: [
+                "en": "Hello,\n\nPlease send me an invite to the new Minit test version.\n\nPlatform: iOS\nInstalled version: %@\n",
+                "sk": "Dobrý deň,\n\nProsím o pozvánku na novú testovaciu verziu aplikácie Minit.\n\nPlatforma: iOS\nNainštalovaná verzia: %@\n",
+                "hu": "Szia,\n\nKérlek, küldj meghívót a Minit új tesztverziójához.\n\nPlatform: iOS\nTelepített verzió: %@\n",
             ],
         ]
 
