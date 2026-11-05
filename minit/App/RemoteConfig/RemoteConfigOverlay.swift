@@ -21,6 +21,9 @@ enum RemoteConfigCopy {
     static let alertCancel = "remoteConfig.update.alertCancel"
     static let requestSubject = "remoteConfig.update.requestSubject"
     static let requestBody = "remoteConfig.update.requestBody"
+    static let reloadButton = "remoteConfig.maintenance.reload"
+    static let stillUnavailableMessage = "remoteConfig.maintenance.stillUnavailable.message"
+    static let stillUnavailableOK = "remoteConfig.maintenance.stillUnavailable.ok"
 }
 
 /// Hosts downtime and soft banners above every screen, and presents blocking
@@ -199,6 +202,7 @@ private final class PassThroughRootView: UIView {
 struct RemoteConfigChrome: View {
     @ObservedObject var gate: RemoteConfigGate
     var locale: Locale
+    @State private var showTesterAlert = false
 
     var body: some View {
         let decision = displayedDecision(gate: gate, locale: locale)
@@ -217,6 +221,8 @@ struct RemoteConfigChrome: View {
                         title: AppLocalizedString.string(RemoteConfigCopy.softTitle, locale: locale),
                         bodyText: softBody(soft),
                         dismissLabel: AppLocalizedString.string(RemoteConfigCopy.dismissBanner, locale: locale),
+                        updateTitle: softUpdateTitle(soft),
+                        onUpdate: softUpdateAction(soft),
                         onClose: { gate.dismissSoftUpdate(threshold: soft.threshold) }
                     )
                 }
@@ -234,7 +240,28 @@ struct RemoteConfigChrome: View {
         )) {
             RemoteConfigGateSheet(gate: gate, locale: locale)
         }
+        .background(
+            RemoteConfigTesterUpdateAlert(
+                isPresented: showTesterAlert,
+                locale: locale,
+                installedVersion: gate.installedMarketingVersion,
+                dismiss: { showTesterAlert = false }
+            )
+        )
         .environment(\.locale, locale)
+    }
+
+    /// Release with no usable URL (`.unavailable`) hides Update, same as the force sheet.
+    private func softUpdateTitle(_ soft: AppVersionPolicy.SoftBanner) -> String? {
+        if case .unavailable = soft.action { return nil }
+        return AppLocalizedString.string(RemoteConfigCopy.updateButton, locale: locale)
+    }
+
+    private func softUpdateAction(_ soft: AppVersionPolicy.SoftBanner) -> (() -> Void)? {
+        if case .unavailable = soft.action { return nil }
+        return {
+            RemoteConfigUpdateTrigger.run(soft.action) { showTesterAlert = true }
+        }
     }
 
     private func showsBanner(_ decision: AppVersionPolicy.Decision) -> Bool {
@@ -247,52 +274,76 @@ struct RemoteConfigChrome: View {
     }
 }
 
-/// Warning banner shared by downtime and the soft update. Corner radius is the Home
-/// loyalty-card radius (`LoyaltyCard` / `DSConstant.cardCornerRadius`, 20).
+/// Warning banner shared by downtime and the soft update.
+/// Solid white, 20 pt corners (the Home loyalty-card radius), a hairline border, and the card shadow.
 struct RemoteConfigBannerCard: View {
     var title: String
     var bodyText: String
     var dismissLabel: String
+    var updateTitle: String?
+    var onUpdate: (() -> Void)?
     var onClose: () -> Void
 
+    /// `DSConstant.cardCornerRadius` is 20.
     private var cornerRadius: CGFloat { DSConstant.cardCornerRadius.value }
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: DSConstant.medium.value) {
-            DSIconView(icon: .info, size: DSConstant.large.value, color: DSColor.Text.link)
-                .padding(.top, 2)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
-                Text(title)
-                    .typography(.paragraphBold)
-                    .foregroundStyle(DSColor.Text.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(bodyText)
-                    .typography(.paragraphRegular)
-                    .foregroundStyle(DSColor.Text.secondary)
-                    .lineLimit(3)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.top, 2)
-            Button(action: onClose) {
-                CloseMark(color: DSColor.Text.secondary)
+        VStack(alignment: .leading, spacing: DSConstant.medium.value) {
+            HStack(alignment: .top, spacing: DSConstant.medium.value) {
+                DSIconView(icon: .info, size: DSConstant.large.value, color: DSColor.Text.link)
                     .padding(.top, 2)
-                    .frame(width: 48, height: 48, alignment: .top)
-                    .contentShape(Rectangle())
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
+                    Text(title)
+                        .typography(.paragraphBold)
+                        .foregroundStyle(DSColor.Text.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(bodyText)
+                        .typography(.paragraphRegular)
+                        .foregroundStyle(DSColor.Text.secondary)
+                        .lineLimit(3)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.top, 2)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                Button(action: onClose) {
+                    CloseMark(color: DSColor.Text.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 2)
+                        .frame(width: RemoteConfigBannerMetrics.closeTarget, height: RemoteConfigBannerMetrics.closeTarget)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(dismissLabel) \(title)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(dismissLabel)
+            if let updateTitle, let onUpdate {
+                DSButton(title: updateTitle, type: .primary, action: onUpdate)
+                    .padding(.trailing, DSConstant.medium.value)
+            }
         }
         .padding(.leading, DSConstant.mediumLarge.value)
         .padding(.top, DSConstant.medium.value)
         .padding(.trailing, DSConstant.xSmall.value)
         .padding(.bottom, DSConstant.mediumLarge.value)
         .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
+        // Light-only app (`UIUserInterfaceStyle` = Light): the banner stays white.
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(DSColor.Border.default, lineWidth: 1))
         .dsCardShadow()
     }
+}
+
+private enum RemoteConfigBannerMetrics {
+    /// Drawn X. The control around it is the touch target.
+    static let closeGlyph: CGFloat = 13
+    /// iOS minimum. The glyph stays inside this target.
+    static let closeTarget: CGFloat = 44
 }
 
 private struct CloseMark: View {
@@ -308,10 +359,10 @@ private struct CloseMark: View {
             context.stroke(
                 path,
                 with: .color(color),
-                style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
             )
         }
-        .frame(width: 16, height: 16)
+        .frame(width: RemoteConfigBannerMetrics.closeGlyph, height: RemoteConfigBannerMetrics.closeGlyph)
         .accessibilityHidden(true)
     }
 }
@@ -326,16 +377,28 @@ struct RemoteConfigGateSheet: View {
 
     /// Same display box as the Home loyalty-card illustration.
     private let illustrationSize = CGSize(width: 127, height: 158)
+    /// Blocking maintenance only. Force update keeps the loyalty-card illustration.
+    private let maintenanceWarningIconSize: CGFloat = 72
 
     var body: some View {
         let decision = displayedDecision(gate: gate, locale: locale)
         ScrollView {
             VStack(spacing: DSConstant.mediumLarge.value) {
-                DSImageView(image: .minitCardPerson, size: illustrationSize, contentMode: .fit)
+                if decision.blocking != nil {
+                    DSIconView(
+                        icon: .warningTriangle,
+                        size: maintenanceWarningIconSize,
+                        color: DSColor.Background.Button.primary
+                    )
                     .accessibilityHidden(true)
+                } else {
+                    DSImageView(image: .minitCardPerson, size: illustrationSize, contentMode: .fit)
+                        .accessibilityHidden(true)
+                }
                 if let blocking = decision.blocking {
                     sheetTitle(AppLocalizedString.string(RemoteConfigCopy.blockingTitle, locale: locale))
                     sheetBody(blockingBody(blocking))
+                    reloadButton
                 } else if let force = decision.force {
                     sheetTitle(AppLocalizedString.string(RemoteConfigCopy.forceTitle, locale: locale))
                     sheetBody(forceBody(force))
@@ -356,6 +419,7 @@ struct RemoteConfigGateSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // Light-only app (`UIUserInterfaceStyle` = Light): the sheet stays white.
         .background(Color.white)
         .interactiveDismissDisabled(true)
         .presentationDetents([.height(max(contentHeight + topInset + bottomInset, 1))])
@@ -364,32 +428,32 @@ struct RemoteConfigGateSheet: View {
         .presentationBackgroundInteraction(.disabled)
         .background(WhiteSheetChrome(topInset: $topInset, bottomInset: $bottomInset))
         .background(
-            TesterAlertPresenter(
+            RemoteConfigTesterUpdateAlert(
                 isPresented: showTesterAlert,
-                title: AppLocalizedString.string(RemoteConfigCopy.alertTitle, locale: locale),
-                message: AppLocalizedString.string(RemoteConfigCopy.alertMessage, locale: locale),
-                openMailTitle: AppLocalizedString.string(RemoteConfigCopy.openMail, locale: locale),
-                requestTitle: AppLocalizedString.string(RemoteConfigCopy.requestVersion, locale: locale),
-                cancelTitle: AppLocalizedString.string(RemoteConfigCopy.alertCancel, locale: locale),
-                onOpenMail: {
-                    showTesterAlert = false
-                    RemoteConfigMailOpener.openMailApp()
-                },
-                onRequestVersion: {
-                    showTesterAlert = false
-                    let subject = AppLocalizedString.string(RemoteConfigCopy.requestSubject, locale: locale)
-                    let template = AppLocalizedString.string(RemoteConfigCopy.requestBody, locale: locale)
-                    let body = RemoteConfigTesterMail.requestBody(
-                        template: template,
-                        installedVersion: gate.installedMarketingVersion
-                    )
-                    RemoteConfigMailOpener.openInvite(subject: subject, body: body)
-                },
-                onCancel: { showTesterAlert = false }
+                locale: locale,
+                installedVersion: gate.installedMarketingVersion,
+                dismiss: { showTesterAlert = false }
+            )
+        )
+        .background(
+            RemoteConfigNativeAlert(
+                isPresented: gate.showsMaintenanceStillUnavailableAlert,
+                title: AppLocalizedString.string(RemoteConfigCopy.blockingTitle, locale: locale),
+                message: AppLocalizedString.string(RemoteConfigCopy.stillUnavailableMessage, locale: locale),
+                actions: [
+                    RemoteConfigNativeAlertAction(
+                        title: AppLocalizedString.string(RemoteConfigCopy.stillUnavailableOK, locale: locale),
+                        style: .default,
+                        handler: { gate.acknowledgeMaintenanceStillUnavailable() }
+                    ),
+                ]
             )
         )
         .onAppear {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        .onDisappear {
+            gate.acknowledgeMaintenanceStillUnavailable()
         }
         .environment(\.locale, locale)
     }
@@ -436,26 +500,91 @@ struct RemoteConfigGateSheet: View {
         return attributed
     }
 
+    private var reloadButton: some View {
+        DSButton(
+            title: AppLocalizedString.string(RemoteConfigCopy.reloadButton, locale: locale),
+            type: .primary,
+            isLoading: gate.isReloadingMaintenance
+        ) {
+            gate.reloadMaintenance()
+        }
+    }
+
     @ViewBuilder
     private func updateButton(_ force: AppVersionPolicy.Force) -> some View {
-        switch force.action {
-        case .openStore(let url):
-            DSButton(
-                title: AppLocalizedString.string(RemoteConfigCopy.updateButton, locale: locale),
-                type: .primary
-            ) {
-                RemoteConfigMailOpener.openUpdate(url)
-            }
-        case .testerAlert:
-            DSButton(
-                title: AppLocalizedString.string(RemoteConfigCopy.updateButton, locale: locale),
-                type: .primary
-            ) {
-                showTesterAlert = true
-            }
-        case .unavailable:
+        if case .unavailable = force.action {
             EmptyView()
+        } else {
+            DSButton(
+                title: AppLocalizedString.string(RemoteConfigCopy.updateButton, locale: locale),
+                type: .primary
+            ) {
+                RemoteConfigUpdateTrigger.run(force.action) { showTesterAlert = true }
+            }
         }
+    }
+}
+
+private enum RemoteConfigUpdateTrigger {
+    static func run(_ action: AppVersionPolicy.UpdateAction, presentTesterAlert: () -> Void) {
+        switch action {
+        case .openStore(let url):
+            RemoteConfigMailOpener.openUpdate(url)
+        case .testerAlert:
+            presentTesterAlert()
+        case .unavailable:
+            break
+        }
+    }
+}
+
+/// Internal/dev Update alert. Open mail is the emphasised action.
+private struct RemoteConfigTesterUpdateAlert: View {
+    var isPresented: Bool
+    var locale: Locale
+    var installedVersion: String
+    var dismiss: () -> Void
+
+    var body: some View {
+        RemoteConfigNativeAlert(
+            isPresented: isPresented,
+            title: AppLocalizedString.string(RemoteConfigCopy.alertTitle, locale: locale),
+            message: AppLocalizedString.string(RemoteConfigCopy.alertMessage, locale: locale),
+            actions: actions
+        )
+    }
+
+    private var actions: [RemoteConfigNativeAlertAction] {
+        [
+            RemoteConfigNativeAlertAction(
+                title: AppLocalizedString.string(RemoteConfigCopy.openMail, locale: locale),
+                style: .default,
+                emphasised: true,
+                handler: {
+                    dismiss()
+                    RemoteConfigMailOpener.openMailApp()
+                }
+            ),
+            RemoteConfigNativeAlertAction(
+                title: AppLocalizedString.string(RemoteConfigCopy.requestVersion, locale: locale),
+                style: .default,
+                handler: {
+                    dismiss()
+                    let subject = AppLocalizedString.string(RemoteConfigCopy.requestSubject, locale: locale)
+                    let template = AppLocalizedString.string(RemoteConfigCopy.requestBody, locale: locale)
+                    let body = RemoteConfigTesterMail.requestBody(
+                        template: template,
+                        installedVersion: installedVersion
+                    )
+                    RemoteConfigMailOpener.openInvite(subject: subject, body: body)
+                }
+            ),
+            RemoteConfigNativeAlertAction(
+                title: AppLocalizedString.string(RemoteConfigCopy.alertCancel, locale: locale),
+                style: .cancel,
+                handler: dismiss
+            ),
+        ]
     }
 }
 
@@ -493,6 +622,7 @@ private struct WhiteSheetChrome: UIViewControllerRepresentable {
         func apply() {
             guard let sheetController = presentedSheetController else { return }
             sheetController.isModalInPresentation = true
+            // Light-only app (`UIUserInterfaceStyle` = Light): the system sheet surface stays white.
             sheetController.view.backgroundColor = .white
             if #available(iOS 26.1, *) {
                 let solid = UIVisualEffect()
@@ -519,17 +649,20 @@ private struct WhiteSheetChrome: UIViewControllerRepresentable {
     }
 }
 
+private struct RemoteConfigNativeAlertAction {
+    var title: String
+    var style: UIAlertAction.Style
+    /// Native `preferredAction`. The alert tint goes black for this action; other titles stay orange.
+    var emphasised: Bool = false
+    var handler: () -> Void
+}
+
 /// Native alert with Minit-orange actions, same tint treatment as the shake alert.
-private struct TesterAlertPresenter: UIViewControllerRepresentable {
+private struct RemoteConfigNativeAlert: UIViewControllerRepresentable {
     var isPresented: Bool
     var title: String
     var message: String
-    var openMailTitle: String
-    var requestTitle: String
-    var cancelTitle: String
-    var onOpenMail: () -> Void
-    var onRequestVersion: () -> Void
-    var onCancel: () -> Void
+    var actions: [RemoteConfigNativeAlertAction]
 
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = UIViewController()
@@ -543,12 +676,7 @@ private struct TesterAlertPresenter: UIViewControllerRepresentable {
             isPresented: isPresented,
             title: title,
             message: message,
-            openMailTitle: openMailTitle,
-            requestTitle: requestTitle,
-            cancelTitle: cancelTitle,
-            onOpenMail: onOpenMail,
-            onRequestVersion: onRequestVersion,
-            onCancel: onCancel,
+            actions: actions,
             from: controller
         )
     }
@@ -564,16 +692,17 @@ private struct TesterAlertPresenter: UIViewControllerRepresentable {
             isPresented: Bool,
             title: String,
             message: String,
-            openMailTitle: String,
-            requestTitle: String,
-            cancelTitle: String,
-            onOpenMail: @escaping () -> Void,
-            onRequestVersion: @escaping () -> Void,
-            onCancel: @escaping () -> Void,
+            actions: [RemoteConfigNativeAlertAction],
             from controller: UIViewController
         ) {
             if !isPresented {
-                alert = nil
+                if let alert {
+                    let onScreen = alert.presentingViewController != nil || alert.isBeingPresented
+                    if onScreen, !alert.isBeingDismissed {
+                        alert.dismiss(animated: false)
+                    }
+                    self.alert = nil
+                }
                 return
             }
             if let alert, alert.presentingViewController != nil || alert.isBeingPresented {
@@ -583,84 +712,129 @@ private struct TesterAlertPresenter: UIViewControllerRepresentable {
             guard let presenter = sheetPresenter(from: controller) else { return }
             guard presenter.presentedViewController == nil else { return }
             let alert = RemoteConfigAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: openMailTitle, style: .default) { [weak self] _ in
-                self?.alert = nil
-                onOpenMail()
-            })
-            alert.addAction(UIAlertAction(title: requestTitle, style: .default) { [weak self] _ in
-                self?.alert = nil
-                onRequestVersion()
-            })
-            alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { [weak self] _ in
-                self?.alert = nil
-                onCancel()
-            })
+            alert.emphasisedTitles = Set(
+                actions.filter(\.emphasised).map { $0.title.trimmingCharacters(in: .whitespacesAndNewlines) }
+            )
+            var preferred: UIAlertAction?
+            for action in actions {
+                let uiAction = UIAlertAction(title: action.title, style: action.style) { [weak self] _ in
+                    self?.alert = nil
+                    action.handler()
+                }
+                alert.addAction(uiAction)
+                if action.emphasised { preferred = uiAction }
+            }
+            alert.preferredAction = preferred
             self.alert = alert
             presenter.present(alert, animated: true)
         }
 
+        /// The force sheet presents above itself. A banner presents from the overlay window root.
         private func sheetPresenter(from controller: UIViewController) -> UIViewController? {
             var current: UIViewController? = controller
             while let candidate = current {
                 if candidate.presentingViewController != nil { return candidate }
                 current = candidate.parent
             }
-            return nil
+            return controller.view.window?.rootViewController
         }
     }
 }
 
-/// Keeps every alert action Minit orange (`#FF9A31`), matching `ShakeReportAlertController`.
-/// iOS 26 draws alert actions as filled capsules and ignores the controller tint for their
-/// labels, so the action titles are colored directly once the alert has laid out.
+/// Non-preferred action titles are Minit orange (`#FF9A31`), matching `ShakeReportAlertController`.
+/// Open mail is `preferredAction`. iOS 26 draws that action as a filled capsule from the
+/// controller tint, and `UIAlertAction` has no per-action tint, so the alert tint is black
+/// and the title is white and bold. The other titles are painted orange after layout.
 private final class RemoteConfigAlertController: UIAlertController {
+    var emphasisedTitles: Set<String> = []
     private var orange: UIColor { UIColor(DSColor.Background.Button.primary) }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        view.tintColor = orange
+        // Preferred action on iOS 26 fills from the controller tint. Black makes that
+        // capsule black; alerts without an emphasised action keep the orange tint.
+        view.tintColor = emphasisedTitles.isEmpty ? orange : .black
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        applyOrange(in: view)
+        applyActionColors(in: view)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.applyOrange(in: self.view)
+            self.applyActionColors(in: self.view)
         }
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        applyOrange(in: view)
+        applyActionColors(in: view)
     }
 
-    private func applyOrange(in view: UIView) {
+    private func applyActionColors(in view: UIView) {
         let titles = Set(actions.compactMap { $0.title?.trimmingCharacters(in: .whitespacesAndNewlines) })
+        applyActionColors(in: view, titles: titles)
+    }
+
+    private func applyActionColors(in view: UIView, titles: Set<String>) {
         if let label = view as? UILabel {
             let text = (label.attributedText?.string ?? label.text ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             if titles.contains(text) {
-                let font = label.font ?? .boldSystemFont(ofSize: 17)
+                let emphasised = emphasisedTitles.contains(text)
+                // White on the black preferred capsule. Black text disappears into that fill.
+                let color: UIColor = emphasised ? .white : orange
+                let font = emphasised ? Self.emphasisedFont(from: label.font) : (label.font ?? .systemFont(ofSize: 17))
                 let attributed = NSMutableAttributedString(string: text)
                 let range = NSRange(location: 0, length: attributed.length)
-                attributed.addAttribute(.foregroundColor, value: orange, range: range)
+                attributed.addAttribute(.foregroundColor, value: color, range: range)
                 attributed.addAttribute(.font, value: font, range: range)
                 label.attributedText = attributed
-                label.textColor = orange
+                label.textColor = color
             }
         }
         if let button = view as? UIButton {
-            button.tintColor = orange
-            button.setTitleColor(orange, for: .normal)
-            if var configuration = button.configuration {
-                configuration.baseForegroundColor = orange
-                button.configuration = configuration
+            let title = Self.buttonTitle(button)
+            if titles.contains(title) {
+                let emphasised = emphasisedTitles.contains(title)
+                // White on the black preferred capsule. Black text disappears into that fill.
+                let color: UIColor = emphasised ? .white : orange
+                button.tintColor = color
+                button.setTitleColor(color, for: .normal)
+                button.setTitleColor(color, for: .highlighted)
+                if var configuration = button.configuration {
+                    configuration.baseForegroundColor = color
+                    configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                        var outgoing = incoming
+                        outgoing.foregroundColor = color
+                        if emphasised {
+                            outgoing.font = Self.emphasisedFont(from: incoming.font)
+                        }
+                        return outgoing
+                    }
+                    button.configuration = configuration
+                }
+                if emphasised {
+                    button.titleLabel?.font = Self.emphasisedFont(from: button.titleLabel?.font)
+                }
             }
         }
         for subview in view.subviews {
-            applyOrange(in: subview)
+            applyActionColors(in: subview, titles: titles)
         }
+    }
+
+    private static func buttonTitle(_ button: UIButton) -> String {
+        let title = button.configuration?.title ?? button.currentTitle ?? button.titleLabel?.text ?? ""
+        return title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func emphasisedFont(from font: UIFont?) -> UIFont {
+        let base = font ?? .systemFont(ofSize: 17)
+        let traits = base.fontDescriptor.symbolicTraits.union(.traitBold)
+        if let descriptor = base.fontDescriptor.withSymbolicTraits(traits) {
+            return UIFont(descriptor: descriptor, size: base.pointSize)
+        }
+        return .boldSystemFont(ofSize: base.pointSize)
     }
 }
 

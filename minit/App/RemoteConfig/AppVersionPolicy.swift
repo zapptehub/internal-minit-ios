@@ -179,6 +179,7 @@ extension RemoteConfigSnapshot {
 /// Pure maintenance and minimum-version decision. No Firebase types.
 /// The soft banner's close control stores `dismissedSoftVersionDefaultsKey` and stays
 /// quiet until the soft floor changes. There is no soft-update dialog.
+/// The banner's Update button uses the same `UpdateAction` as the force-update button.
 enum AppVersionPolicy {
     /// The soft banner close control stores this UserDefaults value and stays quiet until the soft floor changes.
     static let dismissedSoftVersionDefaultsKey = "minit.remoteConfig.dismissedSoftMinVersionIOS"
@@ -240,6 +241,8 @@ enum AppVersionPolicy {
         var usesTesterCopy: Bool
         /// Trimmed soft floor. Close writes this exact string.
         var threshold: String
+        /// Same rules as force update. `.unavailable` hides the Update button.
+        var action: UpdateAction
     }
 
     struct DowntimeBanner: Equatable {
@@ -270,6 +273,32 @@ enum AppVersionPolicy {
             softBanner: resolveSoftBanner(input),
             downtimeBanner: resolveDowntimeBanner(input)
         )
+    }
+
+    /// What a maintenance Reload does after fetch + activate.
+    /// A successful fetch keeps the activated snapshot. A failed fetch keeps the cached
+    /// snapshot and ignores the activated payload. The gate passes the live snapshot as
+    /// `cached`, so a failure cannot restore values from when Reload was tapped.
+    /// The blocking sheet stays only when that snapshot still has maintenance on;
+    /// otherwise the normal gate runs.
+    enum MaintenanceReloadOutcome: Equatable {
+        case cleared
+        case stillUnavailable
+    }
+
+    struct MaintenanceReloadResolution: Equatable {
+        var outcome: MaintenanceReloadOutcome
+        var snapshot: RemoteConfigSnapshot
+    }
+
+    static func resolveMaintenanceReload(
+        fetchSucceeded: Bool,
+        activated: RemoteConfigSnapshot,
+        cached: RemoteConfigSnapshot
+    ) -> MaintenanceReloadResolution {
+        let snapshot = fetchSucceeded ? activated : cached
+        let outcome: MaintenanceReloadOutcome = snapshot.maintenanceBlocking ? .stillUnavailable : .cleared
+        return MaintenanceReloadResolution(outcome: outcome, snapshot: snapshot)
     }
 
     static func resolveMessage(json: String, languageCode: String) -> String? {
@@ -310,10 +339,11 @@ enum AppVersionPolicy {
         guard MarketingVersion.isStrictlyAbove(floor: input.snapshot.minVersionIOS, installed: installed) else {
             return nil
         }
-        return Force(usesTesterCopy: input.channel.usesTesterCopy, action: forceAction(input))
+        return Force(usesTesterCopy: input.channel.usesTesterCopy, action: updateAction(input))
     }
 
-    private static func forceAction(_ input: Input) -> UpdateAction {
+    /// Release opens a store URL when one is set. Development and internal open the tester alert.
+    private static func updateAction(_ input: Input) -> UpdateAction {
         if input.channel.usesTesterCopy {
             return .testerAlert
         }
@@ -335,7 +365,11 @@ enum AppVersionPolicy {
         if dismissed == softFloor {
             return nil
         }
-        return SoftBanner(usesTesterCopy: input.channel.usesTesterCopy, threshold: softFloor)
+        return SoftBanner(
+            usesTesterCopy: input.channel.usesTesterCopy,
+            threshold: softFloor,
+            action: updateAction(input)
+        )
     }
 
     private static let allowedUpdateURLSchemes: Set<String> = ["https", "itms-apps"]

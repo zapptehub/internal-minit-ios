@@ -423,6 +423,60 @@ final class AppVersionPolicyTests: XCTestCase {
         }
     }
 
+    func testSoftBannerUpdateUsesTheSameActionAsForceUpdate() {
+        let store = AppVersionPolicy.UpdateAction.openStore(URL(string: "https://apps.apple.com/app/id9")!)
+        let cases: [(AppDistributionChannel, String, AppVersionPolicy.UpdateAction)] = [
+            (.release, "https://apps.apple.com/app/id9", store),
+            (.release, "  ", .unavailable),
+            (.release, "http://apps.apple.com/app/id9", .unavailable),
+            (.development, "https://apps.apple.com/app/id9", .testerAlert),
+            (.internal, "https://apps.apple.com/app/id9", .testerAlert),
+            (.internal, "", .testerAlert),
+        ]
+        for (channel, url, expected) in cases {
+            let force = evaluate(
+                minVersion: "2.0",
+                updateURL: url,
+                channel: channel,
+                installed: "1.0"
+            ).force
+            let soft = evaluate(
+                softVersion: "2.0",
+                updateURL: url,
+                channel: channel,
+                installed: "1.0"
+            ).softBanner
+            XCTAssertEqual(force?.action, expected, "\(channel.rawValue) force \(url)")
+            XCTAssertEqual(soft?.action, expected, "\(channel.rawValue) soft \(url)")
+            XCTAssertEqual(soft?.action, force?.action, channel.rawValue)
+            XCTAssertEqual(soft?.usesTesterCopy, channel.usesTesterCopy, channel.rawValue)
+            XCTAssertNil(
+                evaluate(softVersion: "2.0", updateURL: url, channel: channel, installed: "1.0").force,
+                channel.rawValue
+            )
+        }
+
+        guard case .openStore(let trimmed) = evaluate(
+            softVersion: "2.0",
+            updateURL: " https://apps.apple.com/app/id9 ",
+            channel: .release,
+            installed: "1.0"
+        ).softBanner?.action else {
+            return XCTFail("trimmed url")
+        }
+        XCTAssertEqual(trimmed.absoluteString, "https://apps.apple.com/app/id9")
+
+        guard case .openStore(let appStore) = evaluate(
+            softVersion: "2.0",
+            updateURL: "itms-apps://apps.apple.com/app/id9",
+            channel: .release,
+            installed: "1.0"
+        ).softBanner?.action else {
+            return XCTFail("itms-apps")
+        }
+        XCTAssertEqual(appStore.scheme?.lowercased(), "itms-apps")
+    }
+
     func testReleaseUpdateURLAllowsOnlyHTTPSAndAppStoreSchemes() {
         let allowed = [
             "https://apps.apple.com/app/id9",
@@ -516,6 +570,100 @@ final class AppVersionPolicyTests: XCTestCase {
             )
         )
         XCTAssertEqual(decision, AppVersionPolicy.Decision.clear)
+    }
+
+    func testMaintenanceReloadClearedWhenFetchActivatesOff() {
+        let cached = reloadSnapshot(blocking: true)
+        let activated = reloadSnapshot(
+            blocking: false,
+            minVersion: "9.0",
+            softVersion: "8.0",
+            bannerMessage: #"{"en":"Tonight"}"#
+        )
+        let resolution = AppVersionPolicy.resolveMaintenanceReload(
+            fetchSucceeded: true,
+            activated: activated,
+            cached: cached
+        )
+        XCTAssertEqual(resolution.outcome, AppVersionPolicy.MaintenanceReloadOutcome.cleared)
+        XCTAssertEqual(resolution.snapshot, activated)
+        let decision = evaluate(snapshot: resolution.snapshot)
+        XCTAssertNil(decision.blocking)
+        XCTAssertNotNil(decision.force)
+        XCTAssertNil(decision.softBanner)
+        XCTAssertNil(decision.downtimeBanner)
+        XCTAssertTrue(decision.coversApp)
+    }
+
+    func testMaintenanceReloadStillActiveWhenFetchKeepsBlocking() {
+        let cached = reloadSnapshot(blocking: false, minVersion: "9.0")
+        let activated = reloadSnapshot(
+            blocking: true,
+            blockingMessage: #"{"en":"Closed"}"#,
+            minVersion: "9.0",
+            bannerMessage: #"{"en":"Tonight"}"#
+        )
+        let resolution = AppVersionPolicy.resolveMaintenanceReload(
+            fetchSucceeded: true,
+            activated: activated,
+            cached: cached
+        )
+        XCTAssertEqual(resolution.outcome, AppVersionPolicy.MaintenanceReloadOutcome.stillUnavailable)
+        XCTAssertEqual(resolution.snapshot, activated)
+        let decision = evaluate(snapshot: resolution.snapshot)
+        XCTAssertEqual(decision.blocking?.body, AppVersionPolicy.ResolvedText.remote("Closed"))
+        XCTAssertNil(decision.force)
+        XCTAssertNil(decision.softBanner)
+        XCTAssertNil(decision.downtimeBanner)
+        XCTAssertTrue(decision.coversApp)
+    }
+
+    func testMaintenanceReloadFetchFailedCachedActiveStaysUnavailable() {
+        let cached = reloadSnapshot(blocking: true, blockingMessage: #"{"en":"Closed"}"#)
+        let activated = reloadSnapshot(
+            blocking: false,
+            minVersion: "9.0",
+            bannerMessage: #"{"en":"Tonight"}"#
+        )
+        let resolution = AppVersionPolicy.resolveMaintenanceReload(
+            fetchSucceeded: false,
+            activated: activated,
+            cached: cached
+        )
+        XCTAssertEqual(resolution.outcome, AppVersionPolicy.MaintenanceReloadOutcome.stillUnavailable)
+        XCTAssertEqual(resolution.snapshot, cached)
+        XCTAssertNotEqual(resolution.snapshot, activated)
+        let decision = evaluate(snapshot: resolution.snapshot)
+        XCTAssertEqual(decision.blocking?.body, AppVersionPolicy.ResolvedText.remote("Closed"))
+        XCTAssertNil(decision.force)
+        XCTAssertNil(decision.downtimeBanner)
+    }
+
+    func testMaintenanceReloadFetchFailedCachedClearedDismisses() {
+        let cached = reloadSnapshot(
+            blocking: false,
+            softVersion: "8.0",
+            bannerMessage: #"{"en":"Tonight"}"#
+        )
+        let activated = reloadSnapshot(
+            blocking: true,
+            blockingMessage: #"{"en":"Closed"}"#,
+            minVersion: "9.0"
+        )
+        let resolution = AppVersionPolicy.resolveMaintenanceReload(
+            fetchSucceeded: false,
+            activated: activated,
+            cached: cached
+        )
+        XCTAssertEqual(resolution.outcome, AppVersionPolicy.MaintenanceReloadOutcome.cleared)
+        XCTAssertEqual(resolution.snapshot, cached)
+        XCTAssertFalse(resolution.snapshot.maintenanceBlocking)
+        let decision = evaluate(snapshot: resolution.snapshot)
+        XCTAssertNil(decision.blocking)
+        XCTAssertNil(decision.force)
+        XCTAssertNotNil(decision.softBanner)
+        XCTAssertEqual(decision.downtimeBanner?.message, "Tonight")
+        XCTAssertFalse(decision.coversApp)
     }
 
     func testRequestInviteMailIncludesPlatformAndInstalledVersion() throws {
@@ -666,6 +814,21 @@ final class AppVersionPolicyTests: XCTestCase {
                 "sk": "Dobrý deň,\n\nProsím o pozvánku na novú testovaciu verziu aplikácie Minit.\n\nPlatforma: iOS\nNainštalovaná verzia: %@\n",
                 "hu": "Szia,\n\nKérlek, küldj meghívót a Minit új tesztverziójához.\n\nPlatform: iOS\nTelepített verzió: %@\n",
             ],
+            RemoteConfigCopy.reloadButton: [
+                "en": "Reload",
+                "sk": "Obnoviť",
+                "hu": "Újratöltés",
+            ],
+            RemoteConfigCopy.stillUnavailableMessage: [
+                "en": "Sorry, Minit app is still unavailable right now. Please try again later.",
+                "sk": "Prepáčte, aplikácia Minit je stále nedostupná. Skúste to znova neskôr.",
+                "hu": "Sajnos a Minit alkalmazás még mindig nem érhető el. Próbáld újra később.",
+            ],
+            RemoteConfigCopy.stillUnavailableOK: [
+                "en": "OK",
+                "sk": "OK",
+                "hu": "OK",
+            ],
         ]
 
         for (key, translations) in expected {
@@ -677,6 +840,39 @@ final class AppVersionPolicyTests: XCTestCase {
                 )
             }
         }
+    }
+
+    private func reloadSnapshot(
+        blocking: Bool,
+        blockingMessage: String = "{}",
+        minVersion: String = "",
+        softVersion: String = "",
+        bannerMessage: String = "{}"
+    ) -> RemoteConfigSnapshot {
+        RemoteConfigSnapshot(
+            maintenanceBlocking: blocking,
+            maintenanceBlockingMessage: blockingMessage,
+            maintenanceBannerMessage: bannerMessage,
+            maintenanceBannerStart: "",
+            maintenanceBannerEnd: "",
+            minVersionIOS: minVersion,
+            softMinVersionIOS: softVersion,
+            updateURLIOS: ""
+        )
+    }
+
+    private func evaluate(snapshot: RemoteConfigSnapshot, installed: String = "1.0") -> AppVersionPolicy.Decision {
+        AppVersionPolicy.evaluate(
+            AppVersionPolicy.Input(
+                snapshot: snapshot,
+                channel: .release,
+                installedMarketingVersion: installed,
+                languageCode: "en",
+                now: now,
+                dismissedSoftThreshold: nil,
+                dismissedBannerIdentity: nil
+            )
+        )
     }
 
     private func evaluate(

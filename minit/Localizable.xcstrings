@@ -707,6 +707,75 @@
           }
         }
       }
+    },
+    "remoteConfig.maintenance.reload" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reload"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Újratöltés"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnoviť"
+          }
+        }
+      }
+    },
+    "remoteConfig.maintenance.stillUnavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorry, Minit app is still unavailable right now. Please try again later."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sajnos a Minit alkalmazás még mindig nem érhető el. Próbáld újra később."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prepáčte, aplikácia Minit je stále nedostupná. Skúste to znova neskôr."
+          }
+        }
+      }
+    },
+    "remoteConfig.maintenance.stillUnavailable.ok" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
