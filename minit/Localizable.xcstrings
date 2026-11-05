@@ -293,6 +293,236 @@
           }
         }
       }
+    },
+    "remoteConfig.banner.dismiss" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bezárás"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zavrieť"
+          }
+        }
+      }
+    },
+    "remoteConfig.maintenance.blocking.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit is temporarily unavailable. Please try again later."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Minit átmenetileg nem érhető el. Próbáld újra később."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit je dočasne nedostupný. Skúste to znova neskôr."
+          }
+        }
+      }
+    },
+    "remoteConfig.maintenance.blocking.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit is unavailable"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Minit nem érhető el"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minit nie je dostupný"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.force.releaseBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This version of Minit is no longer supported. Update to keep using the app."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Minit ezen verziója már nem támogatott. Frissíts, hogy tovább használhasd az alkalmazást."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Táto verzia aplikácie Minit už nie je podporovaná. Aktualizujte ju, aby ste mohli aplikáciu naďalej používať."
+          }
+        }
+      }
+    },
+    "remoteConfig.update.force.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please update the app"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frissítsd az alkalmazást"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizujte aplikáciu, prosím"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Később"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neskôr"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.soft.releaseBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A newer version of Minit is available."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Minit újabb verziója érhető el."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "K dispozícii je novšia verzia aplikácie Minit."
+          }
+        }
+      }
+    },
+    "remoteConfig.update.soft.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update available"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frissítés érhető el"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "K dispozícii je aktualizácia"
+          }
+        }
+      }
+    },
+    "remoteConfig.update.testerBody" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This test build is out of date. Check Firebase App Tester or your email for a newer build, or contact armands.berzins@saleseverest.com for an invite."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a tesztverzió elavult. Az újabb buildet a Firebase App Testerben vagy az e-mailjeid között találod, meghívóért pedig írj az armands.berzins@saleseverest.com címre."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toto testovacie zostavenie je zastarané. Novšie zostavenie nájdete vo Firebase App Tester alebo vo svojom e-maile, prípadne požiadajte o pozvánku na adrese armands.berzins@saleseverest.com."
+          }
+        }
+      }
+    },
+    "remoteConfig.update.update" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frissítés"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizovať"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

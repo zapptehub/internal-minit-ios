@@ -49,16 +49,24 @@ struct ContentView: View {
     /// writes a new value, without any direct coupling between the two. Empty string is
     /// the "never explicitly set yet" sentinel — `@AppStorage` can't hold `String?`.
     @AppStorage(UserDefaultsAppLanguagePreferenceStore.defaultKey) private var appLanguageCode = ""
-    #if MINIT_SHAKE
     @Environment(\.scenePhase) private var scenePhase
+    #if MINIT_SHAKE
     @State private var lastShakeAt = Date.distantPast
     #endif
 
     var body: some View {
         content
             .environment(\.locale, currentLocale)
+            .background {
+                RemoteConfigWindowAnchor(gate: .shared, locale: currentLocale)
+            }
             .task {
                 await appFlow.bootstrap()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    RemoteConfigGate.shared.foreground()
+                }
             }
             #if MINIT_SHAKE
             .onAppear {
