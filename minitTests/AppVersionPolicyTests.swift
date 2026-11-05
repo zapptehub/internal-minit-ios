@@ -785,9 +785,9 @@ final class AppVersionPolicyTests: XCTestCase {
                 "hu": "Belső tesztverzió",
             ],
             RemoteConfigCopy.alertMessage: [
-                "en": "This is an internal test build. Testers get the new version by email or in Firebase App Tester. If you are not a tester, write to Armands for an invite.",
-                "sk": "Toto je interné testovacie zostavenie. Testéri dostanú novú verziu e-mailom alebo vo Firebase App Tester. Ak nie ste tester, napíšte Armandsovi a požiadajte o pozvánku.",
-                "hu": "Ez egy belső tesztverzió. A tesztelők e-mailben vagy a Firebase App Testerben kapják meg az új verziót. Ha nem vagy tesztelő, írj Armandsnak meghívóért.",
+                "en": "This is an internal test build. Testers get the new version by email or in Firebase App Tester. If you are not a tester, write to the developer for an invite.",
+                "sk": "Toto je interné testovacie zostavenie. Testéri dostanú novú verziu e-mailom alebo vo Firebase App Tester. Ak nie ste tester, napíšte vývojárovi a požiadajte o pozvánku.",
+                "hu": "Ez egy belső tesztverzió. A tesztelők e-mailben vagy a Firebase App Testerben kapják meg az új verziót. Ha nem vagy tesztelő, írj a fejlesztőnek meghívóért.",
             ],
             RemoteConfigCopy.openMail: [
                 "en": "Open mail",

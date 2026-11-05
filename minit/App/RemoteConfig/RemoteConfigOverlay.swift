@@ -291,45 +291,51 @@ struct RemoteConfigBannerCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DSConstant.medium.value) {
-            HStack(alignment: .top, spacing: DSConstant.medium.value) {
-                DSIconView(icon: .info, size: DSConstant.large.value, color: DSColor.Text.link)
-                    .padding(.top, 2)
-                    .accessibilityHidden(true)
+        HStack(alignment: .top, spacing: DSConstant.medium.value) {
+            DSIconView(icon: .info, size: DSConstant.large.value, color: DSColor.Text.link)
+                .padding(.top, 2)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: DSConstant.medium.value) {
                 VStack(alignment: .leading, spacing: DSConstant.xSmall.value) {
+                    // Title and body stay fully visible. The card grows with the copy.
                     Text(title)
                         .typography(.paragraphBold)
                         .foregroundStyle(DSColor.Text.primary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(bodyText)
                         .typography(.paragraphRegular)
                         .foregroundStyle(DSColor.Text.secondary)
-                        .lineLimit(3)
-                        .truncationMode(.tail)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.top, 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
-                Button(action: onClose) {
-                    CloseMark(color: DSColor.Text.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .padding(.top, 2)
-                        .frame(width: RemoteConfigBannerMetrics.closeTarget, height: RemoteConfigBannerMetrics.closeTarget)
-                        .contentShape(Rectangle())
+                if let updateTitle, let onUpdate {
+                    // Same horizontal span as the title and body. Stops before the close control.
+                    DSButton(title: updateTitle, type: .primary, widthStyle: .expanded, action: onUpdate)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(dismissLabel) \(title)")
             }
-            if let updateTitle, let onUpdate {
-                DSButton(title: updateTitle, type: .primary, action: onUpdate)
-                    .padding(.trailing, DSConstant.medium.value)
+            .padding(.top, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: onClose) {
+                CloseMark(color: DSColor.Text.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 2)
+                    .frame(width: RemoteConfigBannerMetrics.closeTarget, height: RemoteConfigBannerMetrics.closeTarget)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(dismissLabel) \(title)")
         }
         .padding(.leading, DSConstant.mediumLarge.value)
         .padding(.top, DSConstant.medium.value)
         .padding(.trailing, DSConstant.xSmall.value)
         .padding(.bottom, DSConstant.mediumLarge.value)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
         // Light-only app (`UIUserInterfaceStyle` = Light): the banner stays white.
         .background(Color.white)
@@ -379,6 +385,8 @@ struct RemoteConfigGateSheet: View {
     private let illustrationSize = CGSize(width: 127, height: 158)
     /// Blocking maintenance only. Force update keeps the loyalty-card illustration.
     private let maintenanceWarningIconSize: CGFloat = 72
+    /// Extra air under the sheet top. The grabber is hidden, so this is the gap above the triangle.
+    private let maintenanceWarningTopSpacing = DSConstant.xLarge.value
 
     var body: some View {
         let decision = displayedDecision(gate: gate, locale: locale)
@@ -390,6 +398,7 @@ struct RemoteConfigGateSheet: View {
                         size: maintenanceWarningIconSize,
                         color: DSColor.Background.Button.primary
                     )
+                    .padding(.top, maintenanceWarningTopSpacing)
                     .accessibilityHidden(true)
                 } else {
                     DSImageView(image: .minitCardPerson, size: illustrationSize, contentMode: .fit)
@@ -423,7 +432,7 @@ struct RemoteConfigGateSheet: View {
         .background(Color.white)
         .interactiveDismissDisabled(true)
         .presentationDetents([.height(max(contentHeight + topInset + bottomInset, 1))])
-        .presentationDragIndicator(.visible)
+        .presentationDragIndicator(.hidden)
         .presentationBackground(Color.white)
         .presentationBackgroundInteraction(.disabled)
         .background(WhiteSheetChrome(topInset: $topInset, bottomInset: $bottomInset))
@@ -622,6 +631,7 @@ private struct WhiteSheetChrome: UIViewControllerRepresentable {
         func apply() {
             guard let sheetController = presentedSheetController else { return }
             sheetController.isModalInPresentation = true
+            sheetController.sheetPresentationController?.prefersGrabberVisible = false
             // Light-only app (`UIUserInterfaceStyle` = Light): the system sheet surface stays white.
             sheetController.view.backgroundColor = .white
             if #available(iOS 26.1, *) {
@@ -652,12 +662,12 @@ private struct WhiteSheetChrome: UIViewControllerRepresentable {
 private struct RemoteConfigNativeAlertAction {
     var title: String
     var style: UIAlertAction.Style
-    /// Native `preferredAction`. The alert tint goes black for this action; other titles stay orange.
+    /// Native `preferredAction`. That title is white on the black capsule. Other titles stay black.
     var emphasised: Bool = false
     var handler: () -> Void
 }
 
-/// Native alert with Minit-orange actions, same tint treatment as the shake alert.
+/// Native alert. Action titles are black. An emphasised action is the preferred black capsule.
 private struct RemoteConfigNativeAlert: UIViewControllerRepresentable {
     var isPresented: Bool
     var title: String
@@ -741,20 +751,12 @@ private struct RemoteConfigNativeAlert: UIViewControllerRepresentable {
     }
 }
 
-/// Non-preferred action titles are Minit orange (`#FF9A31`), matching `ShakeReportAlertController`.
-/// Open mail is `preferredAction`. iOS 26 draws that action as a filled capsule from the
-/// controller tint, and `UIAlertAction` has no per-action tint, so the alert tint is black
-/// and the title is white and bold. The other titles are painted orange after layout.
+/// Action titles are black so they stay readable on the light buttons.
+/// Open mail is `preferredAction`. iOS 26+ draws that action as a filled capsule from the
+/// controller tint, and `UIAlertAction` has no per-action tint, so the tint is black
+/// and that title is painted white and bold. Every other title is painted black after layout.
 private final class RemoteConfigAlertController: UIAlertController {
     var emphasisedTitles: Set<String> = []
-    private var orange: UIColor { UIColor(DSColor.Background.Button.primary) }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Preferred action on iOS 26 fills from the controller tint. Black makes that
-        // capsule black; alerts without an emphasised action keep the orange tint.
-        view.tintColor = emphasisedTitles.isEmpty ? orange : .black
-    }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -767,6 +769,8 @@ private final class RemoteConfigAlertController: UIAlertController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // Layout pass covers iOS resetting the tint. A lone OK stays black text; the preferred capsule fills black.
+        view.tintColor = .black
         applyActionColors(in: view)
     }
 
@@ -782,7 +786,8 @@ private final class RemoteConfigAlertController: UIAlertController {
             if titles.contains(text) {
                 let emphasised = emphasisedTitles.contains(text)
                 // White on the black preferred capsule. Black text disappears into that fill.
-                let color: UIColor = emphasised ? .white : orange
+                // Every other action stays black on the light system button.
+                let color: UIColor = emphasised ? .white : .black
                 let font = emphasised ? Self.emphasisedFont(from: label.font) : (label.font ?? .systemFont(ofSize: 17))
                 let attributed = NSMutableAttributedString(string: text)
                 let range = NSRange(location: 0, length: attributed.length)
@@ -797,7 +802,8 @@ private final class RemoteConfigAlertController: UIAlertController {
             if titles.contains(title) {
                 let emphasised = emphasisedTitles.contains(title)
                 // White on the black preferred capsule. Black text disappears into that fill.
-                let color: UIColor = emphasised ? .white : orange
+                // Every other action stays black on the light system button.
+                let color: UIColor = emphasised ? .white : .black
                 button.tintColor = color
                 button.setTitleColor(color, for: .normal)
                 button.setTitleColor(color, for: .highlighted)
