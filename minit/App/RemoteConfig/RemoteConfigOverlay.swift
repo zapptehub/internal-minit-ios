@@ -195,8 +195,10 @@ private func displayedDecision(gate: RemoteConfigGate, locale: Locale) -> AppVer
     gate.decision(languageCode: RemoteConfigLanguage.code(from: locale))
 }
 
-/// Full-screen window above the app. Only the banner cards (or a blocking sheet) take touches.
-/// A clear full-screen `UIWindow` otherwise returns itself from `hitTest` and swallows Start taps.
+/// Full-screen window above the app. Banner cards take touches.
+/// A presented alert or sheet takes the whole window, so its buttons receive taps and the app underneath does not.
+/// With nothing presented, points outside the cards return nil so Start still receives them.
+/// A clear full-screen `UIWindow` would otherwise return itself from `hitTest` and swallow Start taps.
 final class OverlayWindow: UIWindow {
     var blocksTouches = false
     var hitRegistry = RemoteConfigBannerHitRegistry()
@@ -206,6 +208,11 @@ final class OverlayWindow: UIWindow {
         return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
     }
 
+    /// Blocking sheets set `blocksTouches`. The soft-update alert does not, but it is still presented here.
+    var claimsAllTouches: Bool {
+        blocksTouches || hasPresentedController
+    }
+
     func setBlocksTouches(_ blocks: Bool) {
         blocksTouches = blocks
         (rootViewController as? OverlayRootController)?.blocksTouches = blocks
@@ -213,12 +220,12 @@ final class OverlayWindow: UIWindow {
 
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
         if isHidden || alpha <= 0.01 || !isUserInteractionEnabled { return false }
-        if blocksTouches { return bounds.contains(point) }
+        if claimsAllTouches { return bounds.contains(point) }
         return hitRegistry.contains(point, in: self)
     }
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if blocksTouches {
+        if claimsAllTouches {
             return super.hitTest(point, with: event)
         }
         // Outside the banner cards, return nil so the window underneath (Start) receives the touch.
@@ -228,6 +235,17 @@ final class OverlayWindow: UIWindow {
             return nil
         }
         return hit
+    }
+
+    private var hasPresentedController: Bool {
+        guard let root = rootViewController else { return false }
+        return Self.hasPresentedController(root)
+    }
+
+    /// Sheets are presented from the hosting child. The tester alert is presented from the root.
+    private static func hasPresentedController(_ controller: UIViewController) -> Bool {
+        if controller.presentedViewController != nil { return true }
+        return controller.children.contains(where: hasPresentedController)
     }
 }
 
@@ -252,6 +270,8 @@ private final class PassThroughRootView: UIView {
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
         if blocksTouches { return bounds.contains(point) }
         guard let overlay = window as? OverlayWindow else { return false }
+        // A presented alert lives in this window. Pass-through here would skip its buttons.
+        if overlay.claimsAllTouches { return bounds.contains(point) }
         // The hosting view can be full-screen. Only the registered banner cards are inside.
         return overlay.hitRegistry.contains(convert(point, to: overlay), in: overlay)
     }
