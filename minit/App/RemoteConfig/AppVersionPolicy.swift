@@ -176,22 +176,30 @@ extension RemoteConfigSnapshot {
     }
 }
 
-/// One logout per blocking-maintenance episode.
+/// One logout per blocking-maintenance episode, and one per force-update episode.
 ///
-/// Before any snapshot, the previous value is not blocking, so a cold start whose
-/// first snapshot is already blocking is a rising edge. Further observations that
-/// stay blocking do not request again. Force update, soft update, and the downtime
-/// banner pass `isBlocking: false`. When blocking ends, the next rise can request
-/// again; nothing here restores the session that was cleared.
+/// Before any snapshot both episodes are off, so a cold start that is already
+/// blocking or already force-updating is a rising edge. Staying in that state does
+/// not request again. Soft update and the downtime banner pass both flags false.
+/// When an episode ends, the next rise can request again. Nothing here restores
+/// the session that was cleared.
 struct BlockingMaintenanceLogoutEdge: Equatable {
-    private var hasObserved = false
-    private var wasBlocking = false
+    private var blockingEpisode = false
+    private var forceEpisode = false
 
+    /// Maintenance-only rising edge. Force update is left off.
     mutating func observe(isBlocking: Bool) -> Bool {
-        let previouslyBlocking = hasObserved && wasBlocking
-        hasObserved = true
-        wasBlocking = isBlocking
-        return Self.shouldRequestLogout(wasBlocking: previouslyBlocking, isBlocking: isBlocking)
+        observe(maintenanceBlocking: isBlocking, forceUpdate: false)
+    }
+
+    /// Blocking maintenance and the force-update sheet each request logout once per episode.
+    /// They are separate: maintenance ending into a force sheet requests again, and the reverse does too.
+    mutating func observe(maintenanceBlocking: Bool, forceUpdate: Bool) -> Bool {
+        let blockingRise = maintenanceBlocking && !blockingEpisode
+        let forceRise = forceUpdate && !forceEpisode
+        blockingEpisode = maintenanceBlocking
+        forceEpisode = forceUpdate
+        return blockingRise || forceRise
     }
 
     static func shouldRequestLogout(wasBlocking: Bool, isBlocking: Bool) -> Bool {

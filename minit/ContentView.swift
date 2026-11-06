@@ -62,8 +62,8 @@ struct ContentView: View {
             }
             .task {
                 // Same clear as Home's Log Out. Registered before bootstrap so a
-                // cold start that is already blocking cannot restore Home, and so
-                // a later rising edge logs out without a second request per refresh.
+                // cold start that is already blocking or force-updating cannot restore Home,
+                // and so a later rising edge logs out without a second request per episode.
                 let flow = appFlow
                 RemoteConfigGate.shared.bindBlockingLogoutHandler {
                     #if MINIT_SHAKE

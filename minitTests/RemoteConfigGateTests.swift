@@ -179,11 +179,12 @@ final class RemoteConfigGateTests: XCTestCase {
         await waitUntil { backend.foregroundCount == 2 }
         XCTAssertEqual(requests, 1)
 
-        backend.snapshot = snapshot(blocking: false, minVersion: "9.0")
+        backend.snapshot = snapshot(blocking: false)
         gate.foreground()
         await waitUntil { backend.foregroundCount == 3 }
         XCTAssertEqual(requests, 1)
         XCTAssertFalse(gate.snapshot.maintenanceBlocking)
+        XCTAssertNil(gate.decision(languageCode: "en").force)
 
         backend.snapshot = snapshot(blocking: true, message: #"{"en":"Again"}"#)
         gate.foreground()
@@ -191,29 +192,80 @@ final class RemoteConfigGateTests: XCTestCase {
         XCTAssertEqual(requests, 2)
     }
 
-    func testForceSoftAndBannerNeverRequestLogout() async {
-        let backend = ScriptedRemoteConfigBackend(
-            snapshot: snapshot(blocking: false, minVersion: "9.0", softVersion: "8.0", bannerMessage: #"{"en":"Tonight"}"#)
-        )
+    func testForceUpdateRequestsLogoutOnceAndSoftBannerNever() async {
+        let backend = ScriptedRemoteConfigBackend(snapshot: snapshot(blocking: false))
         let gate = makeGate(backend: backend)
         var requests = 0
         gate.bindBlockingLogoutHandler { requests += 1 }
         XCTAssertEqual(requests, 0)
 
+        backend.snapshot = snapshot(
+            blocking: false,
+            minVersion: "9.0",
+            softVersion: "8.0",
+            bannerMessage: #"{"en":"Tonight"}"#
+        )
         gate.foreground()
         await waitUntil { backend.foregroundCount == 1 }
-        XCTAssertEqual(requests, 0)
+        XCTAssertEqual(requests, 1)
+        XCTAssertNotNil(gate.decision(languageCode: "en").force)
+        XCTAssertNil(gate.decision(languageCode: "en").softBanner)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 2 }
+        XCTAssertEqual(requests, 1)
 
         backend.snapshot = snapshot(blocking: false, softVersion: "8.0", bannerMessage: #"{"en":"Tonight"}"#)
         gate.foreground()
-        await waitUntil { backend.foregroundCount == 2 }
-        XCTAssertEqual(requests, 0)
+        await waitUntil { backend.foregroundCount == 3 }
+        XCTAssertEqual(requests, 1)
+        XCTAssertNil(gate.decision(languageCode: "en").force)
+        XCTAssertNotNil(gate.decision(languageCode: "en").softBanner)
+        XCTAssertNotNil(gate.decision(languageCode: "en").downtimeBanner)
 
         backend.snapshot = snapshot(blocking: false, bannerMessage: #"{"en":"Tonight"}"#)
         gate.foreground()
-        await waitUntil { backend.foregroundCount == 3 }
-        XCTAssertEqual(requests, 0)
-        XCTAssertFalse(gate.snapshot.maintenanceBlocking)
+        await waitUntil { backend.foregroundCount == 4 }
+        XCTAssertEqual(requests, 1)
+        XCTAssertNotNil(gate.decision(languageCode: "en").downtimeBanner)
+        XCTAssertNil(gate.decision(languageCode: "en").force)
+
+        backend.snapshot = snapshot(blocking: false, minVersion: "9.0")
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 5 }
+        XCTAssertEqual(requests, 2)
+    }
+
+    func testLaunchAlreadyForceUpdatingRequestsLogoutOnce() async {
+        let backend = ScriptedRemoteConfigBackend(snapshot: snapshot(blocking: false, minVersion: "9.0"))
+        let gate = makeGate(backend: backend)
+        var requests = 0
+        gate.bindBlockingLogoutHandler { requests += 1 }
+
+        XCTAssertEqual(requests, 1)
+        XCTAssertNotNil(gate.decision(languageCode: "en").force)
+        XCTAssertNil(gate.decision(languageCode: "en").blocking)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 1 }
+        XCTAssertEqual(requests, 1)
+    }
+
+    func testBlockingHidesForceSheetAndLogsOutOnce() async {
+        let backend = ScriptedRemoteConfigBackend(
+            snapshot: snapshot(blocking: true, message: #"{"en":"Closed"}"#, minVersion: "9.0")
+        )
+        let gate = makeGate(backend: backend)
+        var requests = 0
+        gate.bindBlockingLogoutHandler { requests += 1 }
+
+        XCTAssertEqual(requests, 1)
+        XCTAssertNotNil(gate.decision(languageCode: "en").blocking)
+        XCTAssertNil(gate.decision(languageCode: "en").force)
+
+        gate.foreground()
+        await waitUntil { backend.foregroundCount == 1 }
+        XCTAssertEqual(requests, 1)
     }
 
     func testReloadClearsInFlightFlagWhenFetchThrows() async {

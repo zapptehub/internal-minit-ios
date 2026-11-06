@@ -574,7 +574,7 @@ final class AppVersionPolicyTests: XCTestCase {
         XCTAssertTrue(episode.observe(isBlocking: true))
     }
 
-    func testForceSoftAndBannerNeverRequestBlockingLogout() {
+    func testForceUpdateRequestsLogoutOnceAndSoftBannerNever() {
         var edge = BlockingMaintenanceLogoutEdge()
         let force = evaluate(minVersion: "9.0", installed: "1.0")
         let soft = evaluate(softVersion: "8.0", installed: "1.0")
@@ -582,18 +582,24 @@ final class AppVersionPolicyTests: XCTestCase {
         XCTAssertNotNil(force.force)
         XCTAssertNil(force.blocking)
         XCTAssertNotNil(soft.softBanner)
-        XCTAssertNil(soft.blocking)
+        XCTAssertNil(soft.force)
         XCTAssertNotNil(banner.downtimeBanner)
         XCTAssertNil(banner.blocking)
+        XCTAssertNil(banner.force)
 
-        XCTAssertFalse(edge.observe(isBlocking: force.blocking != nil))
-        XCTAssertFalse(edge.observe(isBlocking: soft.blocking != nil))
-        XCTAssertFalse(edge.observe(isBlocking: banner.blocking != nil))
+        XCTAssertTrue(edge.observe(maintenanceBlocking: force.blocking != nil, forceUpdate: force.force != nil))
+        XCTAssertFalse(edge.observe(maintenanceBlocking: force.blocking != nil, forceUpdate: force.force != nil))
+        XCTAssertFalse(edge.observe(maintenanceBlocking: soft.blocking != nil, forceUpdate: soft.force != nil))
+        XCTAssertFalse(edge.observe(maintenanceBlocking: banner.blocking != nil, forceUpdate: banner.force != nil))
 
-        let blocking = evaluate(blockingMessage: #"{"en":"Closed"}"#, blocking: true)
+        XCTAssertTrue(edge.observe(maintenanceBlocking: false, forceUpdate: true))
+        XCTAssertFalse(edge.observe(maintenanceBlocking: false, forceUpdate: true))
+
+        let blocking = evaluate(blockingMessage: #"{"en":"Closed"}"#, minVersion: "9.0", blocking: true)
         XCTAssertNotNil(blocking.blocking)
-        XCTAssertTrue(edge.observe(isBlocking: blocking.blocking != nil))
-        XCTAssertFalse(edge.observe(isBlocking: blocking.blocking != nil))
+        XCTAssertNil(blocking.force)
+        XCTAssertTrue(edge.observe(maintenanceBlocking: true, forceUpdate: false))
+        XCTAssertFalse(edge.observe(maintenanceBlocking: true, forceUpdate: false))
     }
 
     func testInAppDefaultsLeaveEveryGateOff() {

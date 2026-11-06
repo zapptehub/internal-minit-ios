@@ -17,8 +17,8 @@ protocol RemoteConfigBackend: AnyObject {
 /// Foreground recomputes the banner window from the activated config and fetches again.
 /// `minimumFetchInterval` is 0 on every channel. A failed fetch keeps the live snapshot.
 /// Launch, foreground, and maintenance Reload share one in-flight network fetch.
-/// A rising edge of `maintenance_blocking` requests logout once per episode.
-/// Force update, soft update, and the downtime banner do not.
+/// A rising edge of blocking maintenance or the force-update sheet requests logout once per episode.
+/// Soft update and the downtime banner do not.
 @MainActor
 final class RemoteConfigGate: ObservableObject {
     static let shared = RemoteConfigGate()
@@ -220,8 +220,8 @@ final class RemoteConfigGate: ObservableObject {
     /// Publishing a non-blocking snapshot drops the still-unavailable alert. The sheet
     /// can disappear without the OK handler, and the next maintenance episode must not
     /// show that alert on its own.
-    /// Blocking maintenance requests logout on the rising edge only, after the snapshot
-    /// is visible to the handler.
+    /// Blocking maintenance and the force-update sheet each request logout on their
+    /// rising edge only, after the snapshot is visible to the handler.
     private func publish(_ snapshot: RemoteConfigSnapshot) {
         self.snapshot = snapshot
         evaluatedAt = Date()
@@ -232,7 +232,22 @@ final class RemoteConfigGate: ObservableObject {
     }
 
     private func noteBlockingLogout(_ snapshot: RemoteConfigSnapshot) {
-        guard blockingLogoutEdge.observe(isBlocking: snapshot.maintenanceBlocking) else { return }
+        let shown = AppVersionPolicy.evaluate(
+            AppVersionPolicy.Input(
+                snapshot: snapshot,
+                channel: channel,
+                installedMarketingVersion: installedMarketingVersion,
+                languageCode: "en",
+                now: evaluatedAt,
+                dismissedSoftThreshold: defaults.string(forKey: AppVersionPolicy.dismissedSoftVersionDefaultsKey),
+                dismissedBannerIdentity: dismissedBannerIdentity
+            )
+        )
+        // `force` is nil while blocking maintenance wins, so the two episodes do not fire together.
+        guard blockingLogoutEdge.observe(
+            maintenanceBlocking: snapshot.maintenanceBlocking,
+            forceUpdate: shown.force != nil
+        ) else { return }
         pendingBlockingLogout = true
         deliverPendingBlockingLogout()
     }
