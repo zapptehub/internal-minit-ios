@@ -49,12 +49,16 @@ struct RemoteConfigWindowAnchor: UIViewRepresentable {
     }
 
     final class Coordinator {
+        /// Shared with the overlay window. Banner cards register their real frames here.
+        let hitRegistry = RemoteConfigBannerHitRegistry()
         private var window: OverlayWindow?
         private var host: UIHostingController<RemoteConfigChrome>?
         private var hostHeight: NSLayoutConstraint?
         private var sceneRetries = 0
         private var appliedLocale: Locale?
         private var didResignForSheet = false
+        /// Host frame after layout. Hit tests use this when a full-screen host would hide the bug.
+        var hitTestHostFrame: CGRect { host?.view.frame ?? .zero }
 
         func sync(gate: RemoteConfigGate, locale: Locale) {
             guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
@@ -71,12 +75,12 @@ struct RemoteConfigWindowAnchor: UIViewRepresentable {
             let window = self.window(for: scene)
             let decision = displayedDecision(gate: gate, locale: locale)
             let showsChrome = decision.coversApp || decision.softBanner != nil || decision.downtimeBanner != nil
-            guard let root = window.rootViewController as? OverlayRootController else { return }
-            root.blocksTouches = decision.coversApp
+            guard window.rootViewController is OverlayRootController else { return }
+            window.setBlocksTouches(decision.coversApp)
 
             if host == nil || appliedLocale != locale {
                 let chromeHost = host ?? makeHost(in: window)
-                chromeHost.rootView = RemoteConfigChrome(gate: gate, locale: locale)
+                chromeHost.rootView = makeChrome(gate: gate, locale: locale)
                 host = chromeHost
                 appliedLocale = locale
             }
@@ -110,6 +114,7 @@ struct RemoteConfigWindowAnchor: UIViewRepresentable {
             let window = OverlayWindow(windowScene: scene)
             window.windowLevel = .alert
             window.backgroundColor = .clear
+            window.hitRegistry = hitRegistry
             let root = OverlayRootController()
             window.rootViewController = root
             self.window = window
@@ -119,9 +124,34 @@ struct RemoteConfigWindowAnchor: UIViewRepresentable {
             return window
         }
 
+        private func makeChrome(gate: RemoteConfigGate, locale: Locale) -> RemoteConfigChrome {
+            RemoteConfigChrome(gate: gate, locale: locale, hitRegistry: hitRegistry)
+        }
+
+        /// Lays the banner out in a real overlay window. Tests use this so hit testing matches production.
+        func installHitTestHarness(scene: UIWindowScene, gate: RemoteConfigGate, locale: Locale) -> OverlayWindow {
+            let window = self.window(for: scene)
+            let chromeHost = host ?? makeHost(in: window)
+            chromeHost.rootView = makeChrome(gate: gate, locale: locale)
+            host = chromeHost
+            appliedLocale = locale
+            window.setBlocksTouches(false)
+            window.isHidden = false
+            resizeHost(chromeHost, in: window)
+            window.layoutIfNeeded()
+            return window
+        }
+
+        /// Stretches the hosting view over the whole window. The banner cards must still be the only hit targets.
+        func expandHostToFillWindowForHitTesting() {
+            guard let window else { return }
+            hostHeight?.constant = max(window.bounds.height, 1)
+            window.layoutIfNeeded()
+        }
+
         private func makeHost(in window: OverlayWindow) -> UIHostingController<RemoteConfigChrome> {
             let host = UIHostingController(
-                rootView: RemoteConfigChrome(gate: RemoteConfigGate.shared, locale: .current)
+                rootView: makeChrome(gate: RemoteConfigGate.shared, locale: .current)
             )
             host.view.backgroundColor = .clear
             host.view.isOpaque = false
@@ -165,10 +195,39 @@ private func displayedDecision(gate: RemoteConfigGate, locale: Locale) -> AppVer
     gate.decision(languageCode: RemoteConfigLanguage.code(from: locale))
 }
 
-private final class OverlayWindow: UIWindow {
+/// Full-screen window above the app. Only the banner cards (or a blocking sheet) take touches.
+/// A clear full-screen `UIWindow` otherwise returns itself from `hitTest` and swallows Start taps.
+final class OverlayWindow: UIWindow {
+    var blocksTouches = false
+    var hitRegistry = RemoteConfigBannerHitRegistry()
+
     static var foregroundScene: UIWindowScene? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+    }
+
+    func setBlocksTouches(_ blocks: Bool) {
+        blocksTouches = blocks
+        (rootViewController as? OverlayRootController)?.blocksTouches = blocks
+    }
+
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        if isHidden || alpha <= 0.01 || !isUserInteractionEnabled { return false }
+        if blocksTouches { return bounds.contains(point) }
+        return hitRegistry.contains(point, in: self)
+    }
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if blocksTouches {
+            return super.hitTest(point, with: event)
+        }
+        // Outside the banner cards, return nil so the window underneath (Start) receives the touch.
+        guard hitRegistry.contains(point, in: self) else { return nil }
+        let hit = super.hitTest(point, with: event)
+        if hit == nil || hit === self || hit === rootViewController?.view {
+            return nil
+        }
+        return hit
     }
 }
 
@@ -192,16 +251,16 @@ private final class PassThroughRootView: UIView {
 
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
         if blocksTouches { return bounds.contains(point) }
-        return subviews.contains { subview in
-            guard !subview.isHidden, subview.alpha > 0.01, subview.isUserInteractionEnabled else { return false }
-            return subview.point(inside: convert(point, to: subview), with: event)
-        }
+        guard let overlay = window as? OverlayWindow else { return false }
+        // The hosting view can be full-screen. Only the registered banner cards are inside.
+        return overlay.hitRegistry.contains(convert(point, to: overlay), in: overlay)
     }
 }
 
 struct RemoteConfigChrome: View {
     @ObservedObject var gate: RemoteConfigGate
     var locale: Locale
+    var hitRegistry: RemoteConfigBannerHitRegistry
     @State private var showTesterAlert = false
 
     var body: some View {
@@ -213,6 +272,7 @@ struct RemoteConfigChrome: View {
                         title: AppLocalizedString.string(RemoteConfigCopy.downtimeTitle, locale: locale),
                         bodyText: downtime.message,
                         dismissLabel: AppLocalizedString.string(RemoteConfigCopy.dismissBanner, locale: locale),
+                        hitRegistry: hitRegistry,
                         onClose: { gate.dismissBanner(identity: downtime.identity) }
                     )
                 }
@@ -221,6 +281,7 @@ struct RemoteConfigChrome: View {
                         title: AppLocalizedString.string(RemoteConfigCopy.softTitle, locale: locale),
                         bodyText: softBody(soft),
                         dismissLabel: AppLocalizedString.string(RemoteConfigCopy.dismissBanner, locale: locale),
+                        hitRegistry: hitRegistry,
                         updateTitle: softUpdateTitle(soft),
                         onUpdate: softUpdateAction(soft),
                         onClose: { gate.dismissSoftUpdate(threshold: soft.threshold) }
@@ -279,6 +340,7 @@ struct RemoteConfigBannerCard: View {
     var title: String
     var bodyText: String
     var dismissLabel: String
+    var hitRegistry: RemoteConfigBannerHitRegistry
     var updateTitle: String?
     var onUpdate: (() -> Void)?
     var onClose: () -> Void
@@ -342,6 +404,95 @@ struct RemoteConfigBannerCard: View {
         .clipShape(shape)
         .overlay(shape.strokeBorder(DSColor.Border.default, lineWidth: 1))
         .dsCardShadow()
+        // Same rectangle as the card. The overlay window hit-tests only these views.
+        .overlay {
+            RemoteConfigBannerHitArea(registry: hitRegistry)
+        }
+    }
+}
+
+/// Banner-card rectangles that may receive touches. Everything else passes through the overlay window.
+final class RemoteConfigBannerHitRegistry {
+    private struct Entry {
+        weak var view: UIView?
+    }
+
+    private var entries: [Entry] = []
+
+    func add(_ view: UIView) {
+        entries.removeAll { $0.view == nil || $0.view === view }
+        entries.append(Entry(view: view))
+    }
+
+    func remove(_ view: UIView) {
+        entries.removeAll { $0.view == nil || $0.view === view }
+    }
+
+    func contains(_ point: CGPoint, in window: UIWindow) -> Bool {
+        entries.contains { entry in
+            guard let view = entry.view,
+                  view.window === window,
+                  !view.isHidden,
+                  view.alpha > 0.01,
+                  view.bounds.width > 1,
+                  view.bounds.height > 1
+            else { return false }
+            return view.bounds.contains(view.convert(point, from: window))
+        }
+    }
+
+    func frames(in window: UIWindow) -> [CGRect] {
+        entries.compactMap { entry in
+            guard let view = entry.view,
+                  view.window === window,
+                  view.bounds.width > 1,
+                  view.bounds.height > 1
+            else { return nil }
+            return view.convert(view.bounds, to: window)
+        }
+    }
+}
+
+private struct RemoteConfigBannerHitArea: UIViewRepresentable {
+    var registry: RemoteConfigBannerHitRegistry
+
+    func makeUIView(context: Context) -> RemoteConfigBannerHitAreaView {
+        let view = RemoteConfigBannerHitAreaView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        view.isAccessibilityElement = false
+        view.registry = registry
+        return view
+    }
+
+    func updateUIView(_ uiView: RemoteConfigBannerHitAreaView, context: Context) {
+        uiView.registry = registry
+        uiView.register()
+    }
+
+    static func dismantleUIView(_ uiView: RemoteConfigBannerHitAreaView, coordinator: ()) {
+        uiView.unregister()
+    }
+}
+
+private final class RemoteConfigBannerHitAreaView: UIView {
+    weak var registry: RemoteConfigBannerHitRegistry?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            unregister()
+        } else {
+            register()
+        }
+    }
+
+    func register() {
+        registry?.add(self)
+    }
+
+    func unregister() {
+        registry?.remove(self)
     }
 }
 
