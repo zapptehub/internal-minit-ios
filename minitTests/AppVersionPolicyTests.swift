@@ -758,6 +758,73 @@ final class AppVersionPolicyTests: XCTestCase {
         XCTAssertEqual(items.first { $0.name == "body" }?.value, body)
     }
 
+    func testSoftUpdateBannerBodyNamesInstalledAndTargetVersions() {
+        let text = SoftUpdateBannerBody.text(
+            installedVersion: " 0.2 ",
+            targetVersion: " 0.3 ",
+            versionedTemplate: "You're using version %1$@. Version %2$@ is available. Update to get the latest improvements.",
+            fallback: "A newer version of Minit is available."
+        )
+        XCTAssertEqual(
+            text,
+            "You're using version 0.2. Version 0.3 is available. Update to get the latest improvements."
+        )
+    }
+
+    func testSoftUpdateBannerBodyFallsBackWhenTargetIsMissingOrBlank() {
+        let fallback = "A newer version of Minit is available."
+        let template = "You're using version %1$@. Version %2$@ is available. Update to get the latest improvements."
+        for target in [nil, "", " ", "\n"] as [String?] {
+            XCTAssertEqual(
+                SoftUpdateBannerBody.text(
+                    installedVersion: "0.2",
+                    targetVersion: target,
+                    versionedTemplate: template,
+                    fallback: fallback
+                ),
+                fallback,
+                "target \(String(describing: target))"
+            )
+        }
+    }
+
+    func testSoftUpdateBannerBodyFallsBackWhenInstalledVersionIsBlank() {
+        let fallback = "A newer test build is available. Check Firebase App Tester or your email."
+        XCTAssertEqual(
+            SoftUpdateBannerBody.text(
+                installedVersion: " ",
+                targetVersion: "0.3",
+                versionedTemplate: "You're using version %1$@. Version %2$@ is available.",
+                fallback: fallback
+            ),
+            fallback
+        )
+    }
+
+    func testSoftUpdateBannerBodyCatalogFormatsEveryLanguage() {
+        let expected = [
+            "en": "You're using version 0.2. Version 0.3 is available. Update to get the latest improvements.",
+            "sk": "Používate verziu 0.2. Verzia 0.3 je k dispozícii. Aktualizujte, aby ste získali najnovšie vylepšenia.",
+            "hu": "A(z) 0.2 verziót használod. Elérhető a(z) 0.3 verzió. Frissíts, hogy megkapd a legújabb fejlesztéseket.",
+        ]
+        for (language, formatted) in expected {
+            let template = AppLocalizedString.string(
+                RemoteConfigCopy.softBodyWithVersions,
+                locale: Locale(identifier: language)
+            )
+            XCTAssertEqual(
+                SoftUpdateBannerBody.text(
+                    installedVersion: "0.2",
+                    targetVersion: "0.3",
+                    versionedTemplate: template,
+                    fallback: "unused"
+                ),
+                formatted,
+                language
+            )
+        }
+    }
+
     func testChannelResolutionUsesSentryEnvironment() {
         XCTAssertEqual(AppDistributionChannel.resolve(environment: "development", fallback: .release), .development)
         XCTAssertEqual(AppDistributionChannel.resolve(environment: "internal", fallback: .release), .internal)
@@ -798,6 +865,11 @@ final class AppVersionPolicyTests: XCTestCase {
                 "en": "A newer version of Minit is available.",
                 "sk": "K dispozícii je novšia verzia aplikácie Minit.",
                 "hu": "A Minit újabb verziója érhető el.",
+            ],
+            RemoteConfigCopy.softBodyWithVersions: [
+                "en": "You're using version %1$@. Version %2$@ is available. Update to get the latest improvements.",
+                "sk": "Používate verziu %1$@. Verzia %2$@ je k dispozícii. Aktualizujte, aby ste získali najnovšie vylepšenia.",
+                "hu": "A(z) %1$@ verziót használod. Elérhető a(z) %2$@ verzió. Frissíts, hogy megkapd a legújabb fejlesztéseket.",
             ],
             RemoteConfigCopy.testerBody: [
                 "en": "This test build is out of date. Check Firebase App Tester or your email for a newer build, or contact armands.berzins@saleseverest.com for an invite.",

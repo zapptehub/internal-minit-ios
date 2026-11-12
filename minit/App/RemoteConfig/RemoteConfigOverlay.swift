@@ -9,6 +9,7 @@ enum RemoteConfigCopy {
     static let forceReleaseBody = "remoteConfig.update.force.releaseBody"
     static let softTitle = "remoteConfig.update.soft.title"
     static let softReleaseBody = "remoteConfig.update.soft.releaseBody"
+    static let softBodyWithVersions = "remoteConfig.update.soft.bodyWithVersions"
     static let softTesterBody = "remoteConfig.update.soft.testerBody"
     static let testerBody = "remoteConfig.update.testerBody"
     static let updateButton = "remoteConfig.update.update"
@@ -349,8 +350,13 @@ struct RemoteConfigChrome: View {
     }
 
     private func softBody(_ soft: AppVersionPolicy.SoftBanner) -> String {
-        let key = soft.usesTesterCopy ? RemoteConfigCopy.softTesterBody : RemoteConfigCopy.softReleaseBody
-        return AppLocalizedString.string(key, locale: locale)
+        let fallbackKey = soft.usesTesterCopy ? RemoteConfigCopy.softTesterBody : RemoteConfigCopy.softReleaseBody
+        return SoftUpdateBannerBody.text(
+            installedVersion: gate.installedMarketingVersion,
+            targetVersion: soft.threshold,
+            versionedTemplate: AppLocalizedString.string(RemoteConfigCopy.softBodyWithVersions, locale: locale),
+            fallback: AppLocalizedString.string(fallbackKey, locale: locale)
+        )
     }
 }
 

@@ -61,6 +61,9 @@ struct StartScreen: View {
                 contentStack
             }
         }
+        .overlay(alignment: .bottom) {
+            versionCaption
+        }
         .onAppear {
             analytics?.trackScreenOpened(file: #fileID)
         }
@@ -158,6 +161,29 @@ struct StartScreen: View {
         .padding(.horizontal, DSConstant.xxLarge.value)
         .padding(.bottom, DSConstant.xxLarge.value)
         .frame(maxWidth: .infinity)
+    }
+
+    /// Sits in the bottom padding under the terms line. The bottom container's
+    /// 40 pt inset stays, so the button, terms, and hero do not move. The
+    /// overlay is inside the safe area; 8 pt keeps it off the home indicator.
+    @ViewBuilder
+    private var versionCaption: some View {
+        if let caption = StartVersionCaption.text(
+            version: StartVersionCaption.marketingVersion(),
+            build: StartVersionCaption.buildNumber(),
+            withBuildFormat: StartLocalizedString.string("start.version.caption", locale: locale),
+            versionOnlyFormat: StartLocalizedString.string("start.version.caption.versionOnly", locale: locale)
+        ) {
+            Text(caption)
+                .font(.system(size: 12, weight: .thin))
+                .foregroundStyle(DSColor.Text.tertiary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, DSConstant.xxLarge.value)
+                .padding(.bottom, DSConstant.small.value)
+                .allowsHitTesting(false)
+        }
     }
 
     /// "terms" and "privacy policy" are markdown links in `start.legal` (see Localizable.xcstrings).

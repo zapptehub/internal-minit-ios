@@ -432,6 +432,29 @@
         }
       }
     },
+    "remoteConfig.update.soft.bodyWithVersions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're using version %1$@. Version %2$@ is available. Update to get the latest improvements."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A(z) %1$@ verziót használod. Elérhető a(z) %2$@ verzió. Frissíts, hogy megkapd a legújabb fejlesztéseket."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Používate verziu %1$@. Verzia %2$@ je k dispozícii. Aktualizujte, aby ste získali najnovšie vylepšenia."
+          }
+        }
+      }
+    },
     "remoteConfig.update.soft.title" : {
       "extractionState" : "manual",
       "localizations" : {
