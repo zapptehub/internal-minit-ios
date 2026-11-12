@@ -14,6 +14,18 @@ public enum DSInputFieldType: Equatable {
     case number
 }
 
+/// How a `.password` field talks to Password AutoFill.
+///
+/// Login uses `.savedPassword` so iOS can fill a password the user already saved.
+/// Registration uses `.userTyped`. On a create-account form (email field plus two
+/// secure fields) iOS otherwise covers the fields with "Use Strong Password?" as
+/// soon as the empty password field is focused, including when the content type
+/// is `.password`. `.userTyped` does not ask for a generated or saved password.
+public enum DSPasswordAutofill: Equatable {
+    case savedPassword
+    case userTyped
+}
+
 /// A single design-system text input, covering every type/state combination in the
 /// Figma "Input" frame (`DSInputFieldType` × `DSInputValidationState` × focus/filled × enabled).
 ///
@@ -36,8 +48,13 @@ public struct DSInputField: View {
     private let onDeleteBackwardOnEmpty: (() -> Void)?
     /// Stable id for `field focused` / `field typed`. Nil records nothing.
     private let reportID: String?
+    private let passwordAutofill: DSPasswordAutofill
 
     @FocusState private var isFocused: Bool
+    /// Password focus comes from the UIKit field, not `@FocusState`. SwiftUI's
+    /// focus binding re-asserts first responder after the system strong-password
+    /// sheet resigns the field, which presents that sheet again.
+    @State private var isPasswordFocused = false
     @State private var isSecureTextHidden = true
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -45,6 +62,8 @@ public struct DSInputField: View {
     /// still fits the circle at accessibility sizes, and both stay exact at `.large`.
     @ScaledMetric(relativeTo: .body) private var numberCircleDiameter = DSInputFieldMetrics.numberCircleDiameter
     @ScaledMetric(relativeTo: .body) private var numberFontSize: CGFloat = 17
+    /// Same body-relative scale as `.typography(.uiLargeRegular)` on the other fields.
+    @ScaledMetric(relativeTo: .body) private var passwordFontSize: CGFloat = 17
 
     public init(
         /// The floating label overlaid on the border (or, for `.number`, an accessibility-only
@@ -81,7 +100,10 @@ public struct DSInputField: View {
         /// UIKit-backed field that overrides `deleteBackward()` directly. `DSOTPField` uses
         /// this to jump focus back to (and clear) the previous digit box.
         onDeleteBackwardOnEmpty: (() -> Void)? = nil,
-        reportID: String? = nil
+        reportID: String? = nil,
+        /// Ignored unless `type` is `.password`. Defaults to saved-password
+        /// AutoFill so login is unchanged. Registration passes `.userTyped`.
+        passwordAutofill: DSPasswordAutofill = .savedPassword
     ) {
         self.label = label
         self.text = text
@@ -96,12 +118,13 @@ public struct DSInputField: View {
         self.isFocusedBinding = isFocusedBinding
         self.onDeleteBackwardOnEmpty = onDeleteBackwardOnEmpty
         self.reportID = reportID
+        self.passwordAutofill = passwordAutofill
     }
 
     public var body: some View {
         let colors = DSInputFieldColors(
             isEnabled: isEnabled,
-            isFocused: isFocusedOverride ?? isFocused,
+            isFocused: isFocusedOverride ?? showsFocusedChrome,
             isFilled: !text.wrappedValue.isEmpty,
             validationState: validationState
         )
@@ -122,6 +145,17 @@ public struct DSInputField: View {
     private var loggedFocus: Bool {
         if let isFocusedBinding {
             return isFocusedBinding.wrappedValue
+        }
+        if case .password = type {
+            return isPasswordFocused
+        }
+        return isFocused
+    }
+
+    /// Border and value color. Password uses the UIKit field's editing state.
+    private var showsFocusedChrome: Bool {
+        if case .password = type {
+            return isPasswordFocused
         }
         return isFocused
     }
@@ -196,7 +230,19 @@ public struct DSInputField: View {
                 accessibilityHintText: validationAccessibilityHint
             ) {
                 HStack(spacing: DSInputFieldMetrics.trailingAccessorySpacing) {
-                    passwordValue(valueColor: colors.valueColor)
+                    DSPasswordTextField(
+                        text: text,
+                        isSecure: isSecureTextHidden,
+                        isFocused: $isPasswordFocused,
+                        textColor: colors.valueColor,
+                        fontSize: passwordFontSize,
+                        isEnabled: isEnabled,
+                        accessibilityLabel: label ?? "",
+                        accessibilityHint: validationAccessibilityHint,
+                        contentType: passwordContentType
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .background { passwordPlaceholder }
 
                     Button {
                         isSecureTextHidden.toggle()
@@ -239,28 +285,20 @@ public struct DSInputField: View {
         }
     }
 
-    /// Empty prompt so the placeholder ("Value") is not the accessibility value.
-    /// The same string is drawn behind the glyphs and hidden from VoiceOver.
-    /// The field label is attached on the control itself.
-    @ViewBuilder
-    private func passwordValue(valueColor: Color) -> some View {
-        if isSecureTextHidden {
-            passwordValueField(SecureField("", text: text), valueColor: valueColor)
-        } else {
-            passwordValueField(TextField("", text: text), valueColor: valueColor)
+    /// `.oneTimeCode` is the content type that does not participate in password
+    /// AutoFill. `.password` and an empty type both make iOS offer a generated
+    /// password on this registration form.
+    private var passwordContentType: UITextContentType {
+        switch passwordAutofill {
+        case .savedPassword:
+            return .password
+        case .userTyped:
+            return .oneTimeCode
         }
     }
 
-    private func passwordValueField<Field: View>(_ field: Field, valueColor: Color) -> some View {
-        field
-            .typography(.uiLargeRegular)
-            .foregroundColor(valueColor)
-            .background { passwordPlaceholder }
-            .focused($isFocused)
-            .accessibilityLabel(label ?? "")
-            .dsAccessibilityHint(validationAccessibilityHint)
-    }
-
+    /// Drawn behind the glyphs and hidden from VoiceOver. An empty UITextField
+    /// prompt would publish "Value" as the accessibility value.
     @ViewBuilder
     private var passwordPlaceholder: some View {
         if text.wrappedValue.isEmpty, let placeholder, !placeholder.isEmpty {

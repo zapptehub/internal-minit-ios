@@ -46,7 +46,8 @@ struct CreateAccountScreen: View {
                     type: .password,
                     placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
                     validationState: viewModel.hasPasswordLengthError ? .error : .none,
-                    reportID: "password"
+                    reportID: "password",
+                    passwordAutofill: .userTyped
                 )
                 DSInputField(
                     label: LoginLocalizedString.string("createAccount.field.confirmPassword", locale: locale),
@@ -54,7 +55,8 @@ struct CreateAccountScreen: View {
                     type: .password,
                     placeholder: LoginLocalizedString.string("createAccount.field.placeholder", locale: locale),
                     validationState: passwordsMismatch ? .error : .none,
-                    reportID: "passwordConfirm"
+                    reportID: "passwordConfirm",
+                    passwordAutofill: .userTyped
                 )
             }
             .padding(.top, headlineToFieldsSpacing)
