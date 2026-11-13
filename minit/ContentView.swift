@@ -49,6 +49,9 @@ struct ContentView: View {
     /// writes a new value, without any direct coupling between the two. Empty string is
     /// the "never explicitly set yet" sentinel — `@AppStorage` can't hold `String?`.
     @AppStorage(UserDefaultsAppLanguagePreferenceStore.defaultKey) private var appLanguageCode = ""
+    /// Set when Settings clears the per-app language. The UI then follows the
+    /// device locale instead of a mid-onboarding checkpoint.
+    @AppStorage(AppLanguageSettingsReconciler.followSystemKey) private var followSystemLanguage = false
     @Environment(\.scenePhase) private var scenePhase
     #if MINIT_SHAKE
     @State private var lastShakeAt = Date.distantPast
@@ -75,6 +78,8 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
+                    AppLanguageSettingsReconciler.reconcile()
+                    SettingsVersionPreference.write()
                     RemoteConfigGate.shared.foreground()
                 }
             }
@@ -101,13 +106,16 @@ struct ContentView: View {
             #endif
     }
 
-    /// A confirmed device-wide language choice applies everywhere — Start, Login, the
-    /// whole onboarding flow, and post-onboarding screens alike — and survives logout,
-    /// since it's stored independently of any account. Only falls back to whatever
-    /// language a resuming *mid-onboarding* checkpoint carries (see
-    /// `AppFlowViewModel.restoredLocale`'s doc comment), and then to the system default,
-    /// when nothing has been explicitly confirmed yet.
+    /// Settings › Minit › Preferred Language wins. `AppLanguageSettingsReconciler`
+    /// copies that choice into `appLanguageCode` (and publishes an onboarding
+    /// choice back to Settings). `followSystemLanguage` means the user cleared
+    /// the per-app language, so a mid-onboarding checkpoint must not override
+    /// the device locale. With neither set, the checkpoint still applies, then
+    /// the system locale.
     private var currentLocale: Locale {
+        if followSystemLanguage {
+            return .autoupdatingCurrent
+        }
         if !appLanguageCode.isEmpty {
             return Locale(identifier: appLanguageCode)
         }

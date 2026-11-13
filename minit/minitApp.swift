@@ -12,6 +12,8 @@ import FirebaseCore
 @main
 struct minitApp: App {
     init() {
+        AppLanguageSettingsReconciler.reconcile()
+        SettingsVersionPreference.write()
         FirebaseApp.configure()
         RemoteConfigGate.start()
         SentryConfiguration.start()
