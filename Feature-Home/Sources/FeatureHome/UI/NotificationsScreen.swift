@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Notifications list opened from Home's bell.
 ///
-/// Rows and the Daily Offer banner come from the home catalog. The firebase
-/// sample is the bundled copy. HTTP keeps the JSON ids and the `{en,sk,hu}`
+/// Rows and the Daily Offer banner come from the home catalog. The bundled
+/// sample is `HomeCatalog.firebase`. HTTP keeps the JSON ids and the `{en,sk,hu}`
 /// objects, resolved here with the in-app locale. Layout follows Figma
 /// "AMP / Notifications" (node 4088:1319); the values live in
 /// `NotificationsScreenMetrics`.

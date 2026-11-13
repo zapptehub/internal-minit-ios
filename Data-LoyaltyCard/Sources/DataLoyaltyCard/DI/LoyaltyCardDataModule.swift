@@ -2,39 +2,17 @@ import CoreNetworking
 
 /// Composition root for loyalty-card data.
 ///
-/// `dataBackend` selects the repository. The HTTP type is constructed only
-/// when the id is `http`. Firebase Realtime Database reads and writes stay
-/// on `LoyaltyCardRepositoryImpl`.
+/// Builds `HttpLoyaltyCardRepository`. `dataBackend` must be `http`; the app
+/// rejects every other id before it constructs this module. Surrounding
+/// whitespace is ignored.
 public final class LoyaltyCardDataModule {
-    private let dataBackend: String
-    private let networkClient: (any NetworkClient)?
+    private let repository: HttpLoyaltyCardRepository
 
-    /// `dataBackend` is the plist id (`firebase` or `http`). A nil client is
-    /// ignored unless the id is `http`.
-    public init(dataBackend: String = "firebase", networkClient: (any NetworkClient)? = nil) {
+    public init(dataBackend: String, networkClient: any NetworkClient) {
         let id = dataBackend.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.dataBackend = id
-        self.networkClient = id == Self.httpBackend ? networkClient : nil
+        precondition(id == "http", "LoyaltyCardDataModule only builds the http repository")
+        self.repository = HttpLoyaltyCardRepository(client: networkClient)
     }
 
     public func makeLoyaltyCardRepository() -> LoyaltyCardRepository { repository }
-
-    private lazy var repository: LoyaltyCardRepository = makeRepository()
-
-    private func makeRepository() -> LoyaltyCardRepository {
-        switch dataBackend {
-        case Self.httpBackend:
-            guard let networkClient else {
-                fatalError("MinitDataBackend is http but no NetworkClient was provided")
-            }
-            return HttpLoyaltyCardRepository(client: networkClient)
-        case Self.firebaseBackend:
-            return LoyaltyCardRepositoryImpl(api: FirebaseLoyaltyCardApiImpl())
-        default:
-            fatalError("Unknown data backend \"\(dataBackend)\"")
-        }
-    }
-
-    private static let firebaseBackend = "firebase"
-    private static let httpBackend = "http"
 }

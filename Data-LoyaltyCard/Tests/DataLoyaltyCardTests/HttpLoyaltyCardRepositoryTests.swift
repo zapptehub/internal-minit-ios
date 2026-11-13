@@ -376,19 +376,6 @@ final class HttpLoyaltyCardRepositoryTests: XCTestCase {
     }
 
     func testDataModuleConstructsHttpOnlyForTheHttpId() throws {
-        let firebase = LoyaltyCardDataModule(
-            dataBackend: "firebase",
-            networkClient: ScriptedNetworkClient(results: [])
-        )
-        let firebaseRepository = try XCTUnwrap(
-            firebase.makeLoyaltyCardRepository() as? LoyaltyCardRepositoryImpl
-        )
-        let firebaseAgain = try XCTUnwrap(
-            firebase.makeLoyaltyCardRepository() as? LoyaltyCardRepositoryImpl
-        )
-        XCTAssertTrue(firebaseRepository === firebaseAgain)
-        XCTAssertTrue(LoyaltyCardDataModule().makeLoyaltyCardRepository() is LoyaltyCardRepositoryImpl)
-
         let client = ScriptedNetworkClient(results: [])
         let http = LoyaltyCardDataModule(dataBackend: " http ", networkClient: client)
         let httpRepository = try XCTUnwrap(http.makeLoyaltyCardRepository() as? HttpLoyaltyCardRepository)

@@ -181,8 +181,8 @@ struct HomeScreen: View {
         )
     }
 
-    /// Catalog chrome. The firebase sample is this catalog for a firebase
-    /// build and while an HTTP request is in flight.
+    /// Catalog chrome. The bundled sample is this catalog while an HTTP
+    /// request is in flight.
     private var catalogChrome: some View {
         let sheet = DSPinnedHeaderSheet(
             header: { pinnedHeader },
@@ -215,7 +215,7 @@ struct HomeScreen: View {
     }
 
     /// Profile, greeting, and the failure. The catalog and the bell are not
-    /// in this tree, so a dead API cannot be read as the firebase sample.
+    /// in this tree, so a dead API cannot be read as the bundled sample.
     private var homeLoadFailureChrome: some View {
         let model = model
         let retryEnabled = !model.isLoggingOut
@@ -309,8 +309,8 @@ struct HomeScreen: View {
     }
 
     /// Ids and numbers from the catalog, formatted for the in-app locale.
-    /// The firebase sample shows for a firebase build and while HTTP is in
-    /// flight. A failed first load shows `HomeLoadFailureView` instead.
+    /// The bundled sample shows while HTTP is in flight. A failed first load
+    /// shows `HomeLoadFailureView` instead.
     /// A failed pull keeps this card and shows the refresh banner.
     private var loyaltyCard: some View {
         let face = HomeLoyaltyCopy.loyaltyCard(
@@ -395,7 +395,7 @@ struct HomeScreen: View {
         }
     }
 
-    /// Daily Offer banners from the catalog. The firebase sample is the three
+    /// Daily Offer banners from the catalog. The bundled sample is the three
     /// slots the screen used to hard-code, opening on the second one. Title runs
     /// stay inverse and accent, resolved with the in-app locale.
     /// `DSBannerCarousel` reads `initialIndex` only in `init`, so the carousel
@@ -505,9 +505,9 @@ struct HomeScreen: View {
     HomeScreen(
         userId: "preview-user",
         profileRepository: PreviewHomeProfileRepository(name: "Iveta"),
-        homeRepository: FirebaseHomeRepository(),
+        homeRepository: SampleHomeRepository(),
         networkClient: PreviewHomeNetworkClient(),
-        apiBaseURL: "https://api.minit.app",
+        apiBaseURL: "https://api.zappte.eu/min",
         onLogOut: {}
     )
 }

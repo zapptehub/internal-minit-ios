@@ -10,13 +10,8 @@
 		B878E288C177E0ECC051B06B /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 7004F2ECA35D26D6BBE2464C /* FirebaseRemoteConfig */; };
 		FA4400012FF44A440032754F /* FeatureHome in Frameworks */ = {isa = PBXBuildFile; productRef = FA4400022FF44A440032754F /* FeatureHome */; };
 		FA4C039D2FF85DF500EDF226 /* FeatureStart in Frameworks */ = {isa = PBXBuildFile; productRef = FA4C039C2FF85DF500EDF226 /* FeatureStart */; };
-		FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA74630069752006AE0DD /* FirebaseAnalytics */; };
-		FA6AA74930069752006AE0DD /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA74830069752006AE0DD /* FirebaseAnalyticsCore */; };
-		FA6AA74B30069752006AE0DD /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA74A30069752006AE0DD /* FirebaseAnalyticsIdentitySupport */; };
 		FA6AA74D30069752006AE0DD /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA74C30069752006AE0DD /* FirebaseAuth */; };
-		FA6AA74F30069752006AE0DD /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA74E30069752006AE0DD /* FirebaseAuthCombine-Community */; };
 		FA6AA75130069752006AE0DD /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA75030069752006AE0DD /* FirebaseCore */; };
-		FA6AA75330069752006AE0DD /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = FA6AA75230069752006AE0DD /* FirebaseDatabase */; };
 		FA7F739C2FF42D010032754F /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = FA7F739B2FF42D010032754F /* DesignSystem */; };
 		FA7F739F2FF42D0F0032754F /* CoreAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FA7F739E2FF42D0F0032754F /* CoreAnalytics */; };
 		FA7F73A22FF42D1C0032754F /* CoreExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = FA7F73A12FF42D1C0032754F /* CoreExtensions */; };
@@ -85,17 +80,12 @@
 				FA7F739C2FF42D010032754F /* DesignSystem in Frameworks */,
 				FA7F73AB2FF42D420032754F /* DataAuth in Frameworks */,
 				FA8D00122FF500010032754F /* DataProfile in Frameworks */,
-				FA6AA75330069752006AE0DD /* FirebaseDatabase in Frameworks */,
 				FAA3D0D9300A874B00181699 /* FeatureOnboarding in Frameworks */,
-				FA6AA74F30069752006AE0DD /* FirebaseAuthCombine-Community in Frameworks */,
 				FAA3D0D6300A863C00181699 /* DataLoyaltyCard in Frameworks */,
 				FA7F73A52FF42D2A0032754F /* CoreLogging in Frameworks */,
 				FA7F73AE2FF42D590032754F /* FeatureLogin in Frameworks */,
-				FA6AA74930069752006AE0DD /* FirebaseAnalyticsCore in Frameworks */,
-				FA6AA74B30069752006AE0DD /* FirebaseAnalyticsIdentitySupport in Frameworks */,
 				FA4C039D2FF85DF500EDF226 /* FeatureStart in Frameworks */,
 				FA6AA74D30069752006AE0DD /* FirebaseAuth in Frameworks */,
-				FA6AA74730069752006AE0DD /* FirebaseAnalytics in Frameworks */,
 				FA7F73B02FF42D590032754F /* LoginTestUtilities in Frameworks */,
 				FAC0E117300B010100181708 /* FeatureTabRoot in Frameworks */,
 				FA4400012FF44A440032754F /* FeatureHome in Frameworks */,
@@ -167,13 +157,8 @@
 				FA7F73AD2FF42D590032754F /* FeatureLogin */,
 				FA7F73AF2FF42D590032754F /* LoginTestUtilities */,
 				FA4C039C2FF85DF500EDF226 /* FeatureStart */,
-				FA6AA74630069752006AE0DD /* FirebaseAnalytics */,
-				FA6AA74830069752006AE0DD /* FirebaseAnalyticsCore */,
-				FA6AA74A30069752006AE0DD /* FirebaseAnalyticsIdentitySupport */,
 				FA6AA74C30069752006AE0DD /* FirebaseAuth */,
-				FA6AA74E30069752006AE0DD /* FirebaseAuthCombine-Community */,
 				FA6AA75030069752006AE0DD /* FirebaseCore */,
-				FA6AA75230069752006AE0DD /* FirebaseDatabase */,
 				FAA3D0D5300A863C00181699 /* DataLoyaltyCard */,
 				FAA3D0D8300A874B00181699 /* FeatureOnboarding */,
 				FAA3D0DA300A874B00181699 /* OnboardingTestUtilities */,
@@ -319,7 +304,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
@@ -458,7 +443,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -504,7 +489,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -548,7 +533,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
@@ -627,7 +612,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -671,7 +656,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
@@ -828,40 +813,15 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = FeatureStart;
 		};
-		FA6AA74630069752006AE0DD /* FirebaseAnalytics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalytics;
-		};
-		FA6AA74830069752006AE0DD /* FirebaseAnalyticsCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsCore;
-		};
-		FA6AA74A30069752006AE0DD /* FirebaseAnalyticsIdentitySupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsIdentitySupport;
-		};
 		FA6AA74C30069752006AE0DD /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
 		};
-		FA6AA74E30069752006AE0DD /* FirebaseAuthCombine-Community */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = "FirebaseAuthCombine-Community";
-		};
 		FA6AA75030069752006AE0DD /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
-		};
-		FA6AA75230069752006AE0DD /* FirebaseDatabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA6AA74530069752006AE0DD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseDatabase;
 		};
 		FA7F739B2FF42D010032754F /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;

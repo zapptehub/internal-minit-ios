@@ -1,14 +1,15 @@
 // Base for the Release configuration of the minit target.
-// Does not include Local.xcconfig or Secrets.xcconfig. Firebase and empty
+// Does not include Local.xcconfig or Secrets.xcconfig. HTTP and empty
 // Access values are hardcoded after the Sentry include.
 #include "Sentry.xcconfig"
 
 // xcconfig treats // as a comment, so the base URL is split the same way as SENTRY_DSN.
-MINIT_API_BASE_URL = https:/$()/api.minit.app
+// Public path on the zappte host. No /mock prefix and no Cloudflare Access.
+MINIT_API_BASE_URL = https:/$()/api.zappte.eu/min
 
 SENTRY_ENVIRONMENT = release
-MINIT_DATA_BACKEND = firebase
-// Demo mode never ships in Release — Firebase stays the only sign-in path.
+MINIT_DATA_BACKEND = http
+// Demo mode never ships in Release.
 MINIT_DEMO_ENABLED = NO
 CF_ACCESS_CLIENT_ID =
 CF_ACCESS_CLIENT_SECRET =

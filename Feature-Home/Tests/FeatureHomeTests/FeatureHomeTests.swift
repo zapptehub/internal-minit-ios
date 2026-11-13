@@ -11,7 +11,7 @@ final class FeatureHomeTests: XCTestCase {
         _ = FeatureHome.createScreen(
             userId: "user-1",
             profileRepository: StubProfileRepository(),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             networkClient: UnusedHomeNetworkClient(),
             apiBaseURL: "https://api.minit.app",
             onLogOut: {}

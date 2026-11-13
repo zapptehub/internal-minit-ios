@@ -143,8 +143,9 @@ expect_empty_committed Internal CF_ACCESS_CLIENT_SECRET
 expect Internal PRODUCT_BUNDLE_IDENTIFIER saleseverest.minit
 
 expect Release SENTRY_ENVIRONMENT release
-expect Release MINIT_DATA_BACKEND firebase
-expect Release MINIT_API_BASE_URL "https://api.minit.app"
+expect Release MINIT_DATA_BACKEND http
+expect Release MINIT_API_BASE_URL "https://api.zappte.eu/min"
+expect Release MINIT_DEMO_ENABLED NO
 expect Release PRODUCT_BUNDLE_IDENTIFIER saleseverest.minit
 expect_empty Release CF_ACCESS_CLIENT_ID
 expect_empty Release CF_ACCESS_CLIENT_SECRET
@@ -298,7 +299,9 @@ expect_exact_line() {
 
 expect_exact_line "$root/Config/Development.xcconfig" "MINIT_DATA_BACKEND = http"
 expect_exact_line "$root/Config/Internal.xcconfig" "MINIT_DATA_BACKEND = http"
-expect_exact_line "$root/Config/Release.xcconfig" "MINIT_DATA_BACKEND = firebase"
+expect_exact_line "$root/Config/Release.xcconfig" "MINIT_DATA_BACKEND = http"
+expect_exact_line "$root/Config/Release.xcconfig" 'MINIT_API_BASE_URL = https:/$()/api.zappte.eu/min'
+expect_exact_line "$root/Config/Release.xcconfig" "MINIT_DEMO_ENABLED = NO"
 expect_exact_line "$root/Config/Development.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG MINIT_SHAKE"
 expect_exact_line "$root/Config/Internal.xcconfig" "SWIFT_ACTIVE_COMPILATION_CONDITIONS = MINIT_SHAKE"
 expect_exact_line "$root/Config/Release.xcconfig" "MINIT_SHAKE_REPORT_EMAIL ="
@@ -423,3 +426,50 @@ while IFS= read -r rel || [ -n "$rel" ]; do
 done < "$tmp/untracked.txt"
 
 echo "OK no non-empty Access assignment in tracked files, the diff against HEAD, or untracked files (gitignored files are not scanned)"
+
+# The store build must not link Realtime Database, Analytics, or the Combine
+# Auth wrapper. Auth and Remote Config stay on the app target's firebase-ios-sdk
+# product. Other local packages must not depend on that SDK.
+if grep -E -q 'FirebaseDatabase|FirebaseAnalytics|AuthCombine' "$project/project.pbxproj"; then
+  echo "FAIL project.pbxproj links FirebaseDatabase, FirebaseAnalytics, or AuthCombine" >&2
+  exit 1
+fi
+echo "OK project.pbxproj does not link FirebaseDatabase, FirebaseAnalytics, or AuthCombine"
+
+sdk_dependency=0
+for manifest in "$root"/*/Package.swift; do
+  case $manifest in
+    */Data-Auth/Package.swift) continue ;;
+  esac
+  if grep -q 'firebase-ios-sdk' "$manifest"; then
+    echo "FAIL $manifest depends on firebase-ios-sdk" >&2
+    sdk_dependency=1
+  fi
+done
+if [ "$sdk_dependency" -ne 0 ]; then
+  exit 1
+fi
+echo "OK Package.swift files other than Data-Auth do not depend on firebase-ios-sdk"
+
+expect_project_version_at_least() {
+  label=$1
+  file=$2
+  minimum=$3
+  actual=$(setting "$file" CURRENT_PROJECT_VERSION)
+  case $actual in
+    ''|*[!0-9]*)
+      echo "FAIL $label CURRENT_PROJECT_VERSION is not an integer" >&2
+      echo "actual: $actual" >&2
+      exit 1
+      ;;
+  esac
+  if [ "$actual" -lt "$minimum" ]; then
+    echo "FAIL $label CURRENT_PROJECT_VERSION is below $minimum" >&2
+    echo "actual: $actual" >&2
+    exit 1
+  fi
+  echo "OK $label CURRENT_PROJECT_VERSION >= $minimum ($actual)"
+}
+
+expect_project_version_at_least Release "$tmp/Release.txt" 10
+expect_project_version_at_least "minitTests Release" "$tmp/minitTests-Release.txt" 10

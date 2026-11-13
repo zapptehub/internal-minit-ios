@@ -2,39 +2,17 @@ import CoreNetworking
 
 /// Composition root for profile data.
 ///
-/// `dataBackend` selects the repository. The HTTP type is constructed only
-/// when the id is `http`. Firebase Realtime Database reads and writes stay
-/// on `ProfileRepositoryImpl`.
+/// Builds `HttpProfileRepository`. `dataBackend` must be `http`; the app
+/// rejects every other id before it constructs this module. Surrounding
+/// whitespace is ignored.
 public final class ProfileDataModule {
-    private let dataBackend: String
-    private let networkClient: (any NetworkClient)?
+    private let repository: HttpProfileRepository
 
-    /// `dataBackend` is the plist id (`firebase` or `http`). A nil client is
-    /// ignored unless the id is `http`.
-    public init(dataBackend: String = "firebase", networkClient: (any NetworkClient)? = nil) {
+    public init(dataBackend: String, networkClient: any NetworkClient) {
         let id = dataBackend.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.dataBackend = id
-        self.networkClient = id == Self.httpBackend ? networkClient : nil
+        precondition(id == "http", "ProfileDataModule only builds the http repository")
+        self.repository = HttpProfileRepository(client: networkClient)
     }
 
     public func makeProfileRepository() -> ProfileRepository { repository }
-
-    private lazy var repository: ProfileRepository = makeRepository()
-
-    private func makeRepository() -> ProfileRepository {
-        switch dataBackend {
-        case Self.httpBackend:
-            guard let networkClient else {
-                fatalError("MinitDataBackend is http but no NetworkClient was provided")
-            }
-            return HttpProfileRepository(client: networkClient)
-        case Self.firebaseBackend:
-            return ProfileRepositoryImpl(api: FirebaseProfileApiImpl())
-        default:
-            fatalError("Unknown data backend \"\(dataBackend)\"")
-        }
-    }
-
-    private static let firebaseBackend = "firebase"
-    private static let httpBackend = "http"
 }

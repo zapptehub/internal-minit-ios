@@ -228,7 +228,7 @@ final class HomeCatalogTests: XCTestCase {
         XCTAssertEqual(face, HomeFirebaseSample.face(locale: english))
     }
 
-    func testHTTPRepositoryGetsV1HomeAndFirebaseDoesNot() async throws {
+    func testHTTPRepositoryGetsV1HomeAndTheSampleDoesNot() async throws {
         let document = try homeDocument()
         let client = RecordingHomeClient(result: .success(document))
         let catalog = try await HttpHomeRepository(client: client).load()
@@ -240,21 +240,12 @@ final class HomeCatalogTests: XCTestCase {
         XCTAssertNil(catalog.banners[0].image)
         XCTAssertEqual(catalog.products.count, 10)
 
-        let idle = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
-        let firebase = try await FirebaseHomeRepository().load()
-        XCTAssertEqual(firebase, .firebase)
-        XCTAssertTrue(idle.paths.isEmpty)
-        XCTAssertTrue(idle.dataURLs.isEmpty)
+        let sample = try await SampleHomeRepository().load()
+        XCTAssertEqual(sample, .firebase)
 
         let selected = HomeRepositoryFactory.make(dataBackend: " http ", networkClient: client)
         _ = try await selected.load()
         XCTAssertEqual(client.paths, ["/v1/home", "/v1/home"])
-
-        let sampleClient = RecordingHomeClient(result: .failure(NetworkError.invalidURL))
-        let sample = HomeRepositoryFactory.make(dataBackend: " firebase ", networkClient: sampleClient)
-        let loaded = try await sample.load()
-        XCTAssertEqual(loaded, .firebase)
-        XCTAssertTrue(sampleClient.paths.isEmpty)
     }
 
     func testAvatarRequestSkipsBlankNonHTTPAndForeignNonMedia() async {

@@ -23,7 +23,7 @@ final class FeatureTabRootTests: XCTestCase {
         _ = FeatureTabRoot.createScreen(
             userId: "user-1",
             profileRepository: StubProfileRepository(),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: HttpHomeRepository(client: UnusedTabNetworkClient()),
             networkClient: UnusedTabNetworkClient(),
             apiBaseURL: "https://api.minit.app",
             onLogOut: {}

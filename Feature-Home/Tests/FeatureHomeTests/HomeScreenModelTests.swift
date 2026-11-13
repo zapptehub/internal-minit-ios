@@ -15,7 +15,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: repository,
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
 
@@ -41,7 +41,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: repository,
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
 
@@ -58,7 +58,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: ScriptedProfileRepository(results: []),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: { logOuts += 1 }
         )
 
@@ -96,7 +96,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: ScriptedProfileRepository(results: []),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: { logOuts += 1 }
         )
         model.openNotifications()
@@ -142,7 +142,7 @@ final class HomeScreenModelTests: XCTestCase {
         let closed = HomeScreenModel(
             userId: "user-1",
             profileRepository: ScriptedProfileRepository(results: []),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: { logOuts += 1 }
         )
         closed.profileTapped()
@@ -231,7 +231,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: repository,
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
 
@@ -255,7 +255,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: repository,
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
 
@@ -330,7 +330,7 @@ final class HomeScreenModelTests: XCTestCase {
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: repository,
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
 
@@ -678,8 +678,8 @@ final class HomeScreenModelTests: XCTestCase {
         XCTAssertEqual(profile.fetchedUserIds, ["user-1"])
     }
 
-    func testPullRefreshOnFirebaseLoadsTheFixtureAgain() async {
-        let repository = CountingHomeRepository(inner: FirebaseHomeRepository())
+    func testPullRefreshOnTheBundledSampleLoadsItAgain() async {
+        let repository = CountingHomeRepository(inner: SampleHomeRepository())
         let model = HomeScreenModel(
             userId: "user-1",
             profileRepository: ScriptedProfileRepository(results: []),
@@ -1088,7 +1088,7 @@ final class HomeScreenModelTests: XCTestCase {
         HomeScreenModel(
             userId: "user-1",
             profileRepository: ScriptedProfileRepository(results: []),
-            homeRepository: FirebaseHomeRepository(),
+            homeRepository: SampleHomeRepository(),
             onLogOut: {}
         )
     }

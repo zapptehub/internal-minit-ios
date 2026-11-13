@@ -1,6 +1,6 @@
 import Foundation
 
-/// Sample catalog for the committed firebase backend.
+/// Bundled sample shown while `GET /v1/home` is in flight.
 ///
 /// Same strings, colors, images, and 3210 card the screens hard-coded. Copy
 /// stays on the xcstrings keys. Loyalty numbers come from `HomeFirebaseSample`.

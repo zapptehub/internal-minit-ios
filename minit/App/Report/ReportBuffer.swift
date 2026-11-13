@@ -48,7 +48,7 @@ nonisolated struct ShakeReportContext: Equatable, Sendable {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
         let environment = expanded(bundle.object(forInfoDictionaryKey: "SentryEnvironment") as? String) ?? "unknown"
-        let backend = expanded(bundle.object(forInfoDictionaryKey: "MinitDataBackend") as? String) ?? "firebase"
+        let backend = expanded(bundle.object(forInfoDictionaryKey: "MinitDataBackend") as? String) ?? "missing"
         let user = Auth.auth().currentUser
         let identity = user.map { ShakeReportIdentity(uid: $0.uid, email: $0.email) }
         let context = ShakeReportContext(

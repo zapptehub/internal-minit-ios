@@ -8,14 +8,12 @@ let package = Package(
         .library(name: "DataLoyaltyCard", targets: ["DataLoyaltyCard"])
     ],
     dependencies: [
-        .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "12.0.0")),
         .package(path: "../Core-Networking")
     ],
     targets: [
         .target(
             name: "DataLoyaltyCard",
             dependencies: [
-                .product(name: "FirebaseDatabase", package: "firebase-ios-sdk"),
                 .product(name: "CoreNetworking", package: "Core-Networking")
             ],
             path: "Sources/DataLoyaltyCard"

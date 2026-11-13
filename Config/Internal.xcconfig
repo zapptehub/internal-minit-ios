@@ -12,8 +12,8 @@ MINIT_API_BASE_URL = https:/$()/api.zappte.eu/mock/min
 MINIT_DATA_BACKEND = http
 
 // Gates the Start screen's "Try Minit in Demo mode" button. The app also
-// requires MINIT_DATA_BACKEND == http, so a gitignored Local.xcconfig override
-// to firebase still hides it even with this flag on.
+// requires MINIT_DATA_BACKEND == http. A gitignored Local.xcconfig override
+// to any other id, including firebase, fails at startup.
 MINIT_DEMO_ENABLED = YES
 
 // Empty unless gitignored Secrets.xcconfig supplies Cloudflare Access credentials.

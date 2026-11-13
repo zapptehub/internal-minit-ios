@@ -155,15 +155,6 @@ final class HttpProfileRepositoryTests: XCTestCase {
     }
 
     func testDataModuleConstructsHttpOnlyForTheHttpId() throws {
-        let firebase = ProfileDataModule(
-            dataBackend: "firebase",
-            networkClient: ScriptedNetworkClient(results: [])
-        )
-        let firebaseRepository = try XCTUnwrap(firebase.makeProfileRepository() as? ProfileRepositoryImpl)
-        let firebaseAgain = try XCTUnwrap(firebase.makeProfileRepository() as? ProfileRepositoryImpl)
-        XCTAssertTrue(firebaseRepository === firebaseAgain)
-        XCTAssertTrue(ProfileDataModule().makeProfileRepository() is ProfileRepositoryImpl)
-
         let http = ProfileDataModule(dataBackend: " http ", networkClient: ScriptedNetworkClient(results: []))
         let httpRepository = try XCTUnwrap(http.makeProfileRepository() as? HttpProfileRepository)
         let httpAgain = try XCTUnwrap(http.makeProfileRepository() as? HttpProfileRepository)

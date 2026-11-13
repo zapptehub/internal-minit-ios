@@ -37,9 +37,9 @@ final class AppDependencies {
     let loginAnalytics: LoginAnalyticsTracking
     let startAnalytics: StartAnalyticsTracking
     let onboardingAnalytics: OnboardingAnalyticsTracking
-    /// Gates Start's "Try Minit in Demo mode" button: `MinitDemoEnabled` (Debug/Internal
-    /// only, `NO` in Release) *and* the data backend is `http` — a gitignored
-    /// `Local.xcconfig` override to `firebase` hides the button even with the flag on.
+    /// Gates Start's "Try Minit in Demo mode" button. This is `MinitDemoEnabled`
+    /// (`YES` on Debug and Internal, `NO` on Release). A bad backend id fails
+    /// before this is set.
     let showsDemo: Bool
 
     private init() {
@@ -84,7 +84,7 @@ final class AppDependencies {
         self.loginAnalytics = ConsoleAnalyticsAdapter()
         self.startAnalytics = ConsoleStartAnalyticsAdapter()
         self.onboardingAnalytics = ConsoleOnboardingAnalyticsAdapter()
-        self.showsDemo = Self.demoEnabled() && dataBackend == "http"
+        self.showsDemo = Self.demoEnabled()
         #if MINIT_SHAKE
         let reportAddress = Self.reportAddress()
         self.reportAddress = reportAddress
@@ -135,20 +135,16 @@ final class AppDependencies {
 
     /// `MinitDataBackend` from Info.plist (`MINIT_DATA_BACKEND`).
     ///
-    /// Debug and Internal commit `http`. Release commits `firebase`. Gitignored
-    /// `Config/Local.xcconfig` may override Debug or Internal. The data modules
-    /// construct the HTTP repositories only when the id is `http`.
-    ///
-    /// A missing or unexpanded value defaults to `firebase`, so a host plist
-    /// that never sets the key stays on Firebase.
-    /// Any other id still fails when the data module builds the repository.
+    /// Debug, Internal, and Release commit `http`. Gitignored `Config/Local.xcconfig`
+    /// may override Debug or Internal. `http` is the only id. A missing, unexpanded,
+    /// `firebase`, or any other value fails here, before a repository is built.
     private static func dataBackend(bundle: Bundle = .main) -> String {
-        let value = plistString("MinitDataBackend", bundle: bundle)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if value.isEmpty || value.hasPrefix("$(") {
-            return "firebase"
+        switch resolveDataBackendID(plistString("MinitDataBackend", bundle: bundle)) {
+        case .success(let id):
+            return id
+        case .failure(let error):
+            fatalError(error.description)
         }
-        return value
     }
 
     /// `MinitDemoEnabled` from Info.plist (`MINIT_DEMO_ENABLED`, `YES` in Debug/Internal,

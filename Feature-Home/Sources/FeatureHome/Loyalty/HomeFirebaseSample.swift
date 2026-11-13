@@ -1,10 +1,6 @@
 import Foundation
 
-/// Cardless loyalty block for the committed firebase backend.
-///
-/// Ships in the Release configuration on purpose, so Release shows the firebase
-/// Home sample (3210/silver, floors only in this fixture) until production
-/// moves off firebase.
+/// Bundled loyalty numbers shown while `GET /v1/home` is in flight.
 ///
 /// The numbers live in `HomeFirebaseSample.json`, the same ids and numbers as
 /// `contract/home.json`. Home renders them through `HomeLoyaltyCopy`. The
